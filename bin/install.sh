@@ -66,9 +66,11 @@ get_default_knob() {
     else
         setting="${default}"
     fi
-    if [ "x${stored_param}" != "x${setting}" ] && [ "x${setting}" != "x${default}" ]; then
-        store_conf ${key} "${setting}"
-    else
+    if [ "x${stored_param}" != "x${setting}" ];then
+        store_conf "${key}" "${setting}"
+        stored_param="$(get_conf ${key})"
+    fi
+    if [ "x${stored_param}" == "x${default}" ]; then
         remove_conf "${key}"
     fi
     echo "${setting}"
@@ -85,8 +87,8 @@ get_corpusops_url() {
 }
 
 get_ansible_url() {
-    get_default_knob ansible_url "${ANSIBLE_URL}"  \
-        "https://github.com/corpusops/ansible.git"
+    get_default_knob ansible_url "${ANSIBLE_URL}" \
+        "$(get_corpusops_orga_url)/ansible.git"
 }
 
 get_corpusops_branch() {
@@ -114,6 +116,11 @@ set_vars() {
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
+    CORPUSOPS_ORGA_URL="${CORPUSOPS_ORGA_URL-}"
+    CORPUSOPS_URL="${CORPUSOPS_URL-}"
+    CORPUSOPS_BRANCH="${CORPUSOPS_BRANCH-}"
+    ANSIBLE_URL="${ANSIBLE_URL-}"
+    ANSIBLE_BRANCH="${ANSIBLE_BRANCH-}"
     if [ "x${DO_VERSION}" != "xy" ];then
         DO_VERSION="no"
     fi
@@ -142,12 +149,9 @@ set_vars() {
     export SED PATH UNAME
     export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE
     #
-    export CORPUSOPS_ORGA_URL="$(get_corpusops_orga_url)"
-    export CORPUSOPS_URL="$(get_corpusops_url)"
-    export CORPUSOPS_BRANCH="$(get_corpusops_branch)"
+    export CORPUSOPS_ORGA_URL CORPUSOPS_URL CORPUSOPS_BRANCH
     #
-    export ANSIBLE_URL="$(get_ansible_url)"
-    export ANSIBLE_BRANCH="$(get_ansible_branch)"
+    export ANSIBLE_URL ANSIBLE_BRANCH
     #
     export EGGS_GIT_DIRS
     #

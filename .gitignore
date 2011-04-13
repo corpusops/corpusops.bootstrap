@@ -19,3 +19,5 @@
 /playbooks
 #
 !/requirements/*.in
+/ignored
+/.corpusops
