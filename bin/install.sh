@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
 
@@ -281,6 +280,39 @@ get_git_branch() {
     cd - 1>/dev/null 2>/dev/null
 }
 
+filtered_ansible_playbook_custom() {
+    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
+    shift
+    if [[ -n ${DEBUG} ]]; then
+        vv bin/ansible-playbook  "${@}"
+    else
+        (((( \
+            vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
+            | egrep -iv "${filter}" >&4) 3>&1) \
+            | (read xs; exit $xs)) 4>&1
+    fi
+    return $?
+}
+
+filtered_ansible_playbook() {
+    filtered_ansible_playbook_ "" "${@}"
+
+}
+
+checkouter () {
+    filter=""
+    filter="${filter}(${ANSIBLE_FILTER_OUTPUT}|"
+    filter="${filter}^("
+    filter="${filter}task.*(command|stash|git|checkout|switch|submod|merging|configur|remote|change)"
+    filter="${filter})"
+    filter="${filter})"
+    filtered_ansible_playbook_custom "${filter}" \
+           $( [[ -n "${DEBUG}" ]] && echo "-vvvvv" ) \
+           -i localhost, -c local "${@}" \
+           -e "$( [[ -n "${DEBUG}" ]] && echo "cops_debug=true " \
+           )prefix='$PWD' venv='${VENV_PATH}'"
+}
+
 checkout_code() {
     if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
         cd "${CORPUS_OPS_PREFIX}" &&\
@@ -295,11 +327,7 @@ checkout_code() {
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
             fi
             for co in $TO_CHECKOUT;do
-                if ! vv bin/ansible-playbook \
-                    -i localhost, -vvvv -c local \
-                    "requirements/${co}" \
-                    -e "$( [[ -n "${DEBUG}" ]] && echo "cops_debug=true " \
-                    )prefix='$PWD' venv='${VENV_PATH}'";then
+                if ! checkouter "requirements/${co}";then
                     bs_log "Code failed to update for <$co>"
                     return 1
                 else
@@ -399,8 +427,8 @@ setup_virtualenv() {
                     cd "${VENV_PATH}/src/${i}"
                     pip install --no-deps -e .
                 fi
-                cd "${cwd}"
             done
+            cd "${cwd}"
         fi
     fi
 }
