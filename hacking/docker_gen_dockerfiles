@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 cd "$(dirname "${0}")/.."
-export LOGGER_NAME=gen_dockerfiles
+export LOGGER_NAME=docker_gen_dockerfiles
 export DOCKERFILE_TEMPLATE=${1-}
 
 sc=hacking/build_env

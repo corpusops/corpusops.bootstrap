@@ -58,7 +58,7 @@ else
     fi
 fi
 
-hacking/gen_dockerfiles
+hacking/docker_gen_dockerfiles
 
 while read distrib_line;do
     for distrib_full in ${distrib_line};do
