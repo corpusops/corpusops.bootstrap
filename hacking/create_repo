@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+export LOGGER_NAME=$(basename $0)
+
 API=https://api.github.com
 username=${username:-kiorky}
 token=${token-}

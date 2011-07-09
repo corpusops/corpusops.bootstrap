@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-
 cd $(dirname $0)/..
+export LOGGER_NAME=$(basename $0)
+
 sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
