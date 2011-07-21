@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "${0}")/.."
+export LOGGER_NAME=gen_dockerfiles
+export DOCKERFILE_TEMPLATE=${1-}
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage () {
+    NO_HEADER=y die '
+Regenerate found distributions dockerfiles from template
+
+ [NOCOLOR=y] \
+ [NO_GEN=y] \
+ [DEBUG=y] \
+ [DISTRIBS="ubuntu:16.04"] \
+    '"$0"' [<path_to_another_dockerfile_template>]
+'
+}
+parse_cli "$@"
+
+if [[ -n ${NO_GEN} ]];then
+    die 0 "Skipping dockerfile generation"
+fi
+
+log "Generating dockerfiles from ${DOCKERFILE_TEMPLATE}"
+while read distrib_line;do
+    for distrib in ${distrib_line};do
+        f=docker/Dockerfile.${distrib}
+        log "Rewriting ${f}"
+        sed -r \
+            -e "/__STRIPME__/d" \
+            -e "s/FROM.*/FROM ${distrib}/g" \
+            "${DOCKERFILE_TEMPLATE}" > "${f}"
+    done
+done <<< ${DISTRIBS}
+# vim:set et sts=4 ts=4 tw=80:

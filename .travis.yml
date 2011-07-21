@@ -1,14 +1,14 @@
 ---
 sudo: required
 dist: trusty
+env:
+  matrix:
+    - DISTRIBS="ubuntu:16.04"
 language: python
 python: "2.7"
 before_install:
-  # Make sure everything's up to date.
   - sudo apt-get update -qq
-
 install:
-- bin/install.sh -C
-
+  - bin/install.sh -C -S -b "$(git log HEAD|head -n1|awk '{print $2}')"
 script:
-    - bin/install.sh -C --synchronize-code
+  - hacking/test_script

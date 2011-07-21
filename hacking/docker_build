@@ -1,0 +1,232 @@
+#!/usr/bin/env bash
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=docker_build
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage() {
+    NO_HEADER=y die '
+Wrapper to docker build, but will also try to squash any created layer up
+
+ [NOCOLOR=y] \
+ [SKIP_FOUND_CANDIDATE_EXIT=y] \
+ [NO_BUILD=y] \
+ [NO_REBUILD=y] \
+ [NO_SQUASH=y] \
+ [NO_SQUASH_CLEANUP=y] \
+ [NO_CANDIDATE_CLEANUP=y] \
+ [NO_OLD_IMAGE_CLEANUP=y] \
+ [DEBUG=y] \
+    '"$0"' <tag> [<dockerfile>] [<path_to_working_dir>]
+ '
+}
+
+parse_cli "$@"
+
+tag=$1
+
+#TMPS="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+candidate=${tag}_cops_candidate
+taggued=${candidate}
+candidate_squashed=${candidate}_s
+
+dockerfile=${2-}
+wd=${3:-$(pwd)}
+if [[ -z ${3-} ]];then
+    # test if 2nd arg is a directory or a file (Dockerfile, in this case)
+    if [[ -d ${2-} ]];then
+        dockerfile=""
+        wd=${2}
+    fi
+fi
+
+ret=1
+
+if [[ -z ${tag} ]];then
+    die 5 "No tag providen"
+fi
+
+# If wanted, try to install image squasher if not already done
+if [[ -n "${SQUASHER_URL}" ]] && [ ! -e "$SQUASHER" ];then
+    echo "Getting $SQUASHER_URL -> $SQUASHER" &&\
+    if echo $SQUASHER_URL | egrep -qi amd64;then
+        curl -L -s "$SQUASHER_URL" \
+            | tar xzvf - -C hacking \
+            && chmod +x hacking/docker-squash \
+            && mv -vf hacking/docker-squash "${SQUASHER}"
+        may_die $? $? "$SQUASHER_URL failed to download"
+    else
+        venv/bin/pip install -e "${SQUASHER_URL}"
+    fi
+fi
+
+old_tag_id=$(get_image "${tag}")
+old_candidate_id=$(get_image "${candidate}")
+old_squashed_id=$(get_image "${candidate_squashed}")
+tag_id=${old_tag_id}
+candidate_id=${old_candidate_id}
+squashed_id=${old_squashed_id}
+
+if [[ -z ${SKIP_FOUND_CANDIDATE_EXIT} ]] && [[ -n ${candidate_id} ]];then
+    die 1 "Candidate already found: ${candidate}, build in progress or already failed ?"
+fi
+if [[ -z ${candidate_id} ]];then
+    debug "No candidates found prior to build"
+fi
+
+# If we are free from any candidates, build a new image
+if [[ -n ${NO_REBUILD} ]] && [[ -n ${candidate_id} ]]; then
+    NO_BUILD=1
+fi
+if [[ -z ${NO_BUILD} ]]; then
+    log "Building ${candidate}"
+    if [[ -n ${dockerfile} ]];then
+        vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
+    else
+        vvv docker build -t "${candidate}" "${wd}"
+    fi
+    ret=$?
+else
+    debug "Skip build of ${tag} :: ${dockerfile} :: ${wd}"
+fi
+
+# Assure to have one candidate
+if [[ ${ret} == 0 ]];then
+    candidate_id=$(get_image "${candidate}")
+    if [[ -z ${candidate_id} ]]; then
+        log "Candidate not found: ${candidate}"
+        ret=1
+    fi
+fi
+
+# Candidate is ready, delete now previous candidate image if found
+if [[ ${ret} == 0 ]] && [[ -z ${NO_CANDIDATE_CLEANUP} ]]; then
+    if [[ ${candidate_id} != ${old_candidate_id} ]]; then
+        dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_candidate_id}" 2>/dev/null)
+        if [[ -n ${dtag_id} ]];then
+            # delete by id to be sure to not delete blindy a candidate used
+            # via other tags
+            vvv docker rmi ${old_candidate_id}
+            if [[ ${?} != 0 ]];then
+                log "Error when cleaning old candidate: ${old_candidate_id} for ${tag}"
+            else
+                log "Old candidate for ${tag} untaggued"
+            fi
+        fi
+    else
+        log "We do not have produced a new image for ${tag}"
+    fi
+else
+    debug "Skip old candidate cleanup of ${tag} :: ${dockerfile} :: ${wd}"
+fi
+
+# Maybe squash produced candidate
+if [[ ${ret} == 0 ]]; then
+    if [[ -z ${NO_SQUASH} ]];then
+        log "Squashing to ${candidate_squashed}"
+        taggued=${candidate_squashed}
+        case "${SQUASHER}" in
+            $SQUASHER_GO)
+                vvv docker save "${candidate_id}" \
+                    | vv sudo "${SQUASHER}" -t "${candidate_squashed}" \
+                    | vvv docker load
+                ret=$?
+                ;;
+            *)
+                vv sudo "${SQUASHER}" -t "${candidate_squashed}" ${candidate_id}
+                ret=$?
+                ;;
+        esac
+        if [[ ${ret} == 0 ]]; then
+            log "Squashed ${tag} :: ${dockerfile} :: ${wd}"
+            squashed_id=$(get_image "${candidate_squashed}")
+        fi
+    else
+        debug "Skip squash of ${tag} :: ${dockerfile} :: ${wd}"
+    fi
+fi
+
+# Everything has gone well, tag back candidate to img
+if [[ ${ret} == 0 ]];then
+    log "Tagging candidate ${taggued} to ${tag}"
+    vvv docker tag "${taggued}" "${tag}"
+    ret=${?}
+    if [[ ${ret} == 0 ]];then
+        tag_id=$(get_image "${tag}")
+    else
+        log "${tag} tag failed"
+    fi
+fi
+
+# Last cleanup bits (cleanup if found leftover squashed candidates
+if [[ ${ret} == 0 ]]; then
+    if [[ -n ${NO_SQUASH} ]];then
+        if [[ -n ${candidate_id} ]]; then
+            dtag_id=$(vv docker inspect -f '{{.Id}}' "${candidate_id}" 2>/dev/null)
+            if [[ -n ${dtag_id} ]];then
+                # delete by id to be sure to delete an image which has only one tag
+                # left, the 'squashed tag'
+                vvv docker rmi "${candidate}"
+                if [[ ${?} != 0 ]];then
+                    log "Error when cleaning candidate tag: ${candidate}"
+                else
+                    log "Cleaned candidate tag: ${candidate}"
+                fi
+            fi
+        else
+            log "When cleaning up, old squashed image was not found for tag: ${candidate_squashed}"
+        fi
+    elif [[ -z ${NO_SQUASH} ]] && [[ -z ${NO_SQUASH_CLEANUP} ]]; then
+        if [[ -n ${squashed_id} ]] && [[ -n ${old_squashed_id} ]] \
+            && [[ ${squashed_id} != ${old_squashed_id} ]]; then
+            dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_squashed_id}" 2>/dev/null)
+            if [[ -n ${dtag_id} ]];then
+                # delete by id to be sure to delete an image which has only one tag
+                # left, the 'squashed tag'
+                vvv docker rmi "${dtag_id}"
+                if [[ ${?} != 0 ]];then
+                    log "Error when cleaning old squashed image: ${candidate_squashed}"
+                else
+                    log "Cleaned old squashed image: ${candidate_squashed}"
+                fi
+            fi
+        else
+            log "When cleaning up, old squashed image was not found for tag: ${candidate_squashed}"
+        fi
+    else
+        debug "Skip tags cleanup"
+    fi
+    if [[ -z ${NO_OLD_IMAGE_CLEANUP} ]]; then
+        if [[ -z ${tag_id} ]];then
+            log "We do not have anymore an image for ${tag}"
+            ret=8
+        elif [[ ${tag_id} != ${old_tag_id} ]]; then
+            dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_tag_id}" 2>/dev/null)
+            if [[ -n ${dtag_id} ]];then
+                # delete by id to be sure to delete an image which isnt used by
+                # other means
+                vvv docker rmi ${dtag_id}
+                if [[ ${?} != 0 ]];then
+                    log "Error when cleaning old image: ${dtag_id} for ${tag}"
+                else
+                    log "Old image for ${tag} untaggued"
+                fi
+            fi
+        else
+            log "We do not have produced a new image for ${tag}"
+        fi
+    else
+        debug "Skip old image cleanup of ${tag} :: ${dockerfile} :: ${wd}"
+    fi
+fi
+
+debug "${0} ret: ${ret}"
+if [[ ${ret} == 0 ]];then
+    log "${YELLOW}Image: ${NORMAL}${CYAN}${tag} ${NORMAL}${YELLOW}built"
+else
+    log "${YELLOW}Image: ${NORMAL}${CYAN}${tag} ${NORMAL}${YELLOW}build failed"
+fi
+exit ${ret}
+# vim:set et sts=4 ts=4 tw=80:

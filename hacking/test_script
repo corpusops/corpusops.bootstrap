@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+cd "$(dirname ${0})/.."
+LOGGER_NAME=test
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+if [[ -n "${NO_SYNC}" ]];then
+    log "Skipping code sync"
+else
+    vv bin/install.sh -C --synchronize-code
+    die_in_error "SYNC failed"
+fi
+
+vv hacking/build_images
+# vim:set et sts=4 ts=4 tw=80:

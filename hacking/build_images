@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=build_images
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage () {
+    NO_HEADER=y die '
+Build any distrib found either in docker/ or via the DISTRIBS env var.
+
+ [NOCOLOR=y] \
+ [NO_GEN=y] \
+ [SKIP_FOUND_CANDIDATE_EXIT=y] \
+ [NO_BUILD=y] \
+ [NO_REBUILD=y] \
+ [NO_SQUASH=y] \
+ [NO_SQUASH_CLEANUP=y] \
+ [NO_CANDIDATE_CLEANUP=y] \
+ [NO_OLD_IMAGE_CLEANUP=y] \
+ [DEBUG=y] \
+ [DISTRIBS="ubuntu:16.04"] \
+    '"$0"'
+'
+}
+parse_cli "$@"
+
+failed=""
+success=""
+
+build() {
+    NOCOLOR=${NOCOLOR-} hacking/docker_build "${1}" "${2}" "${3}"
+}
+
+build_distrib() {
+    distrib_full="${1}"
+    tag="${DOCKER_USER}/${distrib_full}"
+    dockerfile="${W}/docker/Dockerfile.${distrib_full}"
+    build "${tag}" "${dockerfile}" "${W}"
+    ret=${?}
+    if [[ ${ret} != 0 ]];then
+        failed="$(echo "${failed} ${distrib_full}" | xargs)"
+    else
+        success="$(echo "${success} ${distrib_full}" | xargs)"
+    fi
+    return ${ret}
+}
+
+if [[ -z "${DISTRIBS-}" ]];then
+    die 3 "No DISTRIBS en var found nor any valid Dockerfile" \
+        ", error, bailing out"
+else
+    if [[ -n "${NO_BUILD}" ]];then
+        die 0 "Skip building: ${DISTRIBS}"
+    else
+        log "Building: ${DISTRIBS}"
+    fi
+fi
+
+hacking/gen_dockerfiles
+
+while read distrib_line;do
+    for distrib_full in ${distrib_line};do
+        # XXX We can make this parralel to speed up builds
+        NO_OUTPUT=${TRAVIS-} output_in_error \
+            build_distrib "${distrib_full}"
+    done
+done <<< ${DISTRIBS}
+
+log "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
+log "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
+
+if [[ -n ${failed// } ]];then
+    die 4 "At least one image failed to build: ${failed}"
+fi
+
+# vim:set et sts=4 ts=4 tw=80:

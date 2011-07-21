@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)/..
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+reset_colors
+
+img=${img:-"corpusops/ubuntu:16.04"}
+n=${img}_livetest
+default_ep=$W/hacking/container_rootfs/sbin/cops_systemd_entry_point.sh
+ep=${ep:-"${default_ep}"}
+NO_CLEANUP=${NO_CLEANUP-}
+docker_args=${@-}
+
+n=${n//:/};n=${n//_/};n=${n//-/};n=${n//\//};n=${n//\./};
+
+usage() {
+    NO_HEADER=y die '
+Wrapper to test an image (systemd based)
+
+ [img=corpusops/ubuntu:16.04] \
+ [ep=/bin/bash] \
+ [NO_CLEANUP=y] \
+ [DEBUG=y] \
+    '"$0"' <DOCKER_ARGS>
+ '
+}
+
+parse_cli "${@}"
+
+cleanup() {
+    if [[ -z ${NO_CLEANUP} ]]; then
+        docker rm -f $n 2>/dev/null
+        docker rmi -f $n 2>/dev/null
+    fi
+}
+
+cleanup
+
+imgid=$(get_image ${n})
+if [[ -n ${imgid} ]]; then
+    log "Using preexisting $n <${imgid}>"
+    img=$n
+fi
+
+myinput=
+while true; do
+    vv docker run \
+        -e "CORPUSOPS_W=$W"\
+        -e CORPUSOPS_IN_DEV=1\
+        --name="$n" \
+        ${docker_args} \
+        $(  while read v; do
+                echo " -v ${v}:${v}"
+            done < <(find "${W}" -maxdepth 1 -mindepth 1|grep -v venv ) \
+        )\
+        -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+        "${img}" "${ep}"
+    vv docker kill $n
+    vv docker commit $n $n
+    vv docker rm $n
+    imgid=$(get_image ${n})
+    if [[ -n ${imgid} ]]; then
+        img=$imgid
+    fi
+    log "press enter to restart"
+    read myinput
+done
+
+cleanup
+# vim:set et sts=4 ts=4 tw=80:
