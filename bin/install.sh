@@ -109,6 +109,7 @@ set_vars() {
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     DO_NOCONFIRM="${DO_NOCONFIRM-}"
     DO_VERSION="${DO_VERSION-"no"}"
+    DO_ONLY_RECONFIGURE="${DO_ONLY_RECONFIGURE-""}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
     DO_SYNC_PLAYBOOKS="${DO_SYNC_PLAYBOOKS-${DO_SYNC_CODE}}"
@@ -159,6 +160,7 @@ set_vars() {
     #
     export DO_NOCONFIRM
     export DO_VERSION
+    export DO_ONLY_RECONFIGURE
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
     export DO_SYNC_PLAYBOOKS
@@ -481,6 +483,7 @@ usage() {
     bs_yellow_log "This script will install corpusops & prerequisites"
     echo
     bs_log "  Actions (no action means install)"
+    bs_help "    -r|--reconfigure" "Only reconfigure without doing any action" "${DO_ONLY_RECONFIGURE}" y
     bs_help "    --skip-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
     bs_help "    --skip-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
     bs_help "    -S|--skip-checkouts|--skip-sync-code" "Skip code synchronnization" \
@@ -563,6 +566,10 @@ parse_cli_opts() {
             DO_SYNC_ROLES="no"
             argmatch="1"
         fi
+        if [ "x${1}" = "x-r" ] || [ "x${1}" = "x--reconfigure" ]; then
+            DO_ONLY_RECONFIGURE="y"
+            argmatch="1"
+        fi
         if [ "x${1}" = "x-s" ] \
             || [ "x${1}" = "x--synchronize-code" ] \
             || [ "x${1}" = "x--only-sync-code" ] \
@@ -621,6 +628,9 @@ setup() {
 
 main() {
     reconfigure || die "reconfigure failed"
+    if [ "x${DO_ONLY_RECONFIGURE}" != "x" ]; then
+        NO_HEADER=1 may_die 1 0 "Reconfigured"
+    fi
     if [ "x${DO_ONLY_SYNC_CODE}" != "x" ]; then
         synchronize_code || die "synchronize_code failed"
     else
