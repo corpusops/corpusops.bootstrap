@@ -89,7 +89,10 @@ if [[ -n ${candidate_id} ]]; then
 fi
 if [[ -n ${candidate_id} ]]; then
     if [[ -z ${SKIP_FOUND_CANDIDATE_EXIT} ]]; then
-        die 1 "Candidate already found: ${candidate}, build in progress or already failed ? set SKIP_FOUND_CANDIDATE_EXIT=1 to skip"
+        errmsg="Candidate already found: ${candidate},"
+        errmsg="${errmsg} build in progress or already failed ?"
+        errmsg="${errmsg} set SKIP_FOUND_CANDIDATE_EXIT=1 to skip"
+        die 1 "${errmsg}"
     fi
 fi
 
