@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=$(basename $0)
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage() {
+    NO_HEADER=y die '
+Release images to docker
+
+ [DOCKER_PASSWORD=xxx] \
+ [DOCKER_RELEASER=xxx] \
+ [DOCKER_USERNAME=xxx] \
+ [NOCOLOR=y] \
+ [DEBUG=y] \
+    '"$0"' <image> <image1>
+ '
+}
+
+parse_cli() {
+    [[ -z $DOCKER_USERNAME ]] && die "no DOCKER_USERNAME"
+    [[ -z $DOCKER_RELEASER ]] && die "no DOCKER_RELEASER"
+    [[ -z $DOCKER_PASSWORD ]] && die "no DOCKER_PASSWORD"
+    [[ -z $TRAVIS_BRANCH ]] && die "no TRAVIS_BRANCH"
+    IMAGES=${@}
+    RELEASES=""
+    if [[ -z "${IMAGES}" ]]; then
+        IMAGES=${DISTRIBS}
+    fi
+    for img in $IMAGES;do
+        fimg=${DOCKER_USER}/${img}
+        tagid=$(get_image "${fimg}")
+        if [ "x${tagid}" != "x" ]; then
+            RELEASES="${RELEASES} ${fimg}"
+        fi
+    done
+    RELEASES=$(echo "${RELEASES}"|xargs -n1|sort -u)
+}
+
+parse_cli "$@"
+ret=0
+if [[ -z "${RELEASES}" ]]; then
+    die "no releasable images produced yet from: ${YELLOW}$IMAGES"
+fi
+log "Releasing ${RELEASES}"
+if [ "x$TRAVIS_BRANCH" = "xmaster" ]; then
+    docker login -u="$DOCKER_RELEASER" -p="$DOCKER_PASSWORD" &&\
+        for img in ${RELEASES};do
+            vv docker push "${img}"
+            if [ "x${?}" != "x0" ];then
+                ret=1
+            else
+                log "Released: ${img}"
+            fi
+        done
+fi
+die_in_error_ ${ret} "Travis release failed"
+log "release done"
+# vim:set et sts=4 ts=4 tw=80:

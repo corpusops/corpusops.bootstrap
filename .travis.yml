@@ -12,3 +12,5 @@ install:
   - bin/install.sh -C -S -b "$(git log HEAD|head -n1|awk '{print $2}')"
 script:
   - hacking/test_script
+after_success:
+  - hacking/docker_travis_release
