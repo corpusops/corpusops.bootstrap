@@ -14,7 +14,7 @@ Build any distrib found either in docker/ or via the DISTRIBS env var.
  [NO_GEN=y] \
  [SKIP_FOUND_CANDIDATE_EXIT=y] \
  [NO_BUILD=y] \
- [NO_REBUILD=y] \
+ [FORCE_REBUILD=y] \
  [NO_SQUASH=y] \
  [NO_SQUASH_CLEANUP=y] \
  [NO_CANDIDATE_CLEANUP=y] \
