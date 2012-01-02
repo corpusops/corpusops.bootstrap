@@ -1,0 +1,14 @@
+---
+sudo: required
+dist: trusty
+language: python
+python: "2.7"
+before_install:
+  # Make sure everything's up to date.
+  - sudo apt-get update -qq
+
+install:
+- bin/install.sh -C
+
+script:
+    - bin/install.sh -C --synchronize-code
