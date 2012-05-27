@@ -483,7 +483,7 @@ usage() {
         "$(print_contrary ${DO_SYNC_PLAYBOOKS})"  y
     bs_help "     --skip-sync-roles" "Do not sync roles" \
         "$(print_contrary ${DO_SYNC_ROLES})"  y
-    bs_help "    -s|--only-synchronize-code|--only-sync-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
+    bs_help "    -s|--only-synchronize-code|--only-sync-code|--synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
     echo
@@ -552,6 +552,7 @@ parse_cli_opts() {
             argmatch="1"
         fi
         if [ "x${1}" = "x-s" ] \
+            || [ "x${1}" = "x--synchronize-code" ] \
             || [ "x${1}" = "x--only-sync-code" ] \
             || [ "x${1}" = "x--only-synchronize-code" ]; then
             DO_ONLY_SYNC_CODE="y"
