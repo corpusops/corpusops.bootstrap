@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+
+if [[ -z "${DISTRIBS-}" ]];then
+    while read f;do
+        DISTRIBS="${DISTRIBS-} $(echo ${f} \
+            | sed -re "s/.*Dockerfile\.//g")"
+    done < <( find docker -mindepth 1 -maxdepth 1 -type f)
+fi
+DISTRIBS=${DISTRIBS-}
+DISTRIBS=${DISTRIBS//  / }
+DOCKER_USER=${DOCKER_USER:-corpusops}
+NO_GEN=${NO_GEN-}
+NO_BUILD=${NO_BUILD-}
+NO_REBUILD=${NO_REBUILD-}
+NO_SYNC=${NO_SYNC-}
+NO_SQUASH=${NO_SQUASH-}
+NO_OLD_CANDIDATE_CLEANUP=${NO_OLD_CANDIDATE_CLEANUP-}
+NO_CANDIDATE_CLEANUP=${NO_CANDIDATE_CLEANUP-}
+NO_OLD_IMAGE_CLEANUP=${NO_OLD_IMAGE_CLEANUP-}
+SKIP_FOUND_CANDIDATE_EXIT=${SKIP_FOUND_CANDIDATE_EXIT-}
+SQUASHER_V=0.2.0
+SQUASHER_GO="$W/hacking/docker-squash-${SQUASHER_V}"
+BSQUASHER_URL="https://github.com/jwilder/docker-squash/releases/download"
+if uname -ar | grep -qi linux;then
+    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-linux-amd64-v$SQUASHER_V.tar.gz"
+elif uname -ar | grep -qi darwin;then
+    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-darwin-amd64-v$SQUASHER_V.tar.gz"
+else
+    SQUASHER_GO_URL="${SQUASHER_URL-}"
+fi
+SQUASHER_REV="05cd17fe639183e2986fa89b3ddb62bcf903cf2b"
+SQUASHER_FORK="https://github.com/goldmann/docker-squash.git"
+SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
+SQUASHER_PY="$W/venv/bin/docker-squash"
+DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-"${W}/hacking/Dockerfile.in"}
+case "${SQUASHER-}" in
+    $SQUASHER_GO)
+        SQUASHER=$SQUASHER_GO
+        SQUASHER_URL=$SQUASHER_GO_URL
+        ;;
+    *)
+        SQUASHER=$SQUASHER_PY
+        SQUASHER_URL=$SQUASHER_PY_URL
+        ;;
+esac
+
+reset_colors
+
+if [[ -n "${TRAVIS-}" ]]; then
+    CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+    export CORPUSOPS_BRANCH
+fi
+
+export DOCKERFILE_TEMPLATE
+export DOCKER_USER
+export DISTRIBS
+export NO_GEN
+export NO_BUILD
+export NO_SYNC
+export NO_SQUASH
+export SKIP_FOUND_CANDIDATE_EXIT
+export SQUASHER
+export SQUASHER_URL
+# vim:set et sts=4 ts=4 tw=80:

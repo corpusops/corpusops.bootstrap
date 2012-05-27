@@ -17,6 +17,7 @@
 /venv
 /roles
 /playbooks
+/hacking/docker-squash*
 #
 !/requirements/*.in
 /ignored
