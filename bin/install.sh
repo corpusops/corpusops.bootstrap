@@ -103,6 +103,7 @@ set_vars() {
     QUIET=${QUIET:-}
     CORPUS_OPS_PREFIX="$(dirname ${SCRIPT_DIR})"
     CHRONO="$(get_chrono)"
+    DEBUG="${DEBUG-}"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     DO_NOCONFIRM="${DO_NOCONFIRM-}"
     DO_VERSION="${DO_VERSION-"no"}"
@@ -164,7 +165,7 @@ set_vars() {
     #
     export TRAVIS_DEBUG TRAVIS
     #
-    export QUIET
+    export QUIET DEBUG
     #
     export VENV_PATH PIP_CACHE CORPUS_OPS_PREFIX
 }
@@ -497,6 +498,7 @@ usage() {
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
+    bs_help "    --debug" "activate debug" "${DEBUG}" y
 }
 
 parse_cli_opts() {
@@ -515,6 +517,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--version" ];then
             DO_VERSION="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--debug" ];then
+            DEBUG="y";argmatch="1"
         fi
         if [ "x${1}" = "x-h" ] || [ "x${1}" = "x--help" ]; then
             USAGE="1";argmatch="1"
