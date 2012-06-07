@@ -1,40 +1,76 @@
 #!/usr/bin/env bash
+#
+# Convenient wrapper to scan & add to ansible search paths :
+#   - inventories
+#   - libraries
+#   - roles
+#   - plugins
+#
+#   - FROM where we call the ansible commands from
+#       - $PWD
+#       - $PWD/ansible
+#       - $PWD/.ansible
+#   - Idem with directories from corpusops
+#       - $CORPUSOS_ROOT
+#       - $CORPUSOS_ROOT/ansible
+#       - $CORPUSOS_ROOT/.ansible
+#
+# It makes also some sensible defaults:
+#
+#   - nosshhostkeychecking
+#   - nocows
+#   - better controlpath
+
 export WC=$(pwd)
+export OWC=${OWC:-${WC}}
 export A=${WC}/ansible
 export DA=${WC}/.ansible
-export OWC=${OWC:-${WC}}
 export OA=${OWC}/ansible
 export ODA=${OWC}/.ansible
+export SYS_A=${SYS_A:-/etc/ansible}
 export SCRIPT=$(basename "${0}")
 export VENV_PATH="${VENV_PATH-${WC}/venv}"
-export CONF_PREFIXES="/etc/ansible"
-export MODULE_PREFIXES="/usr/share/ansible/plugins"
+PLUGINS_OR_MODULES_DIRS="\
+ANSIBLE_LIBRARY:library
+ANSIBLE_ACTION_PLUGINS:action_plugins
+ANSIBLE_CACHE_PLUGINS:cache_plugins
+ANSIBLE_CALLBACK_PLUGINS:callback_plugins
+ANSIBLE_LOOKUP_PLUGINS:lookup_plugins
+ANSIBLE_CONNECTION_PLUGINS:connection_plugins
+ANSIBLE_INVENTORY_PLUGINS:inventory_plugins
+ANSIBLE_FILTER_PLUGINS:filter_plugins
+ANSIBLE_TEST_PLUGINS:test_plugins
+ANSIBLE_STRATEGY_PLUGINS:strategy_plugins"
 
-if [ -e "${VENV_PATH}/bin/activate" ]
-then
+if [ -e "${VENV_PATH}/bin/activate" ]; then
     . "${VENV_PATH}/bin/activate"
 else
     echo "virtualenv not found in ${VENV_PATH}" >&2
     exit 1
 fi
 
-for p in "${WC}" "${OWC}" "${ODA}" "${OA}" "${DA}" "${A}";do
+while read p;do
     if [ -e "${p}" ];then
-        CONF_PREFIXES="${p};${CONF_PREFIXES}"
-        MODULE_PREFIXES="${p};${MODULE_PREFIXES}"
         for inventory in "${p}/inventories" "${p}/inventory";do
             if [ -e "${inventory}" ] && [[ -z ${ANSIBLE_HOSTS-} ]] ; then
                 export ANSIBLE_HOSTS="${inventory}"
             fi
         done
-        library="${p}/library"
-        if [ -e "${library}" ];then
-            if [[ -z ${ANSIBLE_LIBRARY-} ]]; then
-                export ANSIBLE_LIBRARY="${library}"
-            else
-                export ANSIBLE_LIBRARY="${library}:${ANSIBLE_LIBRARY}"
+        while read line;do
+            var=$(echo "$line:"|cut -d: -f1)
+            path=$(echo "$line:"|cut -d: -f2)
+            testdir="${p}/${path}"
+            if [ -e "${testdir}" ];then
+                eval 'val=$'"${var}"
+                if [[ -z ${val-} ]]; then
+                    subpaths="${testdir}"
+                    eval ${var}'="'${testdir}'"'
+                else
+                    subpaths="${testdir}:${subpaths}"
+                fi
+                eval export ${var}'="'${subpaths}'"'
             fi
-        fi
+        done <<< "${PLUGINS_OR_MODULES_DIRS}"
         roles="${p}/roles"
         if [ -e "${roles}" ];then
             if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
@@ -44,38 +80,18 @@ for p in "${WC}" "${OWC}" "${ODA}" "${OA}" "${DA}" "${A}";do
             fi
         fi
     fi
-done
+done < <(find \
+            "${WC}" "${OWC}" \
+            "${ODA}" "${OA}" \
+            "${DA}" "${A}" \
+            "${SYS_A}" \
+            -mindepth 0 -maxdepth 0 -and \
+            \( -type d -or -type l \) \
+            2>/dev/null | uniq )
 
-tmp="\
-ANSIBLE_ACTION_PLUGINS:plugins/action:${MODULE_PREFIXES}
-ANSIBLE_CACHE_PLUGINS:plugins/cache:${MODULE_PREFIXES}
-ANSIBLE_CALLBACK_PLUGINS:plugins/callback:${MODULE_PREFIXES}
-ANSIBLE_LOOKUP_PLUGINS:plugins/lookup:${MODULE_PREFIXES}
-ANSIBLE_CONNECTION_PLUGINS:plugins/connection:${MODULE_PREFIXES}
-ANSIBLE_INVENTORY_PLUGINS:plugins/inventory:${MODULE_PREFIXES}
-ANSIBLE_FILTER_PLUGINS:plugins/filter:${MODULE_PREFIXES}
-ANSIBLE_TEST_PLUGINS:plugins/test:${MODULE_PREFIXES}
-ANSIBLE_STRATEGY_PLUGINS:plugins/strategy:${MODULE_PREFIXES}"
-
-ANSIBLE_VARS="\
-ANSIBLE_SSH_CONTROL_PATH:~/.assh_%%h.%%p-%%r
-ANSIBLE_HOST_KEY_CHECKING:False
-ANSIBLE_NOCOWS:False"
-
-while read line;do
-    default=$(echo "$line:"|cut -d: -f2)
-    var=$(echo "$line:"|cut -d: -f1)
-    eval 'val=$'"${var}"
-    if [[ -n "${default}" ]] && [[ -z ${val} ]]; then
-        if [[ -z ${val} ]];then
-            eval ${var}'="'${default}'"'
-        fi
-    fi
-    eval 'val=$'"${var}"
-    if [[ -n ${val} ]]; then
-        eval 'export '${var}'="'${val}'"'
-    fi
-done <<< "${ANSIBLE_VARS}"
+export ANSIBLE_SSH_CONTROL_PATH=${ANSIBLE_SSH_CONTROL_PATH:-"~/.assh_%%h.%%p-%%r"}
+export ANSIBLE_HOST_KEY_CHECKING${ANSIBLE_HOST_KEY_CHECKING:-"False"}
+export ANSIBLE_NOCOWS=${ANSIBLE_NOCOWS:-False}
 
 if [[ -n ${ENV_DEBUG-} ]]; then
     env
