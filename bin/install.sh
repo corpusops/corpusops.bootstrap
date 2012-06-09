@@ -181,7 +181,6 @@ import urllib3
 import ipaddr
 import ipwhois
 import pyasn1
-from corpusops import version
 from distutils.version import LooseVersion
 OpenSSL_version = LooseVersion(OpenSSL.__dict__.get('__version__', '0.0'))
 if OpenSSL_version <= LooseVersion('0.15'):
@@ -390,8 +389,6 @@ setup_virtualenv() {
                 cd "${cwd}"
             done
         fi
-        pip install --no-deps -e .
-        die_in_error "corpusops doesn't install"
     fi
 }
 
@@ -625,8 +622,7 @@ if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
     reset_colors
     setup
     if [ "x${DO_VERSION}" = "xy" ];then
-        echo "$(grep VERSION \
-                "${CORPUS_OPS_PREFIX}/src/corpusops/version.py" | cut -d"'" -f2 2>/dev/null)"
+        echo "${CORPUSOPS_VERSION}"
         exit 0
     fi
     recap
