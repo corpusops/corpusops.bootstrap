@@ -2,6 +2,6 @@
   vars:
     checkouts:
       - repo: '__CORPUSOPS_ORGA_URL__/corpusops.playbooks.git'
-        dest: '{{prefix}}/playbooks'
+        dest: '{{prefix}}/playbooks/corpusops'
   tasks: [include: './checkouts_tasks.yml']
 
