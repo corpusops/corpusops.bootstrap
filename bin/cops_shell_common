@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+# W is script_dir/..
+W=${W:-$(pwd)}
+RED="\\e[0;31m"
+CYAN="\\e[0;36m"
+YELLOW="\\e[0;33m"
+NORMAL="\\e[0;0m"
+NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
+LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
+ERROR_MSG="There were errors"
+
+reset_colors() {
+    if [[ -n ${NO_COLOR} ]]; then
+        BLUE=""
+        YELLOW=""
+        RED=""
+        CYAN=""
+    fi
+}
+
+log_() {
+    reset_colors
+    logger_color=${1:-${RED}}
+    msg_color=${2:-${YELLOW}}
+    shift;shift;
+    logger_slug="${logger_color}[${LOGGER_NAME}]${NORMAL} "
+    if [[ -n ${NO_LOGGER_SLUG} ]];then
+        logger_slug=""
+    fi
+    printf "${logger_slug}${msg_color}$(echo "${@}")${NORMAL}\n" >&2;
+    printf "" >&2;  # flush
+}
+
+log(){
+    log_ "${RED}" "${CYAN}" "${@}"
+}
+
+may_die() {
+    reset_colors
+    thetest=${2:-1}
+    rc=${2:-1}
+    shift
+    shift
+    if [ "x${thetest}" != "x0" ]; then
+        if [[ -z "${NO_HEADER-}" ]]; then
+            NO_LOGGER_SLUG=y log_ "" "${CYAN}" "Problem detected:"
+        fi
+        NO_LOGGER_SLUG=y log_ "${RED}" "${RED}" "$@"
+        exit $rc
+    fi
+}
+
+die() {
+    may_die 1 1 "${@}"
+}
+
+die_in_error_() {
+    ret=${1}
+    shift
+    msg="${@:-"$ERROR_MSG"}"
+    may_die "${ret}" "${ret}" "${msg}"
+}
+
+die_in_error() {
+    die_in_error_ "${?}" "${@}"
+}
+
+debug() {
+    if [[ -n "${DEBUG// }" ]];then
+        log_ "${YELLOW}" "${YELLOW}" "${@}"
+    fi
+}
+
+vvv() {
+    debug "${@}"
+    "${@}"
+}
+
+vv() {
+    log "${@}"
+    "${@}"
+}
+
+usage() {
+    die 128 "No usage found"
+}
+
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+
+get_chrono() {
+    date "+%F_%H-%M-%S"
+}
+
+get_full_chrono() {
+    date "+%F_%H-%M-%S-%N"
+}
+
+get_images() {
+    docker images --no-trunc -q "${@}" 2>/dev/null | sort -u
+}
+
+get_image() {
+    get_images "${@}" | head -n 1
+}
+
+detect_os() {
+    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
+    PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+    SED=$(which sed)
+    if [ "x${UNAME}" != "xlinux" ]; then
+        SED=$(which gsed)
+    fi
+    DISTRIB_CODENAME=""
+    DISTRIB_ID=""
+    if hash -r lsb_release >/dev/null 2>&1; then
+        DISTRIB_ID=$(lsb_release -si)
+        DISTRIB_CODENAME=$(lsb_release -sc)
+        DISTRIB_RELEASE=$(lsb_release -sr)
+    elif [ -e /etc/lsb-release ];then
+        log "No lsb_release, sourcing manually /etc/lsb-release"
+        . /etc/lsb-release
+    else
+        if ! ( echo ${@-} | grep -q no_fail );then
+            die "unespected case, no lsb_release"
+        fi
+    fi
+}
+detect_os no_fail
+# vim:set et sts=4 ts=4 tw=80:
