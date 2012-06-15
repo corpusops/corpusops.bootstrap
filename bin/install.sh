@@ -1,44 +1,23 @@
 #!/usr/bin/env bash
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
+
+LOGGER_NAME=cs
+
+cd "$(dirname "$(readlink -f ${0})")/.."
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+
+CORPUSOPS_VERSION="1.0"
 THIS="$(readlink -f "${0}")"
 LAUNCH_ARGS=${@}
-ERROR_MSG="There were errors"
-RED="\\e[0;31m"
-CYAN="\\e[0;36m"
-YELLOW="\\e[0;33m"
-NORMAL="\\e[0;0m"
 
 bs_log(){
-    printf "${RED}[bs] ${@}${NORMAL}\n";
+    log_ "${RED}" "${YELLOW}" "${@}"
 }
 
 bs_yellow_log(){
-    printf "${YELLOW}[bs] ${@}${NORMAL}\n";
-}
-
-die_() {
-    ret=${1}
-    shift
-    printf "${CYAN}PROBLEM DETECTED, BOOTCORPUS FAILED${NORMAL}\n" 1>&2
-    echo "${@}" 1>&2
-    exit $ret
-}
-
-die() {
-    die_ 1 ${@}
-}
-
-die_in_error_() {
-    ret=${1}
-    shift
-    msg="${@:-"$ERROR_MSG"}"
-    if [ "x${ret}" != "x0" ]; then
-        die_ "${ret}" "${msg}"
-    fi
-}
-
-die_in_error() {
-    die_in_error_ "${?}" "${@}"
+    log_ "${YELLOW}" "${YELLOW}" "${@}"
 }
 
 test_online() {
@@ -47,45 +26,6 @@ test_online() {
         return 0
     fi
     return 1
-}
-
-detect_os() {
-    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
-    PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-    SED=$(which sed)
-    if [ "x${UNAME}" != "xlinux" ]; then
-        SED=$(which gsed)
-    fi
-    DISTRIB_CODENAME=""
-    DISTRIB_ID=""
-    if hash -r lsb_release >/dev/null 2>&1; then
-        DISTRIB_ID=$(lsb_release -si)
-        DISTRIB_CODENAME=$(lsb_release -sc)
-        DISTRIB_RELEASE=$(lsb_release -sr)
-    elif [ -e /etc/lsb-release ];then
-        bs_log "No lsb_release, sourcing manually /etc/lsb-release"
-        . /etc/lsb-release
-    else
-        echo "unespected case, no lsb_release"
-        exit 1
-    fi
-}
-
-get_chrono() {
-    date "+%F_%H-%M-%S"
-}
-
-get_full_chrono() {
-    date "+%F_%H-%M-%S-%N"
-}
-
-set_colors() {
-    if [ "x${NO_COLORS}" != "x" ]; then
-        YELLOW=""
-        RED=""
-        CYAN=""
-        NORMAL=""
-    fi
 }
 
 get_conf() {
@@ -157,7 +97,7 @@ get_ansible_branch() {
 }
 
 set_vars() {
-    set_colors
+    reset_colors
     SCRIPT_DIR="$(dirname $THIS)"
     QUIET=${QUIET:-}
     CORPUS_OPS_PREFIX="$(dirname ${SCRIPT_DIR})"
@@ -294,64 +234,9 @@ recap() {
     fi
 }
 
-is_apt_available() {
-    if ! apt-cache show ${@} >/dev/null 2>&1; then
-        return 1
-    else
-        return 0
-    fi
-}
-
-is_apt_installed() {
-    if ! dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep -q installed; then
-        return 1
-    fi
-}
-
-is_pkg_installed() {
-    if echo ${DISTRIB_ID} | egrep -iq "debian|ubuntu";then
-        is_apt_installed "${@}"
-        return $?
-    else
-        return 1
-    fi
-}
-
 may_sudo() {
     if [ "$(whoami)" != "root" ];then
         echo "sudo"
-    fi
-}
-
-deb_install() {
-    to_install=${@}
-    bs_log "Installing ${to_install}"
-    cmd=""
-    CORPUSOPS_WITH_PKGMGR_UPDATE=""
-    if [ "x${CORPUSOPS_WITH_PKGMGR_UPDATE}" != "x" ]; then
-        cmd="apt-get update &&"
-    fi
-    $(may_sudo) sh -c "$cmd apt-get install --no-install-recommends -y --force-yes ${to_install}"
-}
-
-install_packages() {
-    if echo ${DISTRIB_ID} | egrep -iq "debian|ubuntu";then
-        deb_install "${@}"
-    else
-        return 0
-    fi
-}
-
-lazy_pkg_install() {
-    CORPUSOPS_WITH_PKGMGR_UPDATE=${CORPUSOPS_WITH_PKGMGR_UPDATE:-}
-    to_install=""
-    for i in ${@};do
-         if ! is_pkg_installed ${i}; then
-             to_install="${to_install} ${i}"
-         fi
-    done
-    if [ "x${to_install}" != "x" ]; then
-        install_packages ${to_install}
     fi
 }
 
@@ -360,21 +245,11 @@ install_prerequisites() {
         bs_log "prerequisites setup skipped"
         return 0
     fi
-    if [ "x${QUIET}" = "x" ]; then
-        bs_log "Check package dependencies"
-    fi
-    CORPUSOPS_WITH_PKGMGR_UPDATE="y" lazy_pkg_install ${BASE_PACKAGES} \
+    SKIP_UPGRADE=y\
+        WANTED_EXTRA_PACKAGES="${EXTRA_PACKAGES}" \
+        WANTED_PACKAGES="${BASE_PACKAGES}" \
+        $(may_sudo) $CORPUS_OPS_PREFIX/bin/cops_pkgmgr_install.sh 2>&1\
         || die " [bs] Failed install prerequisites"
-    eps=""
-    for i in ${EXTRA_PACKAGES};do
-        if ! is_apt_installed ${i} && is_apt_available ${i};then
-            eps="${eps} ${i}"
-        fi
-    done
-    if [ "x${eps}" != "x" ];then
-        CORPUSOPS_WITH_PKGMGR_UPDATE="y" lazy_pkg_install ${eps} \
-            || die " [bs] Failed install extra prerequisites"
-    fi
 }
 
 sys_info(){
@@ -595,7 +470,7 @@ print_contrary() {
 }
 
 usage() {
-    set_colors
+    reset_colors
     bs_log "${THIS}:"
     echo
     bs_yellow_log "This script will install corpusops & prerequisites"
@@ -747,6 +622,7 @@ main() {
 }
 
 if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
+    reset_colors
     setup
     if [ "x${DO_VERSION}" = "xy" ];then
         echo "$(grep VERSION \
