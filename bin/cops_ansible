@@ -21,6 +21,10 @@
 #   - nocows
 #   - better controlpath
 
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+
 export WC=$(pwd)
 export OWC=${OWC:-${WC}}
 export A=${WC}/ansible
@@ -45,8 +49,7 @@ ANSIBLE_STRATEGY_PLUGINS:strategy_plugins"
 if [ -e "${VENV_PATH}/bin/activate" ]; then
     . "${VENV_PATH}/bin/activate"
 else
-    echo "virtualenv not found in ${VENV_PATH}" >&2
-    exit 1
+    die "virtualenv not found in ${VENV_PATH}"
 fi
 
 while read p;do

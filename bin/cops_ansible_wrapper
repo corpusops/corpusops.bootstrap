@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 export OWC=$(pwd)
 cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
-. bin/ansible-wrapper-common
+. bin/cops_ansible
 exec ${VENV_PATH}/bin/${SCRIPT} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
