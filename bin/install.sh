@@ -58,7 +58,6 @@ detect_os() {
     fi
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
-    DISTRIB_BACKPORT=""
     if hash -r lsb_release >/dev/null 2>&1; then
         DISTRIB_ID=$(lsb_release -si)
         DISTRIB_CODENAME=$(lsb_release -sc)
@@ -66,9 +65,6 @@ detect_os() {
     else
         echo "unespected case, no lsb_release"
         exit 1
-    fi
-    if [ "x${DISTRIB_ID}" = "xDebian" ]; then
-        DISTRIB_BACKPORT="${DISTRIB_CODENAME}-backports"
     fi
 }
 
@@ -189,7 +185,7 @@ set_vars() {
     fi
     # export variables to survive a restart/fork
     export SED PATH UNAME
-    export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE DISTRIB_BACKPORT
+    export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE
     #
     export CORPUSOPS_ORGA_URL="$(get_corpusops_orga_url)"
     export CORPUSOPS_URL="$(get_corpusops_url)"
