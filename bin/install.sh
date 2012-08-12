@@ -62,6 +62,9 @@ detect_os() {
         DISTRIB_ID=$(lsb_release -si)
         DISTRIB_CODENAME=$(lsb_release -sc)
         DISTRIB_RELEASE=$(lsb_release -sr)
+    elif [ -e /etc/lsb-release ];then
+        bs_log "No lsb_release, sourcing manually /etc/lsb-release"
+        . /etc/lsb-release
     else
         echo "unespected case, no lsb_release"
         exit 1
@@ -164,17 +167,27 @@ set_vars() {
     DO_VERSION="${DO_VERSION-"no"}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
+    DO_SYNC_PLAYBOOKS="${DO_SYNC_PLAYBOOKS-${DO_SYNC_CODE}}"
+    DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_CODE}}"
+    DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
     if [ "x${DO_VERSION}" != "xy" ];then
         DO_VERSION="no"
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
-    BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync bzip2"
-    BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
-    BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"
-    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
-    BASE_PACKAGES="${BASE_PACKAGES} libffi-dev"
+    BASE_PACKAGES_FILE="${CORPUS_OPS_PREFIX}/requirements/os_packages.${DISTRIB_ID}"
+    EXTRA_PACKAGES_FILE="${CORPUS_OPS_PREFIX}/requirements/os_extra_packages.${DISTRIB_ID}"
+    if [ -e "${BASE_PACKAGES_FILE}" ];then
+        BASE_PACKAGES=$(cat "${BASE_PACKAGES_FILE}")
+    else
+        BASE_PACKAGES=""
+    fi
+    if [ -e "${EXTRA_PACKAGES_FILE}" ];then
+        EXTRA_PACKAGES=$(cat "${EXTRA_PACKAGES_FILE}")
+    else
+        EXTRA_PACKAGES=""
+    fi
     VENV_PATH="${VENV_PATH:-"${CORPUS_OPS_PREFIX}/venv"}"
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
@@ -196,12 +209,15 @@ set_vars() {
     #
     export EGGS_GIT_DIRS
     #
-    export BASE_PACKAGES
+    export BASE_PACKAGES EXTRA_PACKAGES
     #
     export DO_NOCONFIRM
     export DO_VERSION
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
+    export DO_SYNC_PLAYBOOKS
+    export DO_SYNC_ROLES
+    export DO_SYNC_CORE
     export DO_INSTALL_PREREQUISITES
     export DO_SETUP_VIRTUALENV
     #
@@ -245,10 +261,26 @@ recap_(){
     bs_log "DATE: ${CHRONO}"
     bs_log "CORPUS_OPS_PREFIX: ${CORPUS_OPS_PREFIX}"
     bs_yellow_log "---------------------------------------------------"
+    if [ "x${DO_SYNC_CODE}" != "xno" ];then
+        msg="Syncing:"
+        if [ "x${DO_SYNC_CORE}" != "xno" ];then
+            msg="${msg} core -"
+        fi
+        if [ "x${DO_SYNC_PLAYBOOKS}" != "xno" ];then
+            msg="${msg} playbooks -"
+        fi
+        if [ "x${DO_SYNC_ROLES}" != "xo" ];then
+            msg="${msg} roles"
+        fi
+        bs_log "${msg}"
+    fi
+    bs_yellow_log "---------------------------------------------------"
     if [ "x${need_confirm}" != "xno" ] && [ "x${DO_NOCONFIRM}" = "x" ]; then
         bs_yellow_log "To not have this confirmation message, do:"
         bs_yellow_log "    export DO_NOCONFIRM='1'"
     fi
+
+
 }
 
 recap() {
@@ -262,6 +294,14 @@ recap() {
     fi
 }
 
+is_apt_available() {
+    if ! apt-cache show ${@} >/dev/null 2>&1; then
+        return 1
+    else
+        return 0
+    fi
+}
+
 is_apt_installed() {
     if ! dpkg-query -s ${@} 2>/dev/null|egrep "^Status:"|grep -q installed; then
         return 1
@@ -269,7 +309,7 @@ is_apt_installed() {
 }
 
 is_pkg_installed() {
-    if lsb_release  -si 2>/dev/null | egrep -iq "debian|ubuntu";then
+    if echo ${DISTRIB_ID} | egrep -iq "debian|ubuntu";then
         is_apt_installed "${@}"
         return $?
     else
@@ -291,11 +331,11 @@ deb_install() {
     if [ "x${CORPUSOPS_WITH_PKGMGR_UPDATE}" != "x" ]; then
         cmd="apt-get update &&"
     fi
-    $(may_sudo) sh -c "$cmd apt-get install -y --force-yes ${to_install}"
+    $(may_sudo) sh -c "$cmd apt-get install --no-install-recommends -y --force-yes ${to_install}"
 }
 
 install_packages() {
-    if lsb_release  -si 2>/dev/null | egrep -iq "debian|ubuntu";then
+    if echo ${DISTRIB_ID} | egrep -iq "debian|ubuntu";then
         deb_install "${@}"
     else
         return 0
@@ -324,7 +364,17 @@ install_prerequisites() {
         bs_log "Check package dependencies"
     fi
     CORPUSOPS_WITH_PKGMGR_UPDATE="y" lazy_pkg_install ${BASE_PACKAGES} \
-        || die " [bs] Failed install rerequisites"
+        || die " [bs] Failed install prerequisites"
+    eps=""
+    for i in ${EXTRA_PACKAGES};do
+        if ! is_apt_installed ${i} && is_apt_available ${i};then
+            eps="${eps} ${i}"
+        fi
+    done
+    if [ "x${eps}" != "x" ];then
+        CORPUSOPS_WITH_PKGMGR_UPDATE="y" lazy_pkg_install ${eps} \
+            || die " [bs] Failed install extra prerequisites"
+    fi
 }
 
 sys_info(){
@@ -350,12 +400,29 @@ get_git_branch() {
 checkout_code() {
     if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
         cd "${CORPUS_OPS_PREFIX}" &&\
-            bin/ansible-playbook -i localhost, -vvvv -c local\
-                requirements/checkouts.yml  \
-                -e "prefix='$PWD' venv='${VENV_PATH}'" &&\
-                if [ "x${QUIET}" = "x" ]; then
-                    bs_log "Code updated"
+            TO_CHECKOUT=""
+            if [ "x$DO_SYNC_CORE" != "xno" ];then
+                TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
+            fi
+            if [ "x$DO_SYNC_PLAYBOOKS" != "xno" ];then
+                TO_CHECKOUT="${TO_CHECKOUT} checkouts_playbooks.yml"
+            fi
+            if [ "x$DO_SYNC_ROLES" != "xno" ];then
+                TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
+            fi
+            for co in $TO_CHECKOUT;do
+                if ! bin/ansible-playbook \
+                    -i localhost, -vvvv -c local\
+                    "requirements/${co}"  \
+                    -e "prefix='$PWD' venv='${VENV_PATH}'";then
+                    bs_log "Code failed to update for <$co>"
+                    return 1
+                else
+                    if [ "x${QUIET}" = "x" ]; then
+                        bs_log "Code updated for <$co>"
+                    fi
                 fi
+            done
     else
         bs_yellow_log "Cant sync code, bootstrap core is not done"
         return 1
@@ -369,13 +436,16 @@ synchronize_code() {
         fi
         return 0
     fi
-    if [ "x${CORPUS_OPS_IN_RESTART}" = "x" ] && test_online; then
-        if [ "x${QUIET}" = "x" ];then
-            bs_yellow_log "If you want to skip checkouts, next time, do export DO_SYNC_CODE=no"
+    if [ "x${CORPUS_OPS_IN_RESTART}" = "x" ]; then
+        if ! test_online; then
+            bs_log "Sync code skipped as we seems not to be connected"
+        else
+            if [ "x${QUIET}" = "x" ];then
+                bs_yellow_log "If you want to skip checkouts, next time, do export DO_SYNC_CODE=no"
+            fi
+            checkout_code
         fi
-        checkout_code
     fi
-    return $ret
 }
 
 setup_virtualenv() {
@@ -427,14 +497,14 @@ setup_virtualenv() {
         else
             copt="--cache-dir"
         fi
-        pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
-        die_in_error "requirements/requirements.txt doesn't install"
+        pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
+        die_in_error "requirements/python_requirements.txt doesn't install"
         if [ "x${install_git}" != "x" ]; then
             # ansible, salt & docker had bad history for
             # their deps in setup.py we ignore them and manage that ourselves
             pip install -U $copt "${PIP_CACHE}" --no-deps \
-                -r requirements/git_requirements.txt
-            die_in_error "requirements/git_requirements.txt doesn't install"
+                -r requirements/python_git_requirements.txt
+            die_in_error "requirements/python_git_requirements.txt doesn't install"
         else
             cwd="${PWD}"
             for i in ${EGGS_GIT_DIRS};do
@@ -451,10 +521,7 @@ setup_virtualenv() {
 }
 
 reconfigure() {
-    for i in \
-        ${CORPUS_OPS_PREFIX}/requirements/git_requirements.txt \
-        ${CORPUS_OPS_PREFIX}/requirements/checkouts.yml \
-    ;do
+    for i in ${CORPUS_OPS_PREFIX}/requirements/*.in;do
         ${SED} -r \
             -e "s#^\# (-e.*__(ANSIBLE))#\1#g" \
             -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
@@ -462,7 +529,7 @@ reconfigure() {
             -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
             -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
             -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
-            "${i}.in" > "${i}"
+            "${i}" > "${CORPUS_OPS_PREFIX}/requirements/$(basename "${i}" .in)"
     done
 }
 
@@ -518,7 +585,9 @@ bs_help() {
 }
 
 print_contrary() {
-    if [ "x${1}" = "x" ];then
+    if [ "x${1}" = "xno" ];then
+        echo "y"
+    elif [ "x${1}" = "x" ];then
         echo "y"
     else
         echo "n"
@@ -532,11 +601,17 @@ usage() {
     bs_yellow_log "This script will install corpusops & prerequisites"
     echo
     bs_log "  Actions (no action means install)"
-    bs_help "    -S|--skip-checkouts" "Skip code synchronnization" \
-        "$(print_contrary ${DO_ONLY_SYNC_CODE})" y
     bs_help "    --skip-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
     bs_help "    --skip-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
-    bs_help "    --only-synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
+    bs_help "    -S|--skip-checkouts|--skip-sync-code" "Skip code synchronnization" \
+        "$(print_contrary ${DO_SYNC_CODE})"  y
+    bs_help "     --skip-sync-core" "Do not sync core (ansible, bootstrap)" \
+        "$(print_contrary ${DO_SYNC_CORE})"  y
+    bs_help "     --skip-sync-playbooks" "Do not sync playbooks" \
+        "$(print_contrary ${DO_SYNC_PLAYBOOKS})"  y
+    bs_help "     --skip-sync-roles" "Do not sync roles" \
+        "$(print_contrary ${DO_SYNC_ROLES})"  y
+    bs_help "    -s|--only-synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
     echo
@@ -548,7 +623,7 @@ usage() {
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
-    bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" "y"
+    bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
 }
 
 parse_cli_opts() {
@@ -585,15 +660,26 @@ parse_cli_opts() {
             DO_INSTALL_PREREQUISITES="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--no-synchronize-code" ]; then
+        if [ "x${1}" = "x--skip-sync-code" ] \
+            || [ "x${1}" = "x--no-synchronize-code" ] \
+            || [ "x${1}" = "x-S" ] \
+            || [ "x${2}" = "x--skip-checkouts" ]; then
+            DO_SYNC_CODE="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ]; then
-            DO_SYNC_CODE="no";
+        if [ "x${1}" = "x--skip-sync-core" ]; then
+            DO_SYNC_CORE="no"
             argmatch="1"
         fi
-
-        if [ "x${1}" = "x--only-synchronize-code" ]; then
+        if [ "x${1}" = "x--skip-sync-playbooks" ]; then
+            DO_SYNC_PLAYBOOKS="no"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--skip-sync-roles" ]; then
+            DO_SYNC_ROLES="no"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x-s" ] || [ "x${1}" = "x--only-synchronize-code" ]; then
             DO_ONLY_SYNC_CODE="y"
             DO_SYNC_CODE="y"
             argmatch="1"

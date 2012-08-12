@@ -1,0 +1,7 @@
+- hosts: all
+  vars:
+    checkouts:
+      - repo: '__CORPUSOPS_ORGA_URL__/corpusops.playbooks.git'
+        dest: '{{prefix}}/playbooks'
+  tasks: [include: './checkouts_tasks.yml']
+

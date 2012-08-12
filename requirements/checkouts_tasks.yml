@@ -1,0 +1,58 @@
+- git:
+   accept_hostkey: yes
+   repo: '{{item.repo}}'
+   dest: '{{item.dest}}'
+   version: '{{item.version|default(omit)}}'
+   recursive: '{{item.recursive|default(omit)}}'
+   update: no
+  with_items: '{{checkouts}}'
+  register: "checkouteds"
+- {debug: {msg: "{{checkouteds}}"}, when: "{{ms_debug|default(False)}}"}
+- shell: |
+    {% set item = item.item %}
+    set -ex
+    if ! git remote show -n origin >/dev/null 2>&1;then
+     git remote add origin '{{item.repo}}'
+    else
+     git config remote.origin.url '{{item.repo}}'
+    fi
+    {% set branch = item.get('version', '') %}
+    get_branch () {
+       git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+       git describe --exact-match HEAD 2> /dev/null || \
+       git rev-parse HEAD
+    }
+    curbr=$(get_branch)
+    {% if branch %}
+    if [ "x${curbr}" != "x{{branch}}" ];then
+      git stash || /bin/true
+      if git branch | sed -e 's/^\*\?\s\+//g' | egrep -q '^{{branch}}$';then
+        echo "Using local branch {{branch}}"
+        git checkout '{{branch}}'
+      else
+        echo "Checkout local branch {{branch}}"
+        git checkout origin/{{branch}} -b '{{branch}}'
+      fi
+    fi
+    git pull --ff-only origin '{{branch}}'
+    {% else %}
+    if [ "x${curbr}" = "x" ];then
+      git pull --ff-only origin
+    else
+      git pull --ff-only origin ${curbr}
+    fi
+    {% endif %}
+    if test -e .gitmodules;then
+      echo "Upgrading submodules"
+      git submodule update --recursive
+    fi
+  register: checkouteds2
+  when: "{{item.before == item.after}}"
+  changed_when: |
+    {{"Checkout local branch" in checkouteds2.stdout or
+      "Using local branch" in checkouteds2.stdout or
+      "Already up-to-date." not in checkouteds2.stdout}}
+  args:
+    chdir: '{{item.item.dest}}'
+  with_items: '{{checkouteds.results}}'
+- {debug: {msg: "{{checkouteds2}}"}, when: "{{ms_debug|default(False)}}"}
