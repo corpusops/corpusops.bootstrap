@@ -7,7 +7,6 @@ RED="\\e[0;31m"
 CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
 NORMAL="\\e[0;0m"
-CORPUS_OPS_DEBUG="${CORPUS_OPS_DEBUG:-}"
 
 bs_log(){
     printf "${RED}[bs] ${@}${NORMAL}\n";
@@ -15,12 +14,6 @@ bs_log(){
 
 bs_yellow_log(){
     printf "${YELLOW}[bs] ${@}${NORMAL}\n";
-}
-
-debug_msg() {
-    if [ "x$CORPUS_OPS_DEBUG" != "x" ]; then
-        bs_log "--DEBUG--: ${@}"
-    fi
 }
 
 die_() {
@@ -98,25 +91,25 @@ set_colors() {
 
 get_conf() {
     key="${1}"
-    echo $(cat "${CORPUS_OPS_PREFIX}/etc/corpusops/$key" 2>/dev/null)
+    echo $(cat "${CORPUS_OPS_PREFIX}/.corpusops/$key" 2>/dev/null)
 }
 
 store_conf() {
     key="${1}"
     val="${2}"
-    if [ ! -e "${CORPUS_OPS_PREFIX}/etc/corpusops" ]; then
-        mkdir -p "${CORPUS_OPS_PREFIX}/etc/corpusops"
-        chmod 700 "${CORPUS_OPS_PREFIX}/etc/corpusops"
+    if [ ! -e "${CORPUS_OPS_PREFIX}/.corpusops" ]; then
+        mkdir -p "${CORPUS_OPS_PREFIX}/.corpusops"
+        chmod 700 "${CORPUS_OPS_PREFIX}/.corpusops"
     fi
-    if [ -e "${CORPUS_OPS_PREFIX}/etc/corpusops" ]; then
-        echo "${val}">"${CORPUS_OPS_PREFIX}/etc/corpusops/${key}"
+    if [ -e "${CORPUS_OPS_PREFIX}/.corpusops" ]; then
+        echo "${val}">"${CORPUS_OPS_PREFIX}/.corpusops/${key}"
     fi
 }
 
 remove_conf() {
     for key in $@;do
-        if [ -e "${CORPUS_OPS_PREFIX}/etc/corpusops/${key}" ]; then
-            rm -f "${CORPUS_OPS_PREFIX}/etc/corpusops/${key}"
+        if [ -e "${CORPUS_OPS_PREFIX}/.corpusops/${key}" ]; then
+            rm -f "${CORPUS_OPS_PREFIX}/.corpusops/${key}"
         fi
     done
 }
@@ -171,7 +164,12 @@ set_vars() {
     CORPUS_OPS_PREFIX="$(dirname ${SCRIPT_DIR})"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
-    DO_VERSION="${DO_VERSION:-"no"}"
+    DO_NOCONFIRM="${DO_NOCONFIRM-}"
+    DO_VERSION="${DO_VERSION-"no"}"
+    DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
+    DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
+    DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
+    DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
     if [ "x${DO_VERSION}" != "xy" ];then
         DO_VERSION="no"
     fi
@@ -181,11 +179,6 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"
     BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev"
-    DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES:-"y"}"
-    DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE:-"no"}"
-    DO_SYNC_CODE="${DO_SYNC_CODE:-"y"}"
-    DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV:-"y"}"
-    DO_NOCONFIRM="${DO_NOCONFIRM:-}"
     VENV_PATH="${VENV_PATH:-"${CORPUS_OPS_PREFIX}/venv"}"
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
@@ -209,9 +202,12 @@ set_vars() {
     #
     export BASE_PACKAGES
     #
-    export DO_NOCONFIRM DO_SYNC_CODE DO_SKIP_CHECKOUTS
-    export DO_INSTALL_PREREQUISITES DO_ONLY_SYNC_CODE DO_SETUP_VIRTUALENV
+    export DO_NOCONFIRM
     export DO_VERSION
+    export DO_ONLY_SYNC_CODE
+    export DO_SYNC_CODE
+    export DO_INSTALL_PREREQUISITES
+    export DO_SETUP_VIRTUALENV
     #
     export TRAVIS_DEBUG TRAVIS
     #
@@ -246,7 +242,6 @@ EOF
 
 recap_(){
     need_confirm="${1}"
-    debug="${2:-$CORPUS_OPS_DEBUG}"
     bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log " CORPUSOPS BOOTSTRAPPER (@$(get_ansible_branch)) FOR $DISTRIB_ID"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
@@ -372,21 +367,17 @@ checkout_code() {
 }
 
 synchronize_code() {
-    if [ "x${DO_SYNC_CODE}" != "xy" ]; then
-        bs_log "Sync code skipped"
+    if [ "x${DO_SYNC_CODE}" = "xno" ]; then
+        if [ "x${QUIET}" = "x" ];then
+            bs_log "Sync code skipped"
+        fi
         return 0
     fi
-    if [ "x${CORPUS_OPS_IN_RESTART}" = "x" ] \
-        && test_online \
-        && [ "x${CORPUS_OPS_SKIP_CHECKOUTS}" = "x" ]; then
-        if [ "x${QUIET}" = "x" ]; then
-            bs_yellow_log "If you want to skip checkouts, next time do export DO_SKIP_CHECKOUTS=y"
+    if [ "x${CORPUS_OPS_IN_RESTART}" = "x" ] && test_online; then
+        if [ "x${QUIET}" = "x" ];then
+            bs_yellow_log "If you want to skip checkouts, next time, do export DO_SYNC_CODE=no"
         fi
         checkout_code
-    fi
-    ret=${?}
-    if [ "x${DO_ONLY_SYNC_CODE}" = "x" ]; then
-        exit $ret
     fi
     return $ret
 }
@@ -430,7 +421,9 @@ setup_virtualenv() {
     done
     uflag=""
     if check_py_modules; then
-        bs_log "Pip install in place"
+        if [ "x${QUIET}" = "x" ]; then
+            bs_log "Pip install in place"
+        fi
     else
         bs_log "Python install incomplete"
         if pip --help | grep -q download-cache; then
@@ -528,14 +521,30 @@ bs_help() {
     printf "${msg}\n"
 }
 
+print_contrary() {
+    if [ "x${1}" = "x" ];then
+        echo "y"
+    else
+        echo "n"
+    fi
+}
+
 usage() {
     set_colors
     bs_log "${THIS}:"
     echo
-    bs_yellow_log "This script will install corpusops and maybe configure your host for corpusops operation"
+    bs_yellow_log "This script will install corpusops & prerequisites"
+    echo
+    bs_log "  Actions (no action means install)"
+    bs_help "    -S|--skip-checkouts" "Skip code synchronnization" \
+        "$(print_contrary ${DO_ONLY_SYNC_CODE})" y
+    bs_help "    --skip-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
+    bs_help "    --skip-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
+    bs_help "    --only-synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
+    bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
+    bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
     echo
     bs_log "  General settings"
-    bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --corpusops-orga_url <url>" "corpusops orga  fork git url" \
         "$(get_corpusops_orga_url)" y
     bs_help "    --corpusops-url <url>" "corpusops orga fork git url" "$(get_corpusops_url)" y
@@ -543,16 +552,7 @@ usage() {
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
-    bs_help "    -S|--skip-checkouts" "Skip initial checkouts / updates" "" y
-    bs_help "    -d|--debug" "debug/verbose mode" "NOT SET" y
-    bs_help "    --debug-level <level>" "debug level (quiet|all|info|error)" "NOT SET" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" "y"
-    echo
-    bs_log "  Actions (no action means install)"
-    bs_help "    --synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
-    bs_help "    --no-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
-    bs_help "    --no-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
-    bs_help "    --version" "show corpusops version & exit" "" "${DO_VERSION}"
 }
 
 parse_cli_opts() {
@@ -578,9 +578,6 @@ parse_cli_opts() {
         if [ "x${1}" = "x-l" ] || [ "x${1}" = "x--long-help" ]; then
             CORPUS_LONG_HELP="1";USAGE="1";argmatch="1"
         fi
-        if [ "x${1}" = "x-d" ] || [ "x${1}" = "x--debug" ]; then
-            CORPUS_OPS_DEBUG="y";argmatch="1"
-        fi
         if [ "x${1}" = "x--no-colors" ]; then
             NO_COLORS="1";argmatch="1"
         fi
@@ -588,19 +585,24 @@ parse_cli_opts() {
             DO_NOCONFIRM="y";argmatch="1"
         fi
         # do not remove yet for retro compat
-        if [ "x${1}" = "x--no-prereqs" ]; then
+        if [ "x${1}" = "x--skip-prereqs" ]; then
             DO_INSTALL_PREREQUISITES="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--no-synchronize-code" ]; then
-            DO_SYNC_CODE="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--synchronize-code" ]; then
+        if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ]; then
+            DO_SYNC_CODE="no";
+            argmatch="1"
+        fi
+
+        if [ "x${1}" = "x--only-synchronize-code" ]; then
             DO_ONLY_SYNC_CODE="y"
+            DO_SYNC_CODE="y"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--no-venv" ]; then
+        if [ "x${1}" = "x--skip-venv" ]; then
             DO_SETUP_VIRTUALENV="no"
             argmatch="1"
         fi
@@ -650,18 +652,23 @@ setup() {
 
 main() {
     reconfigure || die "reconfigure failed"
-    if [ "x${DO_ONLY_SYNC_CODE}" = "x" ]; then
+    if [ "x${DO_ONLY_SYNC_CODE}" != "x" ]; then
+        synchronize_code || die "synchronize_code failed"
+    else
         install_prerequisites || die "install_prerequisites failed"
         setup_virtualenv || die "setup_virtualenv failed"
+        synchronize_code || die "synchronize_code failed"
     fi
-    synchronize_code || die "synchronize_code failed"
-    bs_log "end - sucess"
+    if [ "x${QUIET}" = "x" ]; then
+        bs_log "end - sucess"
+    fi
 }
 
 if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
     setup
     if [ "x${DO_VERSION}" = "xy" ];then
-        echo $(grep VERSION "${CORPUS_OPS_PREFIX}/corpusops/version.py"|cut -d'"' -f2 2>/dev/null)
+        echo "$(grep VERSION \
+                "${CORPUS_OPS_PREFIX}/src/corpusops/version.py" | cut -d"'" -f2 2>/dev/null)"
         exit 0
     fi
     recap
