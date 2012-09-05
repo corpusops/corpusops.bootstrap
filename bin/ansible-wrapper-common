@@ -11,9 +11,9 @@
 #       - $PWD/ansible
 #       - $PWD/.ansible
 #   - Idem with directories from corpusops
-#       - $CORPUSOS_ROOT
-#       - $CORPUSOS_ROOT/ansible
-#       - $CORPUSOS_ROOT/.ansible
+#       - $CORPUSOPS_ROOT
+#       - $CORPUSOPS_ROOT/ansible
+#       - $CORPUSOPS_ROOT/.ansible
 #
 # It makes also some sensible defaults:
 #
