@@ -16,7 +16,7 @@ corpusops/corpusops.bootstrap/bin/install.sh
 
 ```
 
-It will in ./corpusops/corpusops.bootstrap/:
+It will in ./corpusops/corpusops.bootstrap:
 
 * download prerequisites packages for your distribution
 * Install a virtualenv with ansible
