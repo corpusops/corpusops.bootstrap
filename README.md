@@ -18,7 +18,7 @@ corpusops/corpusops.bootstrap/bin/install.sh
 
 It will in ./corpusops/corpusops.bootstrap/:
 
-    * download prerequisites packages for your distribution
-    * Install a virtualenv with ansible
-    * Download corpusops roles & playbooks
+* download prerequisites packages for your distribution
+* Install a virtualenv with ansible
+* Download corpusops roles & playbooks
 
