@@ -13,7 +13,7 @@ except:
     HAS_PIP = False
 
 version = {}
-execfile("corpusops/version.py", version)
+execfile("src/corpusops/version.py", version)
 
 
 def read(*rnames):
@@ -31,7 +31,7 @@ classifiers = [
 
 name = 'corpusops'
 version = version['VERSION']
-src_dir = '.'
+src_dir = 'src'
 install_requires = ["setuptools"]
 extra_requires = {}
 candidates = {}
