@@ -10,7 +10,8 @@
 /app
 /doc/build
 /downloads/
-/etc/ansible/*inventories/
+*inventory/
+*inventories/
 /requirements/git_requirements.txt
 /requirements/checkouts.yml
 /src
@@ -20,7 +21,5 @@
 /var/log
 /var/run
 /venv
-/etc/corpusops/
 /roles
 /playbooks
-!/etc/corpusops/README.md
