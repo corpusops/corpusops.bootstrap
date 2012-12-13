@@ -38,7 +38,7 @@ log(){
 
 may_die() {
     reset_colors
-    thetest=${2:-1}
+    thetest=${1:-1}
     rc=${2:-1}
     shift
     shift
