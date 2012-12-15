@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
 
@@ -194,7 +195,7 @@ EOF
 recap_(){
     need_confirm="${1}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " CORPUSOPS BOOTSTRAPPER (@$(get_ansible_branch)) FOR $DISTRIB_ID"
+    bs_yellow_log " CORPUSOPS BOOTSTRAP-${CORPUSOPS_VERSION} (ansible@$(get_ansible_branch)) FOR $DISTRIB_ID"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "DATE: ${CHRONO}"
@@ -212,8 +213,8 @@ recap_(){
             msg="${msg} roles"
         fi
         bs_log "${msg}"
+        bs_yellow_log "---------------------------------------------------"
     fi
-    bs_yellow_log "---------------------------------------------------"
     if [ "x${need_confirm}" != "xno" ] && [ "x${DO_NOCONFIRM}" = "x" ]; then
         bs_yellow_log "To not have this confirmation message, do:"
         bs_yellow_log "    export DO_NOCONFIRM='1'"
