@@ -168,5 +168,42 @@ filtered_ansible_playbook() {
 
 }
 
+output_in_error() {
+    slug_to_call="${@}"
+    NO_OUTPUT="${NO_OUTPUT-}"
+    DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-1}"
+    if [[ -z $NO_OUTPUT ]]; then
+        DO_OUTPUT_TIMER=""
+    else
+        LOG=$(mktemp)
+    fi
+    if [[ -n ${DO_OUTPUT_TIMER} ]]; then
+        TMP=$(mktemp)
+        ( while test -f $TMP;do \
+            log "BuildInProgress: ${slug_to_call}";\
+            sleep 120;\
+          done;\
+          log "done: ${slug_to_call}"; ) &
+    fi
+    if [[ -n $NO_OUTPUT ]]; then
+        log "Log: $LOG"
+        ${slug_to_call} >"$LOG" 2>&1
+        ret=${?}
+        if [ -e "$LOG" ];then
+            if [ "x${ret}" != "x0" ];then
+                vv cat "$LOG" >&2
+            fi
+            rm -f "$LOG"
+        fi
+    else
+        ${slug_to_call}
+        ret=${?}
+    fi
+    if [[ -n $DO_OUTPUT_TIMER ]]; then
+        rm -f "${TMP}"
+    fi
+    return ${ret}
+}
+
 detect_os no_fail
 # vim:set et sts=4 ts=4 tw=80:
