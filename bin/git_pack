@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=docker_build
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage() {
+    NO_HEADER=y die '
+Wrapper to docker build, but will also try to squash any created layer up
+
+ [NOCOLOR=y] \
+ [DEBUG=y] \
+    '"$0"' [path] [path2]
+ '
+}
+
+parse_cli "$@"
+
+START_DIRS=${START_DIR:-${@:-/}}
+
+for dir in ${START_DIRS};do
+    log "operating in ${dir}"
+    while read gitdir;do
+        if test -d "${gitdir}";then
+            vv cd "${gitdir}"
+            vv git gc --aggressive --prune
+        fi
+    done < <(find "${dir}" -name .git -type d 2>/dev/null)
+done
