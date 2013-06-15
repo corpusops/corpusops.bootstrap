@@ -92,10 +92,12 @@ compute_nodes_lxcs:
         {{ r | to_json }}
     corpusops_haproxy_registrations_registrations_lxc: |-
       {%- set r = [] %}
-      {%- for i in vars['groups'].get(inventory_hostname+'_lxcs', []) %}
-      {%- set idata = vars['hostvars'][i] %}
+      {%- set sinventory_hostname = inventory_hostname | regex_replace("\.|-", "_") %}
+      {%- for i in vars['groups'].get(sinventory_hostname+'_lxcs', []) %}
+      {%- set idata = vars['hostvars'][i] | default({}) %}
       {%- set ip = idata.get('local_ip', i).split('/')[0] %}
       {%- set hosts = idata.get('haproxy_hosts', []) %}
+      {%- set http_check = idata.get('haproxy_http_check', none) %}
       {%- set wildcards = idata.get('haproxy_wildcards', []) %}
       {%- set regexes = idata.get('haproxy_regexes', []) %}
       {%- set letsencrypt = idata.get('letsencrypt', True) %}
@@ -114,6 +116,7 @@ compute_nodes_lxcs:
                   'letsencrypt_tls_port': letsencrypt_tls_port,
                   'ssl_terminated': ssl_terminated},
          },
+         'http_check': http_check,
          'hosts': hosts,
          'wildcards': wildcards,
          'regexes': regexes},
@@ -141,7 +144,7 @@ lxcs_containers:
     corpusops_localsettings_hostname_fqdn: "{{inventory_hostname}}"
     ssh_bastion: "{{lxc_compute_node}}"
     ssh_port: "{{40000 + local_ip.split('.')[-1]|int  -1}}"
-    lxc_data: "
+    lxc_data: |-
         {%- set res = {} %}
         {%- set _ = res.update(lxc_data__default) %}
         {%- set _ = res.update(lxc_data__extra) %}
@@ -156,9 +159,9 @@ lxcs_containers:
           'eth7_ip', 'eth7_mac', 'eth7_gateway', 'eth7_bridge',
           'eth8_ip', 'eth8_mac', 'eth8_gateway', 'eth8_bridge',
           'eth9_ip', 'eth9_mac', 'eth9_gateway', 'eth9_bridge',
-          ] -%}                        gateway
+          ] -%}
         {%- if i in res and not res.get(i, None) %}{% set _ = res.pop(i)%}{%endif %}{%- endfor -%}
-        {{- res|to_json -}}"
+        {{- res|to_json -}}
     lxc_data__extra: {}
     lxc_data__default:
       template_options: '-r {ubuntu_release} --mirror "{ubuntu_mirror}"'
@@ -167,8 +170,8 @@ lxcs_containers:
         %}{{lxc_gateway|default(gateway)}}"
       eth0_ip: "{{local_ip}}"
       container_name: "{{inventory_hostname}}"
-      from_container: corpusopsbionictpl
-      docker: "{{lxc_docker|default('docker' in inventory_hostname)}}"
+      from_container: "corpusops{{ubuntu_release}}tpl"
+      docker: "{{lxc_docker|default('docker' in (lxc_container_name|default('')))}}"
       ssh_keys: |-
         {%- set keys = [] %}
         {%- set c = inventory_hostname %}
