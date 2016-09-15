@@ -8,10 +8,12 @@ a whole modern infrastructure
 ## Installing
 
 ```$
+
 mkdir corpusops
 git clone https://github.com/corpusops/corpusops.bootstrap.git corpusops/corpusops.bootstrap
 corpusops/corpusops.bootstrap/bin/install.sh -l
 corpusops/corpusops.bootstrap/bin/install.sh
+
 ```
 
 It will in ./corpusops/corpusops.bootstrap/:
