@@ -287,10 +287,11 @@ checkout_code() {
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
             fi
             for co in $TO_CHECKOUT;do
-                if ! bin/ansible-playbook \
-                    -i localhost, -vvvv -c local\
-                    "requirements/${co}"  \
-                    -e "prefix='$PWD' venv='${VENV_PATH}'";then
+                if ! vv bin/ansible-playbook \
+                    -i localhost, -vvvv -c local \
+                    "requirements/${co}" \
+                    -e "$( [[ -n "${DEBUG}" ]] && echo "cops_debug=true " \
+                    )prefix='$PWD' venv='${VENV_PATH}'";then
                     bs_log "Code failed to update for <$co>"
                     return 1
                 else
