@@ -200,8 +200,9 @@ EOF
 recap_(){
     need_confirm="${1}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " CORPUSOPS BOOTSTRAP-${CORPUSOPS_VERSION} (ansible@$(get_ansible_branch)) FOR $DISTRIB_ID"
+    bs_yellow_log " CORPUSOPS BOOTSTRAP"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
+    bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${NORMAL}"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "DATE: ${CHRONO}"
     bs_log "CORPUS_OPS_PREFIX: ${CORPUS_OPS_PREFIX}"
@@ -498,7 +499,7 @@ usage() {
     bs_help "    --corpusops-orga_url <url>" "corpusops orga  fork git url" \
         "$(get_corpusops_orga_url)" y
     bs_help "    --corpusops-url <url>" "corpusops orga fork git url" "$(get_corpusops_url)" y
-    bs_help "    --corpusops-branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
+    bs_help "    -b|--corpusops-branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
@@ -580,7 +581,7 @@ parse_cli_opts() {
         if [ "x${1}" = "x--corpusops-url" ]; then
             CORPUSOPS_URL="${2}";sh="2";argmatch="1"
         fi
-        if [ "x${1}" = "x--corpusops-branch" ]; then
+        if [ "x${1}" = "x-b" ] || [ "x${1}" = "x--corpusops-branch" ]; then
             CORPUSOPS_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--ansible-url" ]; then
