@@ -499,7 +499,7 @@ usage() {
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
-    bs_help "    --debug" "activate debug" "${DEBUG}" y
+    bs_help "    -d|--debug" "activate debug" "${DEBUG}" y
 }
 
 parse_cli_opts() {
@@ -519,7 +519,7 @@ parse_cli_opts() {
         if [ "x${1}" = "x--version" ];then
             DO_VERSION="y";argmatch="1"
         fi
-        if [ "x${1}" = "x--debug" ];then
+        if [ "x${1}" = "x-d" ] || [ "x${1}" = "x--debug" ];then
             DEBUG="y";argmatch="1"
         fi
         if [ "x${1}" = "x-h" ] || [ "x${1}" = "x--help" ]; then
