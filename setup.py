@@ -34,7 +34,7 @@ candidates = {}
 entry_points = {
     # z3c.autoinclude.plugin": ["target = plone"],
     "console_scripts": [
-        "ansible_rewrie_meta = corpusops.ansible_rewrite_meta:main"],
+        "ansible_rewrite_meta = corpusops.ansible_rewrite_meta:main"],
 }
 setup(name=name,
       version=version,
