@@ -180,6 +180,7 @@ check_py_modules() {
     # test if salt binaries are there & working
     bin="${VENV_PATH}/bin/python"
     "${bin}" << EOF
+import corpusops
 import ansible
 import dns
 import docker
@@ -383,6 +384,8 @@ setup_virtualenv() {
         fi
         pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
+        pip install -U $copt "${PIP_CACHE}" --no-deps -e .
+        die_in_error "corpusops egg doesn't install"
         if [ "x${install_git}" != "x" ]; then
             # ansible, salt & docker had bad history for
             # their deps in setup.py we ignore them and manage that ourselves
