@@ -91,4 +91,7 @@ RUN step_rev=1;set -ex;\
 RUN step_rev=1;set -ex;cd /srv/corpusops/corpusops.bootstrap/;\
     play="$(pwd)/bin/ansible-playbook -vvvv -i hacking/localhost";\
     $play playbooks/corpusops/provision/server.yml
+
+# pack any found git repo
+RUN step_rev=1;set -ex;/srv/corpusops/corpusops.bootstrap/bin/git_pack /
 # vim:set et:

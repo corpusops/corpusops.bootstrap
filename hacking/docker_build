@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 cd "$(dirname ${0})/.."
-export LOGGER_NAME=docker_build
+export LOGGER_NAME=$(basename $0)
 
 sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
@@ -11,9 +11,8 @@ usage() {
 Wrapper to docker build, but will also try to squash any created layer up
 
  [NOCOLOR=y] \
- [SKIP_FOUND_CANDIDATE_EXIT=y] \
  [NO_BUILD=y] \
- [NO_REBUILD=y] \
+ [FORCE_REBUILD=y] \
  [NO_SQUASH=y] \
  [NO_SQUASH_CLEANUP=y] \
  [NO_CANDIDATE_CLEANUP=y] \
@@ -58,35 +57,64 @@ if [[ -n "${SQUASHER_URL}" ]] && [ ! -e "$SQUASHER" ];then
             && mv -vf hacking/docker-squash "${SQUASHER}"
         may_die $? $? "$SQUASHER_URL failed to download"
     else
-        venv/bin/pip install -e "${SQUASHER_URL}"
+        if [ -e venv/bin/activate ]; then
+            . venv/bin/activate
+        fi
+        pip install --upgrade -e "${SQUASHER_URL}"
     fi
 fi
 
-old_tag_id=$(get_image "${tag}")
-old_candidate_id=$(get_image "${candidate}")
-old_squashed_id=$(get_image "${candidate_squashed}")
-tag_id=${old_tag_id}
-candidate_id=${old_candidate_id}
-squashed_id=${old_squashed_id}
+init_candidate_vars() {
+    old_tag_id=$(get_image "${tag}")
+    old_candidate_id=$(get_image "${candidate}")
+    old_squashed_id=$(get_image "${candidate_squashed}")
+    tag_id=${old_tag_id}
+    candidate_id=${old_candidate_id}
+    squashed_id=${old_squashed_id}
+}
 
-if [[ -z ${SKIP_FOUND_CANDIDATE_EXIT} ]] && [[ -n ${candidate_id} ]];then
-    die 1 "Candidate already found: ${candidate}, build in progress or already failed ?"
+
+init_candidate_vars
+dockerfile=${dockerfile:-${wd}/Dockerfile}
+ancestor=
+ancestor_id=
+
+# If we are free from any candidates, build a new image
+if [[ -n ${candidate_id} ]]; then
+    if [[ -n ${FORCE_REBUILD} ]]; then
+        vv docker rmi -f "${candidate_id}"
+        die_in_error "${candidate_id} cleanup failed"
+        init_candidate_vars
+    fi
 fi
+if [[ -n ${candidate_id} ]]; then
+    if [[ -z ${SKIP_FOUND_CANDIDATE_EXIT} ]]; then
+        errmsg="Candidate already found: ${candidate},"
+        errmsg="${errmsg} build in progress or already failed ?"
+        errmsg="${errmsg} set SKIP_FOUND_CANDIDATE_EXIT=1 to skip"
+        die 1 "${errmsg}"
+    fi
+fi
+
 if [[ -z ${candidate_id} ]];then
     debug "No candidates found prior to build"
 fi
 
-# If we are free from any candidates, build a new image
-if [[ -n ${NO_REBUILD} ]] && [[ -n ${candidate_id} ]]; then
-    NO_BUILD=1
+if egrep -q ^FROM "${dockerfile}"; then
+    ancestor=$(egrep ^FROM "${dockerfile}"|head -n1|awk '{print $2}'|xargs -n1|sort -u)
 fi
+
+if [[ -n "${ancestor}" ]]; then
+    vv docker pull "${ancestor}"
+    die_in_error "docker pull ${ancestor} failed"
+    ancestor_id=$(vv docker inspect -f '{{.Id}}' "${ancestor}" 2>/dev/null)
+    debug "Ancestor ${CYAN}${ancestor}"
+    debug "Ancestor id: ${CYAN}${ancestor_id}"
+fi
+
 if [[ -z ${NO_BUILD} ]]; then
     log "Building ${candidate}"
-    if [[ -n ${dockerfile} ]];then
-        vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
-    else
-        vvv docker build -t "${candidate}" "${wd}"
-    fi
+    vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
     ret=$?
 else
     debug "Skip build of ${tag} :: ${dockerfile} :: ${wd}"
@@ -130,12 +158,17 @@ if [[ ${ret} == 0 ]]; then
         case "${SQUASHER}" in
             $SQUASHER_GO)
                 vvv docker save "${candidate_id}" \
-                    | vv sudo "${SQUASHER}" -t "${candidate_squashed}" \
+                    | vv "${SQUASHER}" \
+                        -t "${candidate_squashed}" \
+                        $( [[ -n "${ancestor_id}" ]] && echo  "-from '${ancestor_id}'" ) \
                     | vvv docker load
                 ret=$?
                 ;;
             *)
-                vv sudo "${SQUASHER}" -t "${candidate_squashed}" ${candidate_id}
+                vv "${SQUASHER}" \
+                    -t "${candidate_squashed}" \
+                    $( [[ -n "${ancestor_id}" ]] && echo  "-f ${ancestor_id}" ) \
+                    ${candidate_id}
                 ret=$?
                 ;;
         esac

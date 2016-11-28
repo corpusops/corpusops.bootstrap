@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 cd "$(dirname ${0})/.."
-export LOGGER_NAME=build_images
+export LOGGER_NAME=$(basename $0)
 
 sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
@@ -14,7 +14,7 @@ Build any distrib found either in docker/ or via the DISTRIBS env var.
  [NO_GEN=y] \
  [SKIP_FOUND_CANDIDATE_EXIT=y] \
  [NO_BUILD=y] \
- [NO_REBUILD=y] \
+ [FORCE_REBUILD=y] \
  [NO_SQUASH=y] \
  [NO_SQUASH_CLEANUP=y] \
  [NO_CANDIDATE_CLEANUP=y] \
@@ -58,7 +58,7 @@ else
     fi
 fi
 
-hacking/gen_dockerfiles
+hacking/docker_gen_dockerfiles
 
 while read distrib_line;do
     for distrib_full in ${distrib_line};do

@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-# __STRIPME__: __DISTRIB__ will be replaced, see docker/gen_dockerfiles.sh
+# __STRIPME__: __DISTRIB__ will be replaced, see docker/docker_gen_dockerfiles.sh
 FROM __DISTRIB__
 ENV container docker
 
@@ -92,4 +92,7 @@ RUN step_rev=1;set -ex;\
 RUN step_rev=1;set -ex;cd /srv/corpusops/corpusops.bootstrap/;\
     play="$(pwd)/bin/ansible-playbook -vvvv -i hacking/localhost";\
     $play playbooks/corpusops/provision/server.yml
+
+# pack any found git repo
+RUN step_rev=1;set -ex;/srv/corpusops/corpusops.bootstrap/bin/git_pack /
 # vim:set et:
