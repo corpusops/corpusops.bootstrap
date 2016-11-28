@@ -22,3 +22,10 @@ It will in ./corpusops/corpusops.bootstrap:
 * Install a virtualenv with ansible
 * Download corpusops roles & playbooks
 
+## badges
+
+|  Branch | TravisBuild                                                                                                                                                          |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| master  | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap/badges)  |
+| working | [![Build Status WORKING Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=working)](https://travis-ci.org/corpusops/corpusops.bootstrap/badges) |
+

@@ -1,58 +1,207 @@
-- git:
-   accept_hostkey: yes
-   repo: '{{item.repo}}'
-   dest: '{{item.dest}}'
-   version: '{{item.version|default(omit)}}'
-   recursive: '{{item.recursive|default(omit)}}'
-   update: no
-  with_items: '{{checkouts}}'
-  register: "checkouteds"
-- {debug: {msg: "{{checkouteds}}"}, when: "{{ms_debug|default(False)}}"}
-- shell: |
-    {% set item = item.item %}
-    set -ex
+#
+#  checkout_item: {
+#     'repo': URL,
+#     'dest': /path,
+#     [version: branch/changeset:<changeset>]
+#     [recursive: yes/no]
+#  }
+#  cops_debug: yes/no
+#
+- {name: current_checkout, debug: { msg: "{{checkout_item}}"}}
+- name: Initial checkout
+  git:
+    accept_hostkey: yes
+    repo: '{{checkout_item.repo}}'
+    dest: '{{checkout_item.dest}}'
+    version: '{{checkout_item.version|default(omit)}}'
+    recursive: '{{checkout_item.recursive|default(omit)}}'
+    update: no
+  register: checkouted
+- {debug: {msg: "{{checkouted}}"}, when: "{{cops_debug|default(False)}}"}
+
+- name: Configure remote
+  shell: |
+    set -e
+    vv() { echo "${@}" >&2;"${@}"; }
+    repo="{{ checkout_item.repo }}"
+    test -e .git
     if ! git remote show -n origin >/dev/null 2>&1;then
-     git remote add origin '{{item.repo}}'
+      vv git remote add origin "${repo}"
     else
-     git config remote.origin.url '{{item.repo}}'
+      vv git config remote.origin.url "${repo}"
     fi
-    {% set branch = item.get('version', '') %}
-    get_branch () {
-       git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
-       git describe --exact-match HEAD 2> /dev/null || \
-       git rev-parse HEAD
-    }
-    curbr=$(get_branch)
-    {% if branch %}
-    if [ "x${curbr}" != "x{{branch}}" ];then
-      git stash || /bin/true
-      if git branch | sed -e 's/^\*\?\s\+//g' | egrep -q '^{{branch}}$';then
-        echo "Using local branch {{branch}}"
-        git checkout '{{branch}}'
-      else
-        echo "Checkout local branch {{branch}}"
-        git checkout origin/{{branch}} -b '{{branch}}'
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_remote
+  when: "{{checkouted.before == checkouted.after}}"
+  changed_when: False
+- {debug: {msg: "{{checkouted_remote}}"}, when: "{{cops_debug|default(False)}}"}
+
+- name: Fetching changes
+  shell: |
+    set -e
+    repo="{{ checkout_item.repo }}"
+    vv() { echo "${@}" >&2;"${@}"; }
+    vv git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_fetch
+  when: "{{not (checkouted_remote | skipped)}}"
+  changed_when: False
+- {debug: {msg: "{{checkouted_fetch}}"}, when: "{{cops_debug|default(False)}}"}
+
+# Determine if we are either switching to a branch
+# or a particular changeset
+- name: determine is_changeset 1
+  shell: |
+    set -e
+    branch="{{ checkout_item.get('version', '')}}"
+    vv() { echo "${@}" >&2;"${@}"; }
+    if [ "x${branch}" != "x" ]; then
+      if git branch -a --no-color | egrep -q "remotes/origin/${branch}$";then
+        exit 1
+      elif git branch -a --no-color | grep -v remotes | egrep -q "\s+${branch}$";then
+        exit 1
+      elif git log -q "${branch}" >/dev/null 2>&1;then
+        exit 0
       fi
     fi
-    git pull --ff-only origin '{{branch}}'
-    {% else %}
-    if [ "x${curbr}" = "x" ];then
-      git pull --ff-only origin
-    else
-      git pull --ff-only origin ${curbr}
+    exit 1
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: is_changeset_test
+  when: "{{not (checkouted_fetch | skipped)}}"
+  changed_when: False
+  failed_when: False
+- debug: { msg: "{{is_changeset_test.rc == 0}}" }
+  register: is_changeset
+  when: "{{not (checkouted_fetch | skipped)}}"
+
+
+# Stash any changes
+- name: Stash any ongoing changes
+  shell: |
+    set -e
+    vv() { echo "${@}" >&2;"${@}"; }
+    if ! git diff --quiet; then vv git stash;fi
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: stashed
+  when: "{{not (checkouted_fetch | skipped)}}"
+  changed_when: "{{'git stash' in stashed.stderr}}"
+- {debug: {msg: "{{stashed}}"}, when: "{{cops_debug|default(False)}}"}
+
+
+# EITHER switch to a partibular changeset
+# and reset working copy to it
+- name: Switch to correct changeset if any
+  shell: |
+    set -e
+    changeset="{{ checkout_item.get('version', '')}}"
+    vv() { echo "${@}" >&2;"${@}"; }
+    get_git_changeset() {
+       ( cd "${1:-$(pwd)}" &&\
+         git log HEAD|head -n1|awk '{print $2}')
+    }
+    get_git_branch() {
+       ( cd "${1:-$(pwd)}" &&\
+         git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+         git describe --exact-match HEAD 2> /dev/null || \
+         git rev-parse HEAD)
+    }
+    branch=ch_${changeset}
+    curbr=$(get_git_branch)
+    if [ "x${branch}" != "xch_" ]; then
+      if [ "x${curbr}" != "x${branch}" ]; then
+        if git branch | sed -e 's/^\*\?\s\+//g' | egrep -q '^'"${branch}"'$'; then
+          vv git checkout "${branch}"
+        else
+          vv git checkout "${changeset}" -b "${branch}"
+        fi
+        curch=$(get_git_changeset)
+        if [ "x${curch}" != "x${changeset}" ]; then
+          vv git reset --hard "${curch}"
+        fi
+      fi
     fi
-    {% endif %}
-    if test -e .gitmodules;then
-      echo "Upgrading submodules"
-      git submodule update --recursive
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_changeset
+  when: "{{not (checkouted_fetch | skipped) and is_changeset.msg}}"
+  changed_when: "{{'git reset --hard' in checkouted_changeset.stderr}}"
+- {debug: {msg: "{{checkouted_changeset}}"}, when: "{{cops_debug|default(False)}}"}
+
+
+# OR switch to a partibular branch
+# and get changes from remote repository
+- name: Switch to correct branch if any
+  shell: |
+    set -e
+    branch="{{ checkout_item.get('version', '')}}"
+    vv() { echo "${@}" >&2;"${@}"; }
+    get_git_branch() {
+       ( cd "${1:-$(pwd)}" &&\
+         git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+         git describe --exact-match HEAD 2> /dev/null || \
+         git rev-parse HEAD)
+    }
+    curbr=$(get_git_branch)
+    if [ "x${branch}" != "x" ]; then
+      if [ "x${curbr}" != "x${branch}" ]; then
+        if git branch | sed -e 's/^\*\?\s\+//g' | egrep -q '^'"${branch}"'$'; then
+          vv git checkout "${branch}"
+        else
+          vv git checkout "origin/${branch}" -b "${branch}"
+        fi
+      fi
     fi
-  register: checkouteds2
-  when: "{{item.before == item.after}}"
-  changed_when: |
-    {{"Checkout local branch" in checkouteds2.stdout or
-      "Using local branch" in checkouteds2.stdout or
-      "Already up-to-date." not in checkouteds2.stdout}}
-  args:
-    chdir: '{{item.item.dest}}'
-  with_items: '{{checkouteds.results}}'
-- {debug: {msg: "{{checkouteds2}}"}, when: "{{ms_debug|default(False)}}"}
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_sw
+  when: "{{not (checkouted_fetch | skipped) and not is_changeset.msg}}"
+  changed_when: "{{'git checkout' in checkouted_sw.stderr}}"
+- {debug: {msg: "{{checkouted_sw}}"}, when: "{{cops_debug|default(False)}}"}
+
+- name: Merging remote changes
+  shell: |
+    set -e
+    vv() { echo "${@}" >&2;"${@}"; }
+    get_git_branch() {
+       ( cd "${1:-$(pwd)}" &&\
+         git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+         git describe --exact-match HEAD 2> /dev/null || \
+         git rev-parse HEAD)
+    }
+    curbr=$(get_git_branch)
+    merge="remotes/origin$(if [ "x${curbr}" != "x" ];then echo "/${curbr}";fi)"
+    vv git branch -a
+    vv git merge --ff-only $merge
+
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_merge
+  when: "{{not (checkouted_sw | skipped) and not is_changeset.msg}}"
+  changed_when: "{{'Already up-to-date.' not in checkouted_merge.stdout}}"
+- {debug: {msg: "{{checkouted_merge}}"}, when: "{{cops_debug|default(False)}}"}
+
+
+# Apply stashed changes
+- name: Reapply stashed changes
+  shell: |
+    set -e
+    vv() { echo "${@}" >&2;"${@}"; }
+    vv git stash apply
+    vv git stash drop
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: stashed_reapply
+  when: "{{((not (checkouted_merge | skipped) or not ( checkouted_changeset | skipped ))
+            and stashed | changed)}}"
+- {debug: {msg: "{{stashed_reapply}}"}, when: "{{cops_debug|default(False)}}"}
+
+
+# Update submodules
+- name: Upgrading submodules if any
+  shell: |
+    set -e
+    vv() { echo "${@}" >&2;"${@}"; }
+    if test -e .gitmodules; then
+      vv git submodule update --recursive
+    fi
+  args: {chdir: '{{checkout_item.dest}}'}
+  register: checkouted_sub
+  when: "{{not (checkouted_merge | skipped) or not ( checkouted_changeset | skipped )}}"
+  changed_when: "{{'' != checkouted_sub.stdout.strip()}}"
+- {debug: {msg: "{{checkouted_sub}}"}, when: "{{cops_debug|default(False)}}"}

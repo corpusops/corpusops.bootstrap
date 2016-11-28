@@ -1,7 +1,12 @@
 - hosts: all
   vars:
     checkouts:
-      - repo: '__CORPUSOPS_ORGA_URL__/corpusops.playbooks.git'
+      - repo: '__CORPUSOPS_ORGA_URL__/playbooks.git'
         dest: '{{prefix}}/playbooks/corpusops'
-  tasks: [include: './checkouts_tasks.yml']
+  tasks:
+    - include: './checkouts_tasks.yml'
+      with_items: "{{ checkouts }}"
+      tags: checkouts,checkoutp
+      loop_control:
+        loop_var: checkout_item
 

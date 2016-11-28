@@ -9,6 +9,13 @@ NORMAL="\\e[0;0m"
 NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
 LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
+ANSIBLE_FILTER_OUTPUT="(^("
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(included|skipping):|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(task|play)\s+(recap|\[(debug|all|include|setup)\])|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*$|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( => {)?$|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
 
 reset_colors() {
     if [[ -n ${NO_COLOR} ]]; then
@@ -38,7 +45,7 @@ log(){
 
 may_die() {
     reset_colors
-    thetest=${2:-1}
+    thetest=${1:-1}
     rc=${2:-1}
     shift
     shift
@@ -145,5 +152,58 @@ detect_os() {
         fi
     fi
 }
+
+filtered_ansible_playbook_custom() {
+    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
+    shift
+    (((( \
+        vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
+        | egrep -iv "${filter}" >&4) 3>&1) \
+        | (read xs; exit $xs)) 4>&1
+    return $?
+}
+
+filtered_ansible_playbook() {
+    filtered_ansible_playbook_ "" "${@}"
+
+}
+
+output_in_error() {
+    slug_to_call="${@}"
+    NO_OUTPUT="${NO_OUTPUT-}"
+    DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-1}"
+    if [[ -z $NO_OUTPUT ]]; then
+        DO_OUTPUT_TIMER=""
+    else
+        LOG=$(mktemp)
+    fi
+    if [[ -n ${DO_OUTPUT_TIMER} ]]; then
+        TMP=$(mktemp)
+        ( while test -f $TMP;do \
+            log "BuildInProgress: ${slug_to_call}";\
+            sleep 120;\
+          done;\
+          log "done: ${slug_to_call}"; ) &
+    fi
+    if [[ -n $NO_OUTPUT ]]; then
+        log "Log: $LOG"
+        ${slug_to_call} >"$LOG" 2>&1
+        ret=${?}
+        if [ -e "$LOG" ];then
+            if [ "x${ret}" != "x0" ];then
+                vv cat "$LOG" >&2
+            fi
+            rm -f "$LOG"
+        fi
+    else
+        ${slug_to_call}
+        ret=${?}
+    fi
+    if [[ -n $DO_OUTPUT_TIMER ]]; then
+        rm -f "${TMP}"
+    fi
+    return ${ret}
+}
+
 detect_os no_fail
 # vim:set et sts=4 ts=4 tw=80:

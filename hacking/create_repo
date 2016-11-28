@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+API=https://api.github.com
+username=${username:-kiorky}
+token=${token-}
+orga=${prefix:-corpusops}
+operators=${operators:-operators}
+repos=${@:-}
+
+curl_() { curl -s -u "${username}:${token}" "${@}" ; }
+
+cd "$(dirname "${0}")/.."
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+
+usage () {
+    NO_HEADER=y die '
+Create new repo on github
+
+token=xxx \
+[username=kiorky] \
+[orga=corpusops] \
+    '"$0"'
+'
+}
+
+parse_cli() {
+    if ! hash -r jq; then
+        die "no jq"
+    fi
+    if [[ -z $token ]]; then
+        die "no \$token"
+    fi
+    parse_cli_common "${@}"
+}
+
+parse_cli "$@"
+
+log "repos: $repos"
+ORGA_ID=$(curl_ "$API/orgs/${orga}"|jq .id)
+if [ -z ${ORGA_ID} ];then
+    die "no orga $orga found"
+else
+    debug "orga $orga/$ORGA_ID"
+fi
+team_id=$(curl_ $API/orgs/$orga/teams|jq '.[] | select(.slug=="'${operators}'") | .id')
+if [ -z ${team_id} ];then
+    die "no team_id"
+else
+    debug "operators: $team_id"
+fi
+for repo_name in ${repos};do
+    if curl_ "$API/repos/${orga}/${repo_name}" | grep -iq "not found";then
+        curl_ "$API/orgs/${orga}/repos" -d '{"name":"'${repo_name}'"}' >/dev/null
+        die_in_error "Create $repo_name failed"
+    fi
+    curl_ -XPUT "$API/teams/${team_id}/repos/${orga}/${repo_name}" -d '{"permission": "push"}' >/dev/null
+done
+log 'done'
+# vim:set et sts=4 ts=4 tw=80 ft=sh:

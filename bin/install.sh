@@ -65,9 +65,11 @@ get_default_knob() {
     else
         setting="${default}"
     fi
-    if [ "x${stored_param}" != "x${setting}" ] && [ "x${setting}" != "x${default}" ]; then
-        store_conf ${key} "${setting}"
-    else
+    if [ "x${stored_param}" != "x${setting}" ];then
+        store_conf "${key}" "${setting}"
+        stored_param="$(get_conf ${key})"
+    fi
+    if [ "x${stored_param}" == "x${default}" ]; then
         remove_conf "${key}"
     fi
     echo "${setting}"
@@ -84,8 +86,8 @@ get_corpusops_url() {
 }
 
 get_ansible_url() {
-    get_default_knob ansible_url "${ANSIBLE_URL}"  \
-        "https://github.com/corpusops/ansible.git"
+    get_default_knob ansible_url "${ANSIBLE_URL}" \
+        "$(get_corpusops_orga_url)/ansible.git"
 }
 
 get_corpusops_branch() {
@@ -102,9 +104,11 @@ set_vars() {
     QUIET=${QUIET:-}
     CORPUS_OPS_PREFIX="$(dirname ${SCRIPT_DIR})"
     CHRONO="$(get_chrono)"
+    DEBUG="${DEBUG-}"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     DO_NOCONFIRM="${DO_NOCONFIRM-}"
     DO_VERSION="${DO_VERSION-"no"}"
+    DO_ONLY_RECONFIGURE="${DO_ONLY_RECONFIGURE-""}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
     DO_SYNC_PLAYBOOKS="${DO_SYNC_PLAYBOOKS-${DO_SYNC_CODE}}"
@@ -112,6 +116,11 @@ set_vars() {
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
+    CORPUSOPS_ORGA_URL="${CORPUSOPS_ORGA_URL-}"
+    CORPUSOPS_URL="${CORPUSOPS_URL-}"
+    CORPUSOPS_BRANCH="${CORPUSOPS_BRANCH-}"
+    ANSIBLE_URL="${ANSIBLE_URL-}"
+    ANSIBLE_BRANCH="${ANSIBLE_BRANCH-}"
     if [ "x${DO_VERSION}" != "xy" ];then
         DO_VERSION="no"
     fi
@@ -140,12 +149,9 @@ set_vars() {
     export SED PATH UNAME
     export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE
     #
-    export CORPUSOPS_ORGA_URL="$(get_corpusops_orga_url)"
-    export CORPUSOPS_URL="$(get_corpusops_url)"
-    export CORPUSOPS_BRANCH="$(get_corpusops_branch)"
+    export CORPUSOPS_ORGA_URL CORPUSOPS_URL CORPUSOPS_BRANCH
     #
-    export ANSIBLE_URL="$(get_ansible_url)"
-    export ANSIBLE_BRANCH="$(get_ansible_branch)"
+    export ANSIBLE_URL ANSIBLE_BRANCH
     #
     export EGGS_GIT_DIRS
     #
@@ -153,6 +159,7 @@ set_vars() {
     #
     export DO_NOCONFIRM
     export DO_VERSION
+    export DO_ONLY_RECONFIGURE
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
     export DO_SYNC_PLAYBOOKS
@@ -163,7 +170,7 @@ set_vars() {
     #
     export TRAVIS_DEBUG TRAVIS
     #
-    export QUIET
+    export QUIET DEBUG
     #
     export VENV_PATH PIP_CACHE CORPUS_OPS_PREFIX
 }
@@ -172,6 +179,7 @@ check_py_modules() {
     # test if salt binaries are there & working
     bin="${VENV_PATH}/bin/python"
     "${bin}" << EOF
+import corpusops
 import ansible
 import dns
 import docker
@@ -194,8 +202,9 @@ EOF
 recap_(){
     need_confirm="${1}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " CORPUSOPS BOOTSTRAPPER (@$(get_ansible_branch)) FOR $DISTRIB_ID"
+    bs_yellow_log " CORPUSOPS BOOTSTRAP"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
+    bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${NORMAL}"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "DATE: ${CHRONO}"
     bs_log "CORPUS_OPS_PREFIX: ${CORPUS_OPS_PREFIX}"
@@ -212,8 +221,8 @@ recap_(){
             msg="${msg} roles"
         fi
         bs_log "${msg}"
+        bs_yellow_log "---------------------------------------------------"
     fi
-    bs_yellow_log "---------------------------------------------------"
     if [ "x${need_confirm}" != "xno" ] && [ "x${DO_NOCONFIRM}" = "x" ]; then
         bs_yellow_log "To not have this confirmation message, do:"
         bs_yellow_log "    export DO_NOCONFIRM='1'"
@@ -271,6 +280,39 @@ get_git_branch() {
     cd - 1>/dev/null 2>/dev/null
 }
 
+filtered_ansible_playbook_custom() {
+    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
+    shift
+    if [[ -n ${DEBUG} ]]; then
+        vv bin/ansible-playbook  "${@}"
+    else
+        (((( \
+            vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
+            | egrep -iv "${filter}" >&4) 3>&1) \
+            | (read xs; exit $xs)) 4>&1
+    fi
+    return $?
+}
+
+filtered_ansible_playbook() {
+    filtered_ansible_playbook_ "" "${@}"
+
+}
+
+checkouter () {
+    filter=""
+    filter="${filter}(${ANSIBLE_FILTER_OUTPUT}|"
+    filter="${filter}^("
+    filter="${filter}task.*(command|stash|git|checkout|switch|submod|merging|configur|remote|change)"
+    filter="${filter})"
+    filter="${filter})"
+    filtered_ansible_playbook_custom "${filter}" \
+           $( [[ -n "${DEBUG}" ]] && echo "-vvvvv" ) \
+           -i localhost, -c local "${@}" \
+           -e "$( [[ -n "${DEBUG}" ]] && echo "cops_debug=true " \
+           )prefix='$PWD' venv='${VENV_PATH}'"
+}
+
 checkout_code() {
     if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
         cd "${CORPUS_OPS_PREFIX}" &&\
@@ -285,10 +327,7 @@ checkout_code() {
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
             fi
             for co in $TO_CHECKOUT;do
-                if ! bin/ansible-playbook \
-                    -i localhost, -vvvv -c local\
-                    "requirements/${co}"  \
-                    -e "prefix='$PWD' venv='${VENV_PATH}'";then
+                if ! checkouter "requirements/${co}";then
                     bs_log "Code failed to update for <$co>"
                     return 1
                 else
@@ -373,6 +412,8 @@ setup_virtualenv() {
         fi
         pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
+        pip install -U $copt "${PIP_CACHE}" --no-deps -e .
+        die_in_error "corpusops egg doesn't install"
         if [ "x${install_git}" != "x" ]; then
             # ansible, salt & docker had bad history for
             # their deps in setup.py we ignore them and manage that ourselves
@@ -386,8 +427,8 @@ setup_virtualenv() {
                     cd "${VENV_PATH}/src/${i}"
                     pip install --no-deps -e .
                 fi
-                cd "${cwd}"
             done
+            cd "${cwd}"
         fi
     fi
 }
@@ -473,6 +514,7 @@ usage() {
     bs_yellow_log "This script will install corpusops & prerequisites"
     echo
     bs_log "  Actions (no action means install)"
+    bs_help "    -r|--reconfigure" "Only reconfigure without doing any action" "${DO_ONLY_RECONFIGURE}" y
     bs_help "    --skip-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
     bs_help "    --skip-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
     bs_help "    -S|--skip-checkouts|--skip-sync-code" "Skip code synchronnization" \
@@ -483,7 +525,7 @@ usage() {
         "$(print_contrary ${DO_SYNC_PLAYBOOKS})"  y
     bs_help "     --skip-sync-roles" "Do not sync roles" \
         "$(print_contrary ${DO_SYNC_ROLES})"  y
-    bs_help "    -s|--only-synchronize-code|--only-sync-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
+    bs_help "    -s|--only-synchronize-code|--only-sync-code|--synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
     echo
@@ -491,11 +533,12 @@ usage() {
     bs_help "    --corpusops-orga_url <url>" "corpusops orga  fork git url" \
         "$(get_corpusops_orga_url)" y
     bs_help "    --corpusops-url <url>" "corpusops orga fork git url" "$(get_corpusops_url)" y
-    bs_help "    --corpusops-branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
+    bs_help "    -b|--corpusops-branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
+    bs_help "    -d|--debug" "activate debug" "${DEBUG}" y
 }
 
 parse_cli_opts() {
@@ -514,6 +557,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--version" ];then
             DO_VERSION="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x-d" ] || [ "x${1}" = "x--debug" ];then
+            DEBUG="y";argmatch="1"
         fi
         if [ "x${1}" = "x-h" ] || [ "x${1}" = "x--help" ]; then
             USAGE="1";argmatch="1"
@@ -551,7 +597,12 @@ parse_cli_opts() {
             DO_SYNC_ROLES="no"
             argmatch="1"
         fi
+        if [ "x${1}" = "x-r" ] || [ "x${1}" = "x--reconfigure" ]; then
+            DO_ONLY_RECONFIGURE="y"
+            argmatch="1"
+        fi
         if [ "x${1}" = "x-s" ] \
+            || [ "x${1}" = "x--synchronize-code" ] \
             || [ "x${1}" = "x--only-sync-code" ] \
             || [ "x${1}" = "x--only-synchronize-code" ]; then
             DO_ONLY_SYNC_CODE="y"
@@ -568,7 +619,7 @@ parse_cli_opts() {
         if [ "x${1}" = "x--corpusops-url" ]; then
             CORPUSOPS_URL="${2}";sh="2";argmatch="1"
         fi
-        if [ "x${1}" = "x--corpusops-branch" ]; then
+        if [ "x${1}" = "x-b" ] || [ "x${1}" = "x--corpusops-branch" ]; then
             CORPUSOPS_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--ansible-url" ]; then
@@ -608,6 +659,9 @@ setup() {
 
 main() {
     reconfigure || die "reconfigure failed"
+    if [ "x${DO_ONLY_RECONFIGURE}" != "x" ]; then
+        NO_HEADER=1 may_die 1 0 "Reconfigured"
+    fi
     if [ "x${DO_ONLY_SYNC_CODE}" != "x" ]; then
         synchronize_code || die "synchronize_code failed"
     else
