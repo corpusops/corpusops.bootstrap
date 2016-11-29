@@ -179,9 +179,14 @@ output_in_error() {
     fi
     if [[ -n ${DO_OUTPUT_TIMER} ]]; then
         TMP=$(mktemp)
-        ( while test -f $TMP;do \
-            log "BuildInProgress: ${slug_to_call}";\
-            sleep 120;\
+        ( i=0;\
+          while test -f $TMP;do\
+           i=$((++i));\
+           if [[ $i == 120 ]];then \
+             log "BuildInProgress($LOG): ${slug_to_call}";\
+             i=0;\
+           fi;\
+           sleep 1;\
           done;\
           log "done: ${slug_to_call}"; ) &
     fi
