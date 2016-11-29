@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+OW=$(pwd)
 cd "$(dirname ${0})/.."
 export LOGGER_NAME=$(basename $0)
 
@@ -8,8 +9,17 @@ sc=hacking/build_env
 
 usage () {
     NO_HEADER=y die '
-Build any image found either in docker/ or via the IMAGES env var.
+Build any image from dockerfiles found either:
+    - in ./docker
+    - via the IMAGES env
+This relies on the presence of a docker folder filled with dockerfiles named in
+the form [Dockerfile.]<IMAGE_TAG>
 
+If the name is missing, the tag will take the name of the "top folder".
+
+
+ [NO_BUILD_OUTPUT=] \
+ [NO_FORCE_USER_TAG=y] \
  [NOCOLOR=y] \
  [NO_GEN=y] \
  [SKIP_FOUND_CANDIDATE_EXIT=y] \
@@ -21,58 +31,107 @@ Build any image found either in docker/ or via the IMAGES env var.
  [NO_OLD_IMAGE_CLEANUP=y] \
  [DEBUG=y] \
  [IMAGES="ubuntu:16.04"] \
-    '"$0"'
+    '"$0"' [docker_folder] [docker_folder]
 '
 }
-parse_cli "$@"
-
-failed=""
-success=""
 
 build() {
     NOCOLOR=${NOCOLOR-} hacking/docker_build "${1}" "${2}" "${3}"
 }
 
 build_image() {
-    image_full="${1}"
-    tag="${DOCKER_USER}/${image_full}"
-    dockerfile="${W}/docker/Dockerfile.${image_full}"
-    build "${tag}" "${dockerfile}" "${W}"
-    ret=${?}
-    if [[ ${ret} != 0 ]];then
-        failed="$(echo "${failed} ${image_full}" | xargs)"
-    else
-        success="$(echo "${success} ${image_full}" | xargs)"
-    fi
-    return ${ret}
+    tag="${1}"
+    dockerfile="${2}"
+    docker_folder="${3:-${DOCKER_FOLDER}}"
+    build "${tag}" "${dockerfile}" "${docker_folder}"
+    local rret=${?}
+    return ${rret}
 }
 
-if [[ -z "${IMAGES-}" ]];then
-    die 3 "No IMAGES en var found nor any valid Dockerfile" \
-        ", error, bailing out"
-else
-    if [[ -n "${NO_BUILD}" ]];then
-        die 0 "Skip building: ${IMAGES}"
-    else
-        log "Building: ${IMAGES}"
+parse_cli() {
+    parse_cli_common
+    if [[ -z "${IMAGES-}" ]];then
+        die 3 "No IMAGES en var found nor any valid Dockerfile" \
+            ", error, bailing out"
     fi
-fi
-
-hacking/docker_gen_dockerfiles
-
-while read image_line;do
-    for image_full in ${image_line};do
-        # XXX We can make this parralel to speed up builds
-        NO_OUTPUT=${TRAVIS-} output_in_error \
-            build_image "${image_full}"
+    DOCKER_FOLDERS=
+    CANDIDATE_DOCKER_FOLDERS=${@:-${DOCKER_FOLDER}}
+    for docker_folder in ${CANDIDATE_DOCKER_FOLDERS}; do
+        if [ -d "${docker_folder}" ];then
+            DOCKER_FOLDERS="${DOCKER_FOLDERS} ${docker_folder}"
+        fi
     done
-done <<< ${IMAGES}
+    if [[ -z ${DOCKER_FOLDERS} ]]; then
+        die "No dockerfile found !"
+    fi
+}
 
-log "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
-log "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
+parse_cli "$@"
 
-if [[ -n ${failed// } ]];then
-    die 4 "At least one image failed to build: ${failed}"
+if [[ -n "${NO_BUILD}" ]];then
+    die 0 "Skip building: ${DOCKER_FOLDERS}"
 fi
 
-# vim:set et sts=4 ts=4 tw=80:
+failed=""
+success=""
+
+ret=0
+
+log $DOCKER_FOLDERS
+for docker_folder in ${DOCKER_FOLDERS};do
+    set_docker_folder "${docker_folder}"
+    dockerfiles="$(get_dockerfiles_from_folder "${docker_folder}")"
+    # for base image, build preprovision before !
+    if echo "${docker_folder}" \
+        | grep -q "${W}/docker"; then
+        dockerfiles="$(get_dockerfiles_from_folder \
+                          "${W}/docker/preprovision")"
+        dockerfiles="${dockerfiles} \
+                     $(get_dockerfiles_from_folder \
+                          "${W}/docker/images")"
+    fi
+    dockerfiles="$(echo "${dockerfiles}"|xargs -n1)"
+    debug "Using dockerfiles: ${dockerfiles}"
+    while read dockerfile_line;do
+        for dockerfile in ${dockerfile_line};do
+            tag=$(get_tag_from_dockerfile ${dockerfile} ${docker_folder})
+            timg=$(echo ${tag} | sed -re "s/:?_preprovision$//g")
+            build=1
+            if [[ -n ${IMAGES} ]]; then
+                build=
+                for img in ${IMAGES};do
+                    if [[ "${img}" == "${timg}" ]]; then
+                        build=1
+                        break
+                    fi
+                done
+            fi
+            if [[ -z ${build} ]]; then
+                debug "Skip: ${tag}"
+                continue
+            fi
+            tag=$(may_prepend_docker_user_to_image ${tag})
+            log "Building image: ${tag}"
+            # XXX We can make this parralel to speed up builds
+            NO_OUTPUT=${NO_BUILD_OUTPUT-${TRAVIS-}} output_in_error \
+                build_image "${tag}" "${dockerfile}" "${docker_folder}"
+            if [[ ${?} != 0 ]];then
+                ret=4
+                log "build failure: ${YELLOW}${tag}"
+                failed="$(echo "${failed} ${tag}" | xargs)"
+            else
+                log "build success: ${YELLOW}${tag}"
+                success="$(echo "${success} ${tag}" | xargs)"
+            fi
+        done
+    done <<< "${dockerfiles}"
+done
+
+if [[ -n ${success} ]]; then
+    log "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
+fi
+if [[ -n ${failed} ]]; then
+    log "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
+fi
+exit ${ret}
+# vim:set et sts=4 ts=4 tw=0:
