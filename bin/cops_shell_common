@@ -102,6 +102,11 @@ usage() {
     die 128 "No usage found"
 }
 
+cleanup_docker_tag() {
+    echo "${@}" | sed -re "s/\.|[-_]//g" \
+        | awk '{print tolower($0)}'
+}
+
 parse_cli_common() {
     USAGE=
     for i in ${@-};do
