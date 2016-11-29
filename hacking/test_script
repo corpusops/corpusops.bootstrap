@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 cd "$(dirname ${0})/.."
 export LOGGER_NAME=$(basename $0)
 
@@ -36,5 +35,17 @@ else
     die_in_error "SYNC failed"
 fi
 
-vv hacking/build_images
+if [[ -n "${NO_BUILD}" ]];then
+    log "Skipping build step"
+else
+    vv hacking/build_images
+    die_in_error "BUILD failed"
+fi
+
+if [[ -n "${NO_ROLES_TEST}" ]];then
+    log "Skipping roles test step"
+else
+    vv hacking/test_roles
+    die_in_error "roles tests failed"
+fi
 # vim:set et sts=4 ts=4 tw=80:
