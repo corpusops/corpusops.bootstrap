@@ -25,15 +25,15 @@ sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . $sc || exit 1
 
-export WC=$(pwd)
-export OWC=${OWC:-${WC}}
-export A=${WC}/ansible
-export DA=${WC}/.ansible
-export OA=${OWC}/ansible
-export ODA=${OWC}/.ansible
+export W=$(pwd)
+export OW=${OW:-${W}}
+export A=${W}/ansible
+export DA=${W}/.ansible
+export OA=${OW}/ansible
+export ODA=${OW}/.ansible
 export SYS_A=${SYS_A:-/etc/ansible}
 export SCRIPT=$(basename "${0}")
-export VENV_PATH="${VENV_PATH-${WC}/venv}"
+export VENV_PATH="${VENV_PATH-${W}/venv}"
 PLUGINS_OR_MODULES_DIRS="\
 ANSIBLE_LIBRARY:library
 ANSIBLE_ACTION_PLUGINS:action_plugins
@@ -84,7 +84,7 @@ while read p;do
         fi
     fi
 done < <(find \
-            "${WC}" "${OWC}" \
+            "${W}" "${OW}" \
             "${ODA}" "${OA}" \
             "${DA}" "${A}" \
             "${SYS_A}" \
@@ -100,4 +100,4 @@ if [[ -n ${ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
-cd "${OWC}"
+cd "${OW}"

@@ -2,6 +2,8 @@
 
 # W is script_dir/..
 W=${W:-$(pwd)}
+# OW: from where script was called (must be defined from callee)
+OW="${OW:-${W}}"
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
