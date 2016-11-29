@@ -34,6 +34,10 @@ parse_cli() {
             wd=${2}
         fi
     fi
+    c_dockerfile="Dockerfile.${tag}"
+    if [[ -z "${dockerfile}" ]] && [ -e "${c_dockerfile}" ];then
+        dockerfile=${c_dockerfile}
+    fi
     if [[ -z ${tag} ]];then
         die 5 "No tag providen"
     fi
