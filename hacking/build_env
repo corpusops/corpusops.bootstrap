@@ -4,14 +4,14 @@ sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . $sc || exit 1
 
-if [[ -z "${DISTRIBS-}" ]];then
+if [[ -z "${IMAGES-}" ]];then
     while read f;do
-        DISTRIBS="${DISTRIBS-} $(echo ${f} \
+        IMAGES="${IMAGES-} $(echo ${f} \
             | sed -re "s/.*Dockerfile\.//g")"
     done < <( find docker -mindepth 1 -maxdepth 1 -type f)
 fi
-DISTRIBS=${DISTRIBS-}
-DISTRIBS=${DISTRIBS//  / }
+IMAGES=${IMAGES-}
+IMAGES=${IMAGES//  / }
 DOCKER_USER=${DOCKER_USER:-corpusops}
 DOCKER_RELEASER=${DOCKER_RELEASER-corpusopsreleaser}
 DOCKER_PASSWORD=${DOCKER_PASSWORD-}
@@ -59,7 +59,7 @@ fi
 
 export DOCKERFILE_TEMPLATE
 export DOCKER_USER
-export DISTRIBS
+export IMAGES
 export NO_GEN
 export NO_BUILD
 export NO_SYNC

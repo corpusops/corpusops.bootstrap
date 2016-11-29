@@ -3,7 +3,7 @@
 ## build image
 
 ```
-NO_SQUASH=y SKIP_FOUND_CANDIDATE_EXIT=y DEBUG=y DISTRIBS="ubuntu:16.04" ./hacking/build_images
+NO_SQUASH=y SKIP_FOUND_CANDIDATE_EXIT=y DEBUG=y IMAGES="ubuntu:16.04" ./hacking/build_images
 ```
 
 ## init_repo
