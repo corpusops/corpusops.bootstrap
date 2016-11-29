@@ -38,7 +38,7 @@ SQUASHER_REV="05cd17fe639183e2986fa89b3ddb62bcf903cf2b"
 SQUASHER_FORK="https://github.com/goldmann/docker-squash.git"
 SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
 SQUASHER_PY="$W/venv/bin/docker-squash"
-DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-"${W}/hacking/Dockerfile.in"}
+DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 case "${SQUASHER-}" in
     $SQUASHER_GO)
         SQUASHER=$SQUASHER_GO
