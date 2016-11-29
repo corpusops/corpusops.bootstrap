@@ -22,30 +22,31 @@ Wrapper to docker build, but will also try to squash any created layer up
  '
 }
 
-parse_cli "$@"
+parse_cli() {
+    parse_cli_common "${@}"
+    tag=$1
+    dockerfile=${2-}
+    wd=${3:-$(pwd)}
+    if [[ -z ${3-} ]];then
+        # test if 2nd arg is a directory or a file (Dockerfile, in this case)
+        if [[ -d ${2-} ]];then
+            dockerfile=""
+            wd=${2}
+        fi
+    fi
+    if [[ -z ${tag} ]];then
+        die 5 "No tag providen"
+    fi
+}
 
-tag=$1
+parse_cli "$@"
 
 #TMPS="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
 candidate=${tag}_cops_candidate
 taggued=${candidate}
 candidate_squashed=${candidate}_s
 
-dockerfile=${2-}
-wd=${3:-$(pwd)}
-if [[ -z ${3-} ]];then
-    # test if 2nd arg is a directory or a file (Dockerfile, in this case)
-    if [[ -d ${2-} ]];then
-        dockerfile=""
-        wd=${2}
-    fi
-fi
-
 ret=1
-
-if [[ -z ${tag} ]];then
-    die 5 "No tag providen"
-fi
 
 # If wanted, try to install image squasher if not already done
 if [[ -n "${SQUASHER_URL}" ]] && [ ! -e "$SQUASHER" ];then
