@@ -17,6 +17,15 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( =>
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
 
+get_random_slug() {
+    len=${1:-32}
+    strings=${2:-'a-zA-Z0-9'}
+    echo "$(cat /dev/urandom \
+        | tr -dc "$strings" \
+        | fold -w ${len} \
+        | head -n 1)"
+}
+
 reset_colors() {
     if [[ -n ${NO_COLOR} ]]; then
         BLUE=""
