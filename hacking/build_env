@@ -34,6 +34,65 @@ SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
 SQUASHER_PY="$W/venv/bin/docker-squash"
 BASE_IMAGES="debian debian:jessie ubuntu ubuntu:16.04 ubuntu:14.04"
 DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
+ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
+BASE_ROLES="\
+corpusops.debug
+corpusops.humanlog
+corpusops.include_jinja_vars
+corpusops.saltcall
+corpusops.vars"
+CONFIG_ROLES="\
+corpusops.localsettings_pkgmgr_vars
+corpusops.localsettings_pkgmgr
+corpusops.localsettings_basepkgs_vars
+corpusops.localsettings_basepkgs
+corpusops.localsettings_dns_vars
+corpusops.localsettings_dns
+corpusops.localsettings_editor_vars
+corpusops.localsettings_etckeeper_vars
+corpusops.localsettings_etckeeper
+corpusops.localsettings_git_vars
+corpusops.localsettings_git
+corpusops.localsettings_golang_vars
+corpusops.localsettings_golang
+corpusops.localsettings_locales
+corpusops.localsettings_locales_vars
+corpusops.localsettings_nscd_vars
+corpusops.localsettings_nscd
+corpusops.localsettings_profile_vars
+corpusops.localsettings_profile
+corpusops.localsettings_screen_vars
+corpusops.localsettings_screen
+corpusops.localsettings_ssh_vars
+corpusops.localsettings_ssh
+corpusops.localsettings_sudo_vars
+corpusops.localsettings_sudo
+corpusops.localsettings_sysctls_vars
+corpusops.localsettings_vim_vars
+corpusops.localsettings_vim"
+# corpusops.localsettings_jdk_vars
+# corpusops.localsettings_jdk
+
+# Skipped for now as not run in docker
+# corpusops.localsettings_editor
+# corpusops.services_virt_docker
+# corpusops.localsettings_sysctls
+# corpusops.services_base_ntp
+
+SERVICES_ROLES="\
+corpusops.localsettings_pkgmgr_vars
+corpusops.services_base_cron_vars
+corpusops.services_base_cron
+corpusops.services_base_ntp_vars
+corpusops.services_base_sshd_vars
+corpusops.services_base_sshd
+corpusops.services_virt_docker_vars"
+DEBIAN_ROLES="\
+corpusops.localsettings_autoupgrades_vars
+corpusops.localsettings_autoupgrades"
+UBUNTU_ROLES="\
+corpusops.localsettings_apparmor_vars
+corpusops.localsettings_apparmor"
 
 set_docker_folder() {
     DOCKER_FOLDER=${1:-${DOCKER_FOLDER}}

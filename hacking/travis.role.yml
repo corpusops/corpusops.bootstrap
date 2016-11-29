@@ -1,0 +1,31 @@
+---
+sudo: required
+dist: trusty
+env:
+  matrix:
+    - IMAGES="ubuntu:16.04_preprovision"
+    - IMAGES="ubuntu:14.04_preprovision"
+    - IMAGES="ubuntu:_preprovision"
+language: python
+python: "2.7"
+before_install:
+  - sudo apt-get update -qq
+  - >
+    set -ex;
+    for i in $IMAGES;do
+     img="corpusops/$i";
+     n="${img//:/}";
+     n="${img//\\./}";
+     docker pull "$img";
+     docker run --name="$n" "cops${img}" "$img" /bin/true;
+     docker cp "$n":/srv/corpusops "/srv/corpusops.${i}";
+    done
+install:
+script:
+  - > 
+    set -ex;
+    for i in $IMAGES;do
+      if [ -e /srv/corpusops ];then rm -fv /srv/corpusops;fi;
+      ln -sf "/srv/corpusops.${i}" "/srv/corpusops";
+      "/srv/corpusops/hacking/test_roles" "$PWD";
+    done

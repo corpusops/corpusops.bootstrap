@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+OW=$(pwd)
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=$(basename $0)
+
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage () {
+    NO_HEADER=y die '
+Test script for ansible roles in ./roles or arbitrary rolepath
+against a set of docker \$IMAGES.
+
+ [NO_CLEANUP=] \
+ [NO_TESTS_OUTPUT=] \
+ [NO_FORCE_USER_TAG=] \
+ [IMAGES=xxx] \
+ [ROLES_TO_TEST=]\
+ [ROLE_DOCKERFILE_TEMPLATE=xxx]
+ [NOCOLOR=y] \
+ [DEBUG=y] \
+    '"$0" [role1] [role2]'
+'
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+
+parse_cli "$@"
+
+failed_roles=""
+success_roles=""
+role_num=0
+
+tmp_files=""
+tmp_imgs=""
+
+do_cleanup() {
+    log "Tests cleanup"
+    for tmp_file in ${tmp_files};do
+        if [ -e "${tmp_file}" ]; then
+            vv rm -f "${tmp_file}"
+        fi
+    done
+    for test_tag in ${tmp_imgs};do
+        test_tagid=$(vvv get_image ${test_tag})
+        if [[ "${test_tagid}" != "" ]]; then
+            log "Removing produced test image: ${test_tagid}"
+            docker rmi "${test_tagid}"
+        fi
+    done
+}
+
+post_cleanup() {
+    rc=${?}
+    if [[ -n "${NO_CLEANUP}" ]]; then
+        log "Skip Post tests cleanup"
+    else
+        do_cleanup
+    fi
+    exit ${rc}
+}
+trap post_cleanup SIGQUIT SIGINT SIGTERM
+
+dockerfile_template() {
+    role=$1
+    t="${role}/Dockerfile.test"
+    if [ -e "$t" ];then
+        r="$t"
+    else
+        r="${ROLE_DOCKERFILE_TEMPLATE}"
+    fi
+    echo "$r"
+}
+
+rewrite_role_dockerfile() {
+    role_num=$((role_num+1))
+    image="${1}"
+    role="${2}"
+    rolename="$(basename $role)"
+    template="${3}"
+    rewrite_dockerfile "${template}" "${image}" |\
+        sed -r\
+        -e "s|__ROLEPATH__|${role}|g" \
+        -e "s|__ROLENAME__|${rolename}|g"\
+        -e "s|__ROLE_NUM__|${role_num}|g"
+}
+
+test_role() {
+    image="${1}"
+    role="${2}"
+    if echo "${role}" | egrep -vq '^/'; then
+        if test -d "${OW}/${role}"; then
+            role="${OW}/${role}"
+        elif test -d "${OW}/roles/${role}"; then
+            role="${OW}/roles/${role}"
+        elif test -d "${W}/roles/${role}"; then
+            role="${W}/roles/${role}"
+        fi
+    fi
+    if ! test -d ${role}; then
+        log "non existing role: ${role}"
+        return 1
+    fi
+    rolename="$(basename ${role})"
+    dockerfile="$(dockerfile_template $role)"
+    tmpstr=$(get_random_slug 8)
+    tmpdockerfile=${role}/dockerfile.testtmp.${tmpstr}
+    raw_test_tag=$(basename ${tmpdockerfile}):copstest
+    raw_test_tag=${raw_test_tag//*dockerfile.testtmp./${rolename}}
+    test_tag=$(cleanup_docker_tag $raw_test_tag)
+    vv rewrite_role_dockerfile "${image}" "${role}" "${dockerfile}" > "${tmpdockerfile}"
+    local rret=$?
+    tmp_files="${tmp_files} ${tmpdockerfile}"
+    if [[ ${rret} == 0 ]]; then
+        vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
+        rret=${?}
+        tmp_imgs="${tmp_imgs} ${test_tag}"
+    fi
+    return ${rret}
+}
+
+get_roles_to_test() {
+    image="${1:-ubuntu}"
+    shift
+    roles_to_tests=${@:-${ROLES_TO_TEST-}}
+    if [[ -z ${roles_to_tests} ]];then
+        roles_to_tests="${BASE_ROLES} ${CONFIG_ROLES} ${SERVICES_ROLES}"
+        if echo $image | egrep -iq "debian|ubuntu"; then
+            roles_to_tests="${roles_to_tests} ${DEBIAN_ROLES}"
+        fi
+        if echo $image | egrep -iq "ubuntu"; then
+            roles_to_tests="${roles_to_tests} ${UBUNTU_ROLES}"
+        fi
+    fi
+    echo "${roles_to_tests}" | sort -u | xargs -n1
+}
+
+ret=0
+while read image_line;do
+    for image in ${image_line};do
+        image=$(may_prepend_docker_user_to_image ${image})
+        roles_to_tests=$(get_roles_to_test ${image} $@)
+        log "Image: ${image}"
+        log "  Testing: ${roles_to_tests}"
+        # XXX We can make this parralel to speed up builds
+        for role in ${roles_to_tests};do
+            test_slug=${image}::${role}
+            ( NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
+                 test_role ${image} ${role}; )
+            if [[ $? != 0 ]];then
+                ret=1
+                log "test failure: ${YELLOW}${test_slug}"
+                failed_roles="${failed_roles} ${test_slug}"
+            else
+                log "test success: ${YELLOW}${test_slug}"
+                success_roles="${success_roles} ${test_slug}"
+            fi
+        done
+    done
+done <<< ${IMAGES}
+if [[ -n ${success_roles} ]];then
+    log "success roles:${YELLOW}${success_roles}"
+fi
+if [[ -n ${failed_roles} ]];then
+    log "failed roles:${YELLOW}${failed_roles}"
+fi
+exit ${ret}
+# vim:set et sts=4 ts=4 tw=80:
