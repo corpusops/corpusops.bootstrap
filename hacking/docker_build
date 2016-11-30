@@ -111,8 +111,16 @@ fi
 
 if [[ -n "${ancestor}" ]]; then
     vv docker pull "${ancestor}"
-    die_in_error "docker pull ${ancestor} failed"
-    ancestor_id=$(vv docker inspect -f '{{.Id}}' "${ancestor}" 2>/dev/null)
+    ret=${?}
+    ancestor_id=$(get_docker_id "${ancestor}")
+    if [[ ${ret} != 0 ]]; then
+        if [[ "${ancestor_id}" == "" ]]; then
+            die "docker pull ${ancestor} failed"
+        else
+            warn "docker pull ${ancestor} failed"
+            warn "but tag exists locally, using it"
+        fi
+    fi
     debug "Ancestor ${CYAN}${ancestor}"
     debug "Ancestor id: ${CYAN}${ancestor_id}"
 fi
