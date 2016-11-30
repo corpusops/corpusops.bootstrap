@@ -146,6 +146,10 @@ get_image() {
     get_images "${@}" | head -n 1
 }
 
+get_docker_id() {
+    docker inspect -f '{{.Id}}' "${@}" 2>/dev/null
+}
+
 detect_os() {
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
