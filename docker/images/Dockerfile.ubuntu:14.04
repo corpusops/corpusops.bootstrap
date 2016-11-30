@@ -1,8 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-# __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
-FROM __IMAGE_PREPROVISION__
+FROM corpusops/ubuntu:14.04_preprovision
 ENV container docker
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 
