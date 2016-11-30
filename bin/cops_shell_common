@@ -50,8 +50,12 @@ log_() {
     printf "" >&2;  # flush
 }
 
-log(){
+log() {
     log_ "${RED}" "${CYAN}" "${@}"
+}
+
+warn() {
+    log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"
 }
 
 may_die() {
