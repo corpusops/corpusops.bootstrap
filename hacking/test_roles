@@ -136,7 +136,7 @@ get_roles_to_test() {
             roles_to_tests="${roles_to_tests} ${UBUNTU_ROLES}"
         fi
     fi
-    echo "${roles_to_tests}" | sort -u | xargs -n1
+    echo "${roles_to_tests}" | xargs -n1 | sort -u
 }
 
 ret=0
