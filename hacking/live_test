@@ -97,11 +97,11 @@ main() {
             -e "CORPUSOPS_W=${W}"\
             -e CORPUSOPS_IN_DEV=1\
             --name="$n" \
-            $( while read v; do echo " -v ${v}:${v}";done < \
+            $( while read v; do echo " -v ${v}:${v}:ro";done < \
                  <( ldd "${docker_binary}" | awk '{print $3}' | egrep '^/'; )
             )\
             $( if [[ "${OW}" == "${W}" ]];then
-                while read v; do echo " -v ${v}:${v}";done < \
+                while read v; do echo " -v ${v}:${v}:ro";done < \
                     <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
                fi
             )\
