@@ -19,6 +19,18 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( =>
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
 
+has_command() {
+    ret=1
+    if which which >/dev/null 2>/dev/null && which "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    elif command -v "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    elif hash -r "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    fi
+    return ${ret}
+}
+
 get_random_slug() {
     len=${1:-32}
     strings=${2:-'a-zA-Z0-9'}
@@ -157,9 +169,9 @@ get_docker_id() {
 detect_os() {
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-    SED=$(which sed)
-    if [ "x${UNAME}" != "xlinux" ]; then
-        SED=$(which gsed)
+    SED="sed"
+    if [ "x${UNAME}" != "xlinux" ] && has_command gsed; then
+        SED=gsed
     fi
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
