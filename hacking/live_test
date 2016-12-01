@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+OW=$(pwd)
 cd $(dirname $0)/..
 export LOGGER_NAME=$(basename $0)
 
@@ -8,67 +9,141 @@ sc=hacking/build_env
 
 reset_colors
 
-img=${img:-"corpusops/ubuntu:16.04"}
-n=${img}_livetest
-default_ep=$W/hacking/container_rootfs/sbin/cops_systemd_entry_point.sh
-ep=${ep:-"${default_ep}"}
-NO_CLEANUP=${NO_CLEANUP-}
-docker_args=${@-}
-
-n=${n//:/};n=${n//_/};n=${n//-/};n=${n//\//};n=${n//\./};
-
 usage() {
     NO_HEADER=y die '
-Wrapper to test an image (systemd based)
+Wrapper to test an image:
+    - the container will be commited upon restarts
+    - Current directory, and docker ones are mounted inside the container
+    - It can cleanup produced tests with $CLEANUP=1
 
+You can even systemd based corpusops images like this:
+ img="'"${img}"'" '"$0"' '"$default_systemd_ep"'
+
+Or launch a shell
+ docker_args="-ti" '"$0"'  '"${img}"' bash
+
+ [docker_args=] \
  [img=corpusops/ubuntu:16.04] \
- [ep=/bin/bash] \
- [NO_CLEANUP=y] \
+ [rootfs_mp=] \
+ [rootfs_start_dir=] \
+ [rootfs_mount_mode=] \
+ [cwd_mp=] \
+ [cwd_mount_mode=] \
  [DEBUG=y] \
-    '"$0"' <DOCKER_ARGS>
+ [NOINPUT=] \
+ [CLEANUP=] \
+    '"$0"' [ ... image args ... ]
  '
 }
 
-parse_cli "${@}"
+sane_container_name() {
+    local n=$1
+    n=${n//:/}
+    n=${n//_/}
+    n=${n//-/}
+    n=${n//\//}
+    n=${n//\./}
+    echo $n
+}
+
+save_container() {
+    local n="${1}"
+    local d="${2:-${n}}"
+    local running=$(docker ps -q    --filter 'name='$n)
+    local cid=$(docker     ps -q -a --filter 'name='$n)
+    if [[ -n "${running}" ]];then
+        vv docker kill "$running"
+    fi
+    local cid=$(docker     ps -q -a --filter 'name='$n)
+    if [[ -n "${cid}" ]];then
+        vv docker commit "$cid" "$d"
+        vv docker rm "$cid"
+    else
+        img=${initial_img}
+    fi
+}
 
 cleanup() {
-    if [[ -z ${NO_CLEANUP} ]]; then
+    local n=$1
+    if [[ -n ${CLEANUP} ]]; then
         docker rm -f $n 2>/dev/null
         docker rmi -f $n 2>/dev/null
     fi
 }
 
-cleanup
+trap_cleanup() {
+    rc=$?
+    ( CLEANUP="${FINAL_CLEANUP-${CLEANUP}}" cleanup $n )
+    exit $rc
+}
 
-imgid=$(get_image ${n})
-if [[ -n ${imgid} ]]; then
-    log "Using preexisting $n <${imgid}>"
-    img=$n
-fi
-
-myinput=
-while true; do
-    vv docker run \
-        -e "CORPUSOPS_W=$W"\
-        -e CORPUSOPS_IN_DEV=1\
-        --name="$n" \
-        ${docker_args} \
-        $(  while read v; do
-                echo " -v ${v}:${v}"
-            done < <(find "${W}" -maxdepth 1 -mindepth 1|grep -v venv ) \
-        )\
-        -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-        "${img}" "${ep}"
-    vv docker kill $n
-    vv docker commit $n $n
-    vv docker rm $n
-    imgid=$(get_image ${n})
-    if [[ -n ${imgid} ]]; then
-        img=$imgid
+parse_cli() {
+    parse_cli_common "${@}"
+    if [[ -z ${docker_binary} ]];then
+        die "no docker, install it first"
     fi
-    log "press enter to restart"
-    read myinput
-done
+}
 
-cleanup
+main() {
+    ( CLEANUP="${INITIAL_CLEANUP-${CLEANUP}}" cleanup $n )
+    imgid=$(get_image "${n}")
+    if [[ -n ${imgid} ]]; then
+        log "Using preexisting $n <${imgid}>"
+        img="${n}"
+    fi
+    myinput=
+    while true; do
+        vv "${docker_binary}" run \
+            -e "CORPUSOPS_W=${W}"\
+            -e CORPUSOPS_IN_DEV=1\
+            --name="$n" \
+            $( while read v; do echo " -v ${v}:${v}";done < \
+                 <( ldd "${docker_binary}" | awk '{print $3}' | egrep '^/'; )
+            )\
+            $( if [[ "${OW}" == "${W}" ]];then
+                while read v; do echo " -v ${v}:${v}";done < \
+                    <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
+               fi
+            )\
+            -v "${docker_binary}:${docker_binary}" \
+            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+            -v "/var/lib/docker:/var/lib/docker" \
+            -v "/var/run/docker:/var/run/docker" \
+            -v "/var/run/docker.sock:/var/run/docker.sock" \
+            -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
+            -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
+            "${docker_args}" "${img}" "${@}"
+        save_container $n
+        imgid=$(get_image "${n}")
+        if [[ -n ${imgid} ]]; then
+            img=${imgid}
+        fi
+        if [[ -z NOINPUT ]]; then
+            log "press enter to restart..."
+            read myinput
+            log "Restarting"
+        else
+            log "Restarting in 2 sec"
+            sleep 2
+        fi
+    done
+}
+
+docker_binary=${docker_binary:-$(which docker)}
+docker_args=${docker_args-}
+default_systemd_ep=/sbin/cops_systemd_entry_point.sh
+default_img="corpusops/ubuntu:16.04"
+img="${img:-${default_img}}"
+initial_img=${img}
+n=$(sane_container_name ${img}_livetest)
+rootfs_mount_mode="${rootfs_mount_mode:-:ro}"
+rootfs_start_dir="${rootfs_start_dir:-/}"
+rootfs_mp="${rootfs_mp:-/HOST_ROOTFS}"
+cwd_mp="${cwd_mp:-/HOST_CWD}"
+cwd_mount_mode="${rootfs_mount_mode:-}"
+default_ep=$W/hacking/container_rootfs/$default_systemd_ep
+
+parse_cli "${@}"
+trap trap_cleanup SIGQUIT SIGINT SIGTERM
+main
 # vim:set et sts=4 ts=4 tw=80:
