@@ -22,7 +22,7 @@ else
     if LC_ALL=C LANG=C /sbin/init --help 2>&1 | grep -iq upstart;then
         # verify that jobs are in place
         for i in $services;do
-            j="/etc/init/${s}.conf"
+            j="/etc/init/${i}.conf"
             o="${j}.override"
             if [[ ! -e "${j}" ]];then
                 echo "missing ${j}" >&2
