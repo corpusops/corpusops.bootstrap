@@ -87,7 +87,6 @@ if release_test; then
         done
     log "release done"
 else
-    ret=2
     log "Release test failed, release skipped"
 fi
 die_in_error_ ${ret} "Release failed ($ret)"
