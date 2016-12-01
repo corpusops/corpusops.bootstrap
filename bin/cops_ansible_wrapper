@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export OW=$(pwd)
+export OW=${OW:-$(pwd)}
 cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
 . bin/cops_ansible
 exec ${VENV_PATH}/bin/${SCRIPT} "${@}"
