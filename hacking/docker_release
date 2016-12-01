@@ -10,6 +10,7 @@ usage() {
     NO_HEADER=y die '
 Release images to docker
 
+ [FORCE_NO_RELEASE=] \
  [FORCE_RELEASE=] \
  [DOCKER_REGISTY=xxx] \
  [DOCKER_PASSWORD=xxx] \
@@ -33,7 +34,22 @@ parse_cli() {
     else
         RELEASED_DIR=${W}
     fi
-    R_IMAGES=${@:-${IMAGES}}
+    R_IMAGES="${@:-"${IMAGES}"}"
+    for r in $R_IMAGES;do
+        add_preprov=
+        for s in $BASE_IMAGES;do
+            if [[ "$r" == "$s" ]];then
+                add_preprov=1
+            fi
+        done
+        if [[ -n "$add_preprov" ]];then
+            pimg="$(add_preprovision_slug "$r")"
+            R_IMAGES="${R_IMAGES} ${pimg}"
+        fi
+    done
+    R_IMAGESp="$(echo "$R_IMAGES"|xargs -n1|grep    _preprovision|sort -u)"
+    R_IMAGESr="$(echo "$R_IMAGES"|xargs -n1|grep -v _preprovision|sort -u)"
+    R_IMAGES="$( (echo "${R_IMAGESp}";echo "$R_IMAGESr")|xargs -n1)"
     RELEASABLE=""
     for img in ${R_IMAGES};do
         fimg=${img}
@@ -45,7 +61,7 @@ parse_cli() {
             RELEASABLE="${RELEASABLE} ${fimg}"
         fi
     done
-    RELEASABLE=$(echo "${RELEASABLE}" | xargs -n1 | sort -u)
+    RELEASABLE="$(echo "${RELEASABLE}" | xargs -n1)"
     RELEASABLE_BRANCHES="${RELEASABLE_BRANCHES:-"^master$"}"
     if [[ -z "${RELEASABLE}" ]]; then
         die "no releasable images produced yet from: ${YELLOW}$IMAGES"
@@ -80,7 +96,12 @@ if release_test; then
         -p="$DOCKER_PASSWORD" "${DOCKER_REGISTRY}" \
         $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}") &&\
         for img in ${RELEASABLE};do
-            vv docker push "${img}"
+            ( if [[ -n $FORCE_NO_RELEASE ]];then
+                vv echo docker push "${img}"
+              else
+                vv docker push "${img}"
+              fi
+            )
             if [[ ${?} != 0 ]];then
                 log "Failed to release: ${img}"
                 ret=1

@@ -13,7 +13,6 @@ Regenerate found dockerfiles from template (you need a base template path
 but too dockerfiles, eg ./Dockerfile.in & ./Dockerfile.in._preprovision)
 
  [DOCKERFILE_TEMPLATE=] \
- [INPUT_DIRS=] \
  [NOCOLOR=y] \
  [NO_GEN=y] \
  [DEBUG=y] \
@@ -27,7 +26,7 @@ if [[ -n ${NO_GEN} ]];then
 fi
 
 parse_cli "$@"
-log "Generating dockerfiles from ${INPUT_DIRS}"
+log "Generating dockerfiles"
 cd "${W}"
 for e in images preprovision;do
     if [ ! -e docker/$e ]; then
