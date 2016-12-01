@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+export OW=$(pwd)
+cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
+. bin/cops_ansible
+exec "${W}/bin/ansible-playbook" \
+    -i "${ANSIBLE_INVENTORY:-"${W}/hacking/localhost"}" \
+    "${@}"
+# vim:set et sts=4 ts=4 tw=0:

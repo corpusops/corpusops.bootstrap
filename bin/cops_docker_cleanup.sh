@@ -26,4 +26,8 @@ while read i;do
     docker rmi $i
 done < <( \
     docker images --filter dangling=true -q )
+while read i;do
+    docker rmi $i
+done < <( \
+    docker images -a|grep copstest|awk '{print $3}' )
 # vim:set et sts=4 ts=4 tw=80:

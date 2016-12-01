@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+cd "$(dirname ${0})/.."
+export LOGGER_NAME=$(basename $0)
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage() {
+    NO_HEADER=y die '
+Release images to docker
+
+ [FORCE_RELEASE=] \
+ [DOCKER_REGISTY=xxx] \
+ [DOCKER_PASSWORD=xxx] \
+ [DOCKER_RELEASER=xxx] \
+ [DOCKER_USER=xxx] \
+ [RELEASABLE_BRANCHES=xxx] \
+ [NOCOLOR=y] \
+ [DEBUG=y] \
+    '"$0"' WORKING_DIR <image> <image1>
+ '
+}
+
+parse_cli() {
+    [[ -z $DOCKER_USER ]] && die "no DOCKER_USER"
+    [[ -z $DOCKER_RELEASER ]] && die "no DOCKER_RELEASER"
+    [[ -z $DOCKER_PASSWORD ]] && die "no DOCKER_PASSWORD"
+
+    if [[ -n ${1-} ]] && [ -d "${1}" ]; then
+        RELEASED_DIR=${1}
+        shift
+    else
+        RELEASED_DIR=${W}
+    fi
+    R_IMAGES=${@:-${IMAGES}}
+    RELEASABLE=""
+    for img in ${R_IMAGES};do
+        fimg=${img}
+        if echo ${fimg} | grep -vq /;then
+            fimg=${DOCKER_USER}/${img}
+        fi
+        tagid=$(get_image "${fimg}")
+        if [ "x${tagid}" != "x" ]; then
+            RELEASABLE="${RELEASABLE} ${fimg}"
+        fi
+    done
+    RELEASABLE=$(echo "${RELEASABLE}" | xargs -n1 | sort -u)
+    RELEASABLE_BRANCHES="${RELEASABLE_BRANCHES:-"^master$"}"
+    if [[ -z "${RELEASABLE}" ]]; then
+        die "no releasable images produced yet from: ${YELLOW}$IMAGES"
+    fi
+}
+
+release_test() {
+    if [[ -n ${TRAVIS} ]]; then
+        if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+            debug "Is a travis pull request, no release"
+            return 1
+        elif echo "${TRAVIS_BRANCH}"\
+            | egrep -iq ${RELEASABLE_BRANCHES}; then
+            return 0
+        fi
+    else
+        if [[ -n ${FORCE_RELEASE} ]]; then
+            return 0
+        elif get_git_branch ${RELEASED_DIR}\
+            | egrep -iq ${RELEASABLE_BRANCHES}; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+parse_cli "$@"
+ret=0
+if release_test; then
+    log "Releasing ${RELEASABLE}"
+    log "docker login" && docker login -u="$DOCKER_RELEASER" \
+        -p="$DOCKER_PASSWORD" "${DOCKER_REGISTRY}" \
+        $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}") &&\
+        for img in ${RELEASABLE};do
+            vv docker push "${img}"
+            if [[ ${?} != 0 ]];then
+                log "Failed to release: ${img}"
+                ret=1
+            else
+                log "Released: ${img}"
+            fi
+        done
+    log "release done"
+else
+    log "Release test failed, release skipped"
+fi
+die_in_error_ ${ret} "Release failed ($ret)"
+# vim:set et sts=4 ts=4 tw=80:

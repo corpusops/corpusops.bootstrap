@@ -1,11 +1,32 @@
 #!/usr/bin/env bash
-set -e
 cd "$(dirname ${0})/.."
 export LOGGER_NAME=$(basename $0)
 
 sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
+
+usage () {
+    NO_HEADER=y die '
+Regenerate found distributions dockerfiles from template
+
+ [NO_SYNC=] \
+ [NO_BUILD=y] \
+ [NO_ROLES_TEST=y]\
+ [ROLES_TO_TEST=]\
+ [NOCOLOR=y] \
+ [NO_GEN=y] \
+ [DEBUG=y] \
+ [IMAGES=xxx] \
+    '"$0"'
+'
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+
+parse_cli "$@"
 
 if [[ -n "${NO_SYNC}" ]];then
     log "Skipping code sync"
@@ -14,5 +35,17 @@ else
     die_in_error "SYNC failed"
 fi
 
-vv hacking/build_images
+if [[ -n "${NO_BUILD}" ]];then
+    log "Skipping build step"
+else
+    vv hacking/build_images
+    die_in_error "BUILD failed"
+fi
+
+if [[ -n "${NO_ROLES_TEST}" ]];then
+    log "Skipping roles test step"
+else
+    vv hacking/test_roles
+    die_in_error "roles tests failed"
+fi
 # vim:set et sts=4 ts=4 tw=80:

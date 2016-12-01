@@ -22,30 +22,35 @@ Wrapper to docker build, but will also try to squash any created layer up
  '
 }
 
-parse_cli "$@"
+parse_cli() {
+    parse_cli_common "${@}"
+    tag=$1
+    dockerfile=${2-}
+    wd=${3:-$(pwd)}
+    if [[ -z ${3-} ]];then
+        # test if 2nd arg is a directory or a file (Dockerfile, in this case)
+        if [[ -d ${2-} ]];then
+            dockerfile=""
+            wd=${2}
+        fi
+    fi
+    c_dockerfile="Dockerfile.${tag}"
+    if [[ -z "${dockerfile}" ]] && [ -e "${c_dockerfile}" ];then
+        dockerfile=${c_dockerfile}
+    fi
+    if [[ -z ${tag} ]];then
+        die 5 "No tag providen"
+    fi
+}
 
-tag=$1
+parse_cli "$@"
 
 #TMPS="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
 candidate=${tag}_cops_candidate
 taggued=${candidate}
 candidate_squashed=${candidate}_s
 
-dockerfile=${2-}
-wd=${3:-$(pwd)}
-if [[ -z ${3-} ]];then
-    # test if 2nd arg is a directory or a file (Dockerfile, in this case)
-    if [[ -d ${2-} ]];then
-        dockerfile=""
-        wd=${2}
-    fi
-fi
-
 ret=1
-
-if [[ -z ${tag} ]];then
-    die 5 "No tag providen"
-fi
 
 # If wanted, try to install image squasher if not already done
 if [[ -n "${SQUASHER_URL}" ]] && [ ! -e "$SQUASHER" ];then
@@ -106,8 +111,16 @@ fi
 
 if [[ -n "${ancestor}" ]]; then
     vv docker pull "${ancestor}"
-    die_in_error "docker pull ${ancestor} failed"
-    ancestor_id=$(vv docker inspect -f '{{.Id}}' "${ancestor}" 2>/dev/null)
+    ret=${?}
+    ancestor_id=$(get_docker_id "${ancestor}")
+    if [[ ${ret} != 0 ]]; then
+        if [[ "${ancestor_id}" == "" ]]; then
+            die "docker pull ${ancestor} failed"
+        else
+            warn "docker pull ${ancestor} failed"
+            warn "but tag exists locally, using it"
+        fi
+    fi
     debug "Ancestor ${CYAN}${ancestor}"
     debug "Ancestor id: ${CYAN}${ancestor_id}"
 fi

@@ -2,6 +2,8 @@
 
 # W is script_dir/..
 W=${W:-$(pwd)}
+# OW: from where script was called (must be defined from callee)
+OW="${OW:-${W}}"
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
@@ -16,6 +18,27 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*$|"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( => {)?$|"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
+
+has_command() {
+    ret=1
+    if which which >/dev/null 2>/dev/null && which "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    elif command -v "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    elif hash -r "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+    fi
+    return ${ret}
+}
+
+get_random_slug() {
+    len=${1:-32}
+    strings=${2:-'a-zA-Z0-9'}
+    echo "$(cat /dev/urandom \
+        | tr -dc "$strings" \
+        | fold -w ${len} \
+        | head -n 1)"
+}
 
 reset_colors() {
     if [[ -n ${NO_COLOR} ]]; then
@@ -39,8 +62,12 @@ log_() {
     printf "" >&2;  # flush
 }
 
-log(){
+log() {
     log_ "${RED}" "${CYAN}" "${@}"
+}
+
+warn() {
+    log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"
 }
 
 may_die() {
@@ -93,6 +120,11 @@ usage() {
     die 128 "No usage found"
 }
 
+cleanup_docker_tag() {
+    echo "${@}" | sed -re "s/\.|[-_]//g" \
+        | awk '{print tolower($0)}'
+}
+
 parse_cli_common() {
     USAGE=
     for i in ${@-};do
@@ -130,12 +162,16 @@ get_image() {
     get_images "${@}" | head -n 1
 }
 
+get_docker_id() {
+    docker inspect -f '{{.Id}}' "${@}" 2>/dev/null
+}
+
 detect_os() {
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-    SED=$(which sed)
-    if [ "x${UNAME}" != "xlinux" ]; then
-        SED=$(which gsed)
+    SED="sed"
+    if [ "x${UNAME}" != "xlinux" ] && has_command gsed; then
+        SED=gsed
     fi
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
@@ -179,9 +215,14 @@ output_in_error() {
     fi
     if [[ -n ${DO_OUTPUT_TIMER} ]]; then
         TMP=$(mktemp)
-        ( while test -f $TMP;do \
-            log "BuildInProgress: ${slug_to_call}";\
-            sleep 120;\
+        ( i=0;\
+          while test -f $TMP;do\
+           i=$((++i));\
+           if [[ $i == 120 ]];then \
+             log "BuildInProgress($LOG): ${slug_to_call}";\
+             i=0;\
+           fi;\
+           sleep 1;\
           done;\
           log "done: ${slug_to_call}"; ) &
     fi
@@ -203,6 +244,18 @@ output_in_error() {
         rm -f "${TMP}"
     fi
     return ${ret}
+}
+
+get_git_changeset() {
+   ( cd "${1:-$(pwd)}" &&\
+     git log HEAD|head -n1|awk '{print $2}')
+}
+
+get_git_branch() {
+   ( cd "${1:-$(pwd)}" &&\
+     git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+     git describe --exact-match HEAD 2> /dev/null || \
+     git rev-parse HEAD)
 }
 
 detect_os no_fail

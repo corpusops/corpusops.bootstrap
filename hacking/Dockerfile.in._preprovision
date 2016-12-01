@@ -1,8 +1,10 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM ubuntu
+# __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
+FROM __IMAGE__
 ENV container docker
+ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
@@ -21,7 +23,9 @@ RUN step_rev=1;\
     WANTED_DOCKER_PACKAGES="$(cat $REQS_PATH/os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_EXTRA_PACKAGES="$(cat $REQS_PATH/os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
-    if hash -r systemd >/dev/null 2>&1 || [ -e /lib/systemd ];then \
+    if ((which which && which systemd) || \
+         command -v systemd )>/dev/null 2>&1 \
+       || [ -e /lib/systemd/systemd ];then \
       WANTED_PACKAGES="systemd ${WANTED_PACKAGES}";\
     fi;\
     :;\
@@ -36,8 +40,8 @@ RUN step_rev=1;\
 # 2/ isolate virtualenv contruction
 COPY requirements/os_* \
      requirements/python_* \
-     /srv/corpusops/corpusops.bootstrap/requirements/
-RUN step_rev=2;set -e;cd /srv/corpusops/corpusops.bootstrap;\
+     ${COPS_ROOT}/requirements/
+RUN step_rev=2;set -e;cd ${COPS_ROOT};\
     virtualenv --system-site-packages --unzip-setuptools venv;\
     . venv/bin/activate;\
     :;\
@@ -49,13 +53,13 @@ RUN step_rev=2;set -e;cd /srv/corpusops/corpusops.bootstrap;\
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
-COPY .corpusops /srv/corpusops/corpusops.bootstrap/.corpusops
-COPY bin /srv/corpusops/corpusops.bootstrap/bin
-COPY src /srv/corpusops/corpusops.bootstrap/src
-COPY setup.py /srv/corpusops/corpusops.bootstrap/setup.py
+COPY .corpusops ${COPS_ROOT}/.corpusops
+COPY bin ${COPS_ROOT}/bin
+COPY src ${COPS_ROOT}/src
+COPY setup.py ${COPS_ROOT}/setup.py
 RUN step_rev=2;set -ex;\
     . /etc/lsb-release;\
-    cd /srv/corpusops/corpusops.bootstrap;\
+    cd ${COPS_ROOT};\
     :;\
     if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then\
         apt-get remove -y --force-yes git;\
@@ -68,11 +72,11 @@ RUN step_rev=2;set -ex;\
     rm -rf /bootstrap;
 
 # 4/ Bring in all playbooks & roles
-COPY .git /srv/corpusops/corpusops.bootstrap/.git
-COPY roles /srv/corpusops/corpusops.bootstrap/roles
-COPY playbooks /srv/corpusops/corpusops.bootstrap/playbooks
+COPY .git ${COPS_ROOT}/.git
+COPY roles ${COPS_ROOT}/roles
+COPY playbooks ${COPS_ROOT}/playbooks
 RUN step_rev=3;set -ex;\
-    cd /srv/corpusops/corpusops.bootstrap;\
+    cd ${COPS_ROOT};\
     git reset --hard HEAD;\
     bin/install.sh -C --only-sync-code;\
     hacking/container_rootfs/sbin/cops_container_snapshot.sh;
@@ -80,18 +84,15 @@ RUN step_rev=3;set -ex;\
 # Now copy all rootfs helpers & make the container a good systemd / process
 # manager citizen
 RUN step_rev=1;set -ex;\
-    cd /srv/corpusops/corpusops.bootstrap/;\
+    cd ${COPS_ROOT}/;\
     cp bin/cops_reset_passwords.sh /sbin;\
     rsync -av hacking/container_rootfs/ /;\
     /sbin/cops_container_activate_core_services.sh;\
     /sbin/cops_container_cleanup.sh;\
     /sbin/cops_container_snapshot.sh;
 
-# 5/ Make the docker image a preconfigured-for-production image
-RUN step_rev=1;set -ex;cd /srv/corpusops/corpusops.bootstrap/;\
-    play="$(pwd)/bin/ansible-playbook -vvvv -i hacking/localhost";\
-    $play playbooks/corpusops/provision/server.yml
-
 # pack any found git repo
-RUN step_rev=1;set -ex;/srv/corpusops/corpusops.bootstrap/bin/git_pack /
+RUN step_rev=1;set -ex;${COPS_ROOT}/bin/git_pack /;\
+    /sbin/cops_container_cleanup.sh;\
+    /sbin/cops_container_snapshot.sh;
 # vim:set et:
