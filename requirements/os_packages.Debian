@@ -25,3 +25,4 @@ python-virtualenv
 rsync
 swig
 tcl8.5
+ca-certificates
