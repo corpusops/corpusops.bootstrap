@@ -22,7 +22,9 @@ RUN step_rev=1;\
     WANTED_DOCKER_PACKAGES="$(cat $REQS_PATH/os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_EXTRA_PACKAGES="$(cat $REQS_PATH/os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
-    if hash -r systemd >/dev/null 2>&1 || [ -e /lib/systemd ];then \
+    if ((which which && which systemd) || \
+         command -v systemd )>/dev/null 2>&1 \
+       || [ -e /lib/systemd/systemd ];then \
       WANTED_PACKAGES="systemd ${WANTED_PACKAGES}";\
     fi;\
     :;\
