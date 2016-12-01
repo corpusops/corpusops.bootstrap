@@ -57,13 +57,13 @@ release_test() {
         if echo "${TRAVIS_BRANCH}"\
             | egrep -iq ${RELEASABLE_BRANCHES}; then
             return 0
-        fi 
+        fi
     else
         if [[ -n ${FORCE_RELEASE} ]]; then
             return 0
         elif get_git_branch ${RELEASED_DIR}\
             | egrep -iq ${RELEASABLE_BRANCHES}; then
-            return 0 
+            return 0
         fi
     fi
     return 1
@@ -78,7 +78,7 @@ if release_test; then
         $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}") &&\
         for img in ${RELEASABLE};do
             vv docker push "${img}"
-            if ["x${?}" != "x0" ];then
+            if [[ ${?} != 0 ]];then
                 log "Failed to release: ${img}"
                 ret=1
             else
