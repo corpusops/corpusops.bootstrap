@@ -54,7 +54,10 @@ parse_cli() {
 
 release_test() {
     if [[ -n ${TRAVIS} ]]; then
-        if echo "${TRAVIS_BRANCH}"\
+        if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+            debug "Is a travis pull request, no release"
+            return 1
+        elif echo "${TRAVIS_BRANCH}"\
             | egrep -iq ${RELEASABLE_BRANCHES}; then
             return 0
         fi
