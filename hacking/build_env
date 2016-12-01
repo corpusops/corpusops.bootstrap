@@ -179,7 +179,9 @@ add_preprovision_slug() {
     if echo ${image_preprovision} | grep -vq :; then
         image_preprovision="${image_preprovision}:"
     fi
-    image_preprovision="${image_preprovision}_preprovision"
+    if echo ${image_preprovision} | egrep -vq _preprovision$; then
+        image_preprovision="${image_preprovision}_preprovision"
+    fi
     echo ${image_preprovision}
 }
 
