@@ -22,6 +22,7 @@ You can even systemd based corpusops images like this:
 Or launch a shell
  docker_args="-ti" '"$0"'  '"${img}"' bash
 
+ [name=] \
  [docker_args=] \
  [img=corpusops/ubuntu:16.04] \
  [rootfs_mp=] \
@@ -95,51 +96,30 @@ main() {
     fi
     myinput=
     while true; do
-        if [[ -n "${img_args}" ]]; then
-            vv "${docker_binary}" run \
-                -e "CORPUSOPS_W=${W}"\
-                -e CORPUSOPS_IN_DEV=1\
-                --name="$n" \
-                $( while read v; do echo " -v ${v}:${v}:ro";done < \
-                    <( ldd "${docker_binary}" | awk '{print $3}' | egrep '^/'; )
-                )\
-                $( if [[ "${OW}" == "${W}" ]];then
-                    while read v; do echo " -v ${v}:${v}:ro";done < \
-                        <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
-                fi
-                )\
-                -v "${docker_binary}:${docker_binary}" \
-                -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
-                -v "/var/lib/docker:/var/lib/docker" \
-                -v "/var/run/docker:/var/run/docker" \
-                -v "/var/run/docker.sock:/var/run/docker.sock" \
-                -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
-                -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
-                "${docker_args}" "${img}" "${img_args}"
-        else
-            vv "${docker_binary}" run \
-                -e "CORPUSOPS_W=${W}"\
-                -e CORPUSOPS_IN_DEV=1\
-                --name="$n" \
-                $( while read v; do echo " -v ${v}:${v}:ro";done < \
-                    <( ldd "${docker_binary}" \
-                       | egrep -v "libc.so|libpthread.so" \
-                       | awk '{print $3}' | egrep '^/'; )
-                )\
-                $( if [[ "${OW}" == "${W}" ]];then
-                    while read v; do echo " -v ${v}:${v}:ro";done < \
-                        <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
-                fi
-                )\
-                -v "${docker_binary}:${docker_binary}" \
-                -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
-                -v "/var/lib/docker:/var/lib/docker" \
-                -v "/var/run/docker:/var/run/docker" \
-                -v "/var/run/docker.sock:/var/run/docker.sock" \
-                -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
-                -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
-                "${docker_args}" "${img}"
-        fi
+        vv "${docker_binary}" run \
+            -e "CORPUSOPS_W=${W}"\
+            -e CORPUSOPS_IN_DEV=1\
+            --name="$n" \
+            $( while read v; do echo " -v ${v}:${v}:ro";done < \
+                <( ldd "${docker_binary}" \
+                   | egrep -v "libc.so|libpthread.so|libdl.so" \
+                   | awk '{print $3}' | egrep '^/'; )
+            )\
+            $( if [[ "${OW}" == "${W}" ]];then
+                while read v; do echo " -v ${v}:${v}:ro";done < \
+                    <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
+            fi
+            )\
+            -v "${docker_binary}:${docker_binary}" \
+            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+            -v "/var/lib/docker:/var/lib/docker" \
+            -v "/var/run/docker:/var/run/docker" \
+            -v "/var/run/docker.sock:/var/run/docker.sock" \
+            -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
+            -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
+            "${docker_args}" \
+            "${img}" \
+            $( [[ -n "${img_args}" ]] && echo "${img_args}"; )
         save_container $n
         imgid=$(get_image "${n}")
         if [[ -n ${imgid} ]]; then
@@ -162,7 +142,7 @@ default_systemd_ep=/sbin/cops_systemd_entry_point.sh
 default_img="corpusops/ubuntu:16.04"
 img="${img:-${default_img}}"
 initial_img=${img}
-n=$(sane_container_name ${img}_livetest)
+n=${name:-$(sane_container_name ${img}_livetest)}
 rootfs_mount_mode="${rootfs_mount_mode:-:ro}"
 rootfs_start_dir="${rootfs_start_dir:-/}"
 rootfs_mp="${rootfs_mp:-/HOST_ROOTFS}"
