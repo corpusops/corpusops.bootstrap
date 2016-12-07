@@ -50,6 +50,8 @@ corpusops.localsettings_basepkgs_vars
 corpusops.localsettings_basepkgs
 corpusops.localsettings_dns_vars
 corpusops.localsettings_dns
+corpusops.localsettings_jdk_vars
+corpusops.localsettings_jdk
 corpusops.localsettings_editor_vars
 corpusops.localsettings_etckeeper_vars
 corpusops.localsettings_etckeeper
@@ -72,14 +74,12 @@ corpusops.localsettings_sudo
 corpusops.localsettings_sysctls_vars
 corpusops.localsettings_vim_vars
 corpusops.localsettings_vim"
-# corpusops.localsettings_jdk_vars
-# corpusops.localsettings_jdk
 
-# Skipped for now as not run in docker
-# corpusops.localsettings_editor
-# corpusops.services_virt_docker
-# corpusops.localsettings_sysctls
-# corpusops.services_base_ntp
+NOT_IN_DOCKER_ROLES="\
+corpusops.localsettings_editor
+corpusops.services_virt_docker
+corpusops.localsettings_sysctls
+corpusops.services_base_ntp"
 
 SERVICES_ROLES="\
 corpusops.localsettings_pkgmgr_vars
