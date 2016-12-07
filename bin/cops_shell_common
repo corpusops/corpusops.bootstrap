@@ -31,6 +31,16 @@ has_command() {
     return ${ret}
 }
 
+get_command() {
+    if which which >/dev/null 2>/dev/null && which "${@}" 2>/dev/null;then
+        :
+    elif command -v "${@}" 2>/dev/null;then
+        :
+    elif hash -r "${@}" 2>/dev/null;then
+        :
+    fi
+}
+
 get_random_slug() {
     len=${1:-32}
     strings=${2:-'a-zA-Z0-9'}
