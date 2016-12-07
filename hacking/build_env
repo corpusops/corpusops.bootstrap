@@ -36,6 +36,7 @@ SQUASHER_PY="$W/venv/bin/docker-squash"
 BASE_IMAGES="debian:latest debian:jessie ubuntu:latest ubuntu:16.04 ubuntu:14.04"
 DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
+ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
 BASE_ROLES="\
 corpusops.debug
 corpusops.humanlog

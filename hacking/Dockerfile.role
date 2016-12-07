@@ -3,13 +3,8 @@ FROM __IMAGE_PREPROVISION__
 ENV container docker
 ARG COPS_ROOT=__COPS_ROOT__
 
-RUN step_rev=1;set -ex;cd "${COPS_ROOT}";\
-    crole="${COPS_ROOT}/bin/cops_apply_role -vvvv";\
-    $crole roles/corpusops.localsettings_pkgmgr/role.yml;
-
 ADD . __ROLEPATH__
 RUN step_rev=1;set -ex;cd "${COPS_ROOT}";\
     crole="${COPS_ROOT}/bin/cops_apply_role -vvvv";\
-    cd "__ROLES_WD__";\
-    if [ -e "__ROLEPATH__/role.yml" ]; then $crole "__ROLEPATH__/role.yml";fi;
+    __ROLE_SCRIPT__
 # vim:set et:

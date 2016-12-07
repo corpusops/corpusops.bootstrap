@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -ex
+COPS_ROOT=${COPS_ROOT:-__COPS_ROOT__}
+crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
+cd "${COPS_ROOT}"
+$crole roles/corpusops.localsettings_pkgmgr/role.yml;
+cd "__ROLES_WD__"
+if [ -e "__ROLEPATH__/role.yml" ]; then
+    ${crole} "__ROLEPATH__/role.yml"
+fi
+# vim:set et:

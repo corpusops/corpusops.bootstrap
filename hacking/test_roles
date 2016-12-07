@@ -18,6 +18,7 @@ against a set of docker \$IMAGES.
  [NO_FORCE_USER_TAG=] \
  [IMAGES=xxx] \
  [ROLES_TO_TEST=]\
+ [NOT_IN_DOCKER=]
  [ROLE_DOCKERFILE_TEMPLATE=xxx]
  [NOCOLOR=y] \
  [DEBUG=y] \
@@ -58,19 +59,37 @@ dockerfile_template() {
     echo "$r"
 }
 
-rewrite_role_dockerfile() {
-    role_num=$((role_num+1))
-    image="${1}"
-    role="${2}"
-    rolename="$(basename $role)"
-    template="${3}"
-    roles_wd=$( cd "${role}" && cd .. && pwd )
-    rolesd=$( basename "${roles_wd}" )
+testscript_template() {
+    role=$1
+    t="${role}/testcript"
+    if [ -e "$t" ];then
+        r="$t"
+    else
+        r="${ROLE_TESTSCRIPT_TEMPLATE}"
+    fi
+    echo "$r"
+}
+
+rewrite_role_file() {
+    local cops_root=${COPS_ROOT}
+    local role_num=$((role_num+1))
+    local image="${1}"
+    local role="${2}"
+    local rolename="$(basename $role)"
+    local template="${3}"
+    local role_script="${4}"
+    local roles_wd=$( cd "${role}" && cd .. && pwd )
+    local rolesd=$( basename "${roles_wd}" )
     if echo "${rolesd}" | egrep -q '^roles?'; then
         roles_wd=$( cd "${roles_wd}/.." && pwd )
     fi
+    if [[ -n ${NOT_IN_DOCKER} ]]; then
+        cops_root=${W}
+    fi
     rewrite_dockerfile "${template}" "${image}" |\
         sed -r\
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
+        -e "s|__ROLE_SCRIPT__|${role_script}|g" \
         -e "s|__ROLES_WD__|${roles_wd}|g" \
         -e "s|__ROLEPATH__|${role}|g" \
         -e "s|__ROLENAME__|${rolename}|g"\
@@ -95,18 +114,31 @@ test_role() {
     fi
     rolename="$(basename ${role})"
     dockerfile="$(dockerfile_template $role)"
+    testscript="$(testscript_template $role)"
     tmpstr=$(get_random_slug 8)
     tmpdockerfile=${role}/dockerfile.testtmp.${tmpstr}
+    tmptestscript=${role}/testscript.testtmp.${tmpstr}
     raw_test_tag=$(basename ${tmpdockerfile}):copstest
     raw_test_tag=${raw_test_tag//*dockerfile.testtmp./${rolename}}
     test_tag=$(cleanup_docker_tag $raw_test_tag)
-    vv rewrite_role_dockerfile "${image}" "${role}" "${dockerfile}" > "${tmpdockerfile}"
+    vv rewrite_role_file \
+        "${image}" "${role}" "${dockerfile}" "${tmptestscript}"\
+        > "${tmpdockerfile}"
+    vv rewrite_role_file \
+        "${image}" "${role}" "${testscript}" "${tmptestscript}"\
+        > "${tmptestscript}"
+    chmod +x "${tmptestscript}"
     local rret=$?
-    tmp_files="${tmp_files} ${tmpdockerfile}"
+    tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
     if [[ ${rret} == 0 ]]; then
-        vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
-        rret=${?}
-        tmp_imgs="${tmp_imgs} ${test_tag}"
+        if [[ -z ${NOT_IN_DOCKER-} ]]; then
+            vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
+            rret=${?}
+            tmp_imgs="${tmp_imgs} ${test_tag}"
+        else
+            ( cd "${role}" && ${tmptestscript} )
+            rret=${?}
+        fi
     fi
     return ${rret}
 }
