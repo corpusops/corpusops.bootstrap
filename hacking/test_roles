@@ -39,16 +39,13 @@ tmp_files=""
 tmp_dockers=""
 tmp_imgs=""
 
-post_cleanup() {
-    rc=${?}
+post_tests_cleanup() {
     if [[ -n "${NO_CLEANUP}" ]]; then
         log "Skip Post tests cleanup"
     else
-        do_tmp_cleanup "${tmp_files}" "${tmp_dockers}" "${tmp_imgs}"
+        vvv do_tmp_cleanup "${tmp_files}" "${tmp_dockers}" "${tmp_imgs}"
     fi
-    exit ${rc}
 }
-trap post_cleanup SIGQUIT SIGINT SIGTERM
 
 dockerfile_template() {
     role=$1
@@ -67,8 +64,14 @@ rewrite_role_dockerfile() {
     role="${2}"
     rolename="$(basename $role)"
     template="${3}"
+    roles_wd=$( cd "${role}" && cd .. && pwd )
+    rolesd=$( basename "${roles_wd}" )
+    if echo "${rolesd}" | egrep -q '^roles?'; then
+        roles_wd=$( cd "${roles_wd}/.." && pwd )
+    fi
     rewrite_dockerfile "${template}" "${image}" |\
         sed -r\
+        -e "s|__ROLES_WD__|${roles_wd}|g" \
         -e "s|__ROLEPATH__|${role}|g" \
         -e "s|__ROLENAME__|${rolename}|g"\
         -e "s|__ROLE_NUM__|${role_num}|g"
@@ -134,7 +137,8 @@ while read image_line;do
         # XXX We can make this parralel to speed up builds
         for role in ${roles_to_tests};do
             test_slug=${image}::${role}
-            ( NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
+            ( do_trap post_tests_cleanup EXIT;
+              NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
                  test_role ${image} ${role}; )
             if [[ $? != 0 ]];then
                 ret=1

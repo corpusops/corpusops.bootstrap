@@ -38,6 +38,7 @@ script:
   # Either test on docker if possible
   # Or directly on travis compute node
   - |
+    if [ -e .travis.env ];then . .travis.env;fi
     co=/srv/corpusops/corpusops.bootstrap
     role=$(pwd)
     rolename=$(basename $role)
@@ -48,7 +49,6 @@ script:
     ret=666
     set +e
     set -x
-    if [ -e .travis.env ];then . .travis.env;fi
     if [ "x${NO_DOCKER_TEST-}" = "x" ]; then
       if ! sudo docker exec copstestrunner bash -c \
        "

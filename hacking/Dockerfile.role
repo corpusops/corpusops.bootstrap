@@ -10,6 +10,6 @@ RUN step_rev=1;set -ex;cd "${COPS_ROOT}";\
 ADD . __ROLEPATH__
 RUN step_rev=1;set -ex;cd "${COPS_ROOT}";\
     crole="${COPS_ROOT}/bin/cops_apply_role -vvvv";\
-    cd "__ROLEPATH__";\
-    if [ -e role.yml ]; then $crole role.yml;fi;
+    cd "__ROLES_WD__";\
+    if [ -e "__ROLEPATH__/role.yml" ]; then $crole "__ROLEPATH__/role.yml";fi;
 # vim:set et:
