@@ -14,7 +14,7 @@ usage() {
 Wrapper to test an image:
     - the container will be commited upon restarts
     - Current directory, and docker ones are mounted inside the container
-    - It can cleanup produced tests with $CLEANUP=1
+    - It can cleanup produced tests with CLEANUP=1
 
 You can even systemd based corpusops images like this:
  img="'"${img}"'" '"$0"' '"$default_systemd_ep"'
@@ -29,6 +29,7 @@ Or launch a shell
  [rootfs_mount_mode=] \
  [cwd_mp=] \
  [cwd_mount_mode=] \
+ [INITIAL_CLEANUP=] [FINAL_CLEANUP=] [CLEANUP=]\
  [DEBUG=y] \
  [NOINPUT=] \
  [CLEANUP=] \
@@ -68,6 +69,9 @@ cleanup() {
     if [[ -n ${CLEANUP} ]]; then
         docker rm -f $n 2>/dev/null
         docker rmi -f $n 2>/dev/null
+    else
+        log "Skip cleanup, to cleanup livetest images/docker: export one of "
+        log "  CLEANUP, INITIAL_CLEANUP, FINAL_CLEANUP"
     fi
 }
 
@@ -78,7 +82,7 @@ trap_cleanup() {
 }
 
 parse_cli() {
-    parse_cli_common "${@}"
+    parse_cli_common
     if [[ -z ${docker_binary} ]];then
         die "no docker, install it first"
     fi
@@ -93,26 +97,51 @@ main() {
     fi
     myinput=
     while true; do
-        vv "${docker_binary}" run \
-            -e "CORPUSOPS_W=${W}"\
-            -e CORPUSOPS_IN_DEV=1\
-            --name="$n" \
-            $( while read v; do echo " -v ${v}:${v}:ro";done < \
-                 <( ldd "${docker_binary}" | awk '{print $3}' | egrep '^/'; )
-            )\
-            $( if [[ "${OW}" == "${W}" ]];then
-                while read v; do echo " -v ${v}:${v}:ro";done < \
-                    <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
-               fi
-            )\
-            -v "${docker_binary}:${docker_binary}" \
-            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
-            -v "/var/lib/docker:/var/lib/docker" \
-            -v "/var/run/docker:/var/run/docker" \
-            -v "/var/run/docker.sock:/var/run/docker.sock" \
-            -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
-            -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
-            "${docker_args}" "${img}" "${@}"
+        if [[ -n "${img_args}" ]]; then
+            vv "${docker_binary}" run \
+                -e "CORPUSOPS_W=${W}"\
+                -e CORPUSOPS_IN_DEV=1\
+                --name="$n" \
+                $( while read v; do echo " -v ${v}:${v}:ro";done < \
+                    <( ldd "${docker_binary}" | awk '{print $3}' | egrep '^/'; )
+                )\
+                $( if [[ "${OW}" == "${W}" ]];then
+                    while read v; do echo " -v ${v}:${v}:ro";done < \
+                        <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
+                fi
+                )\
+                -v "${docker_binary}:${docker_binary}" \
+                -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+                -v "/var/lib/docker:/var/lib/docker" \
+                -v "/var/run/docker:/var/run/docker" \
+                -v "/var/run/docker.sock:/var/run/docker.sock" \
+                -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
+                -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
+                "${docker_args}" "${img}" "${img_args}"
+        else
+            vv "${docker_binary}" run \
+                -e "CORPUSOPS_W=${W}"\
+                -e CORPUSOPS_IN_DEV=1\
+                --name="$n" \
+                $( while read v; do echo " -v ${v}:${v}:ro";done < \
+                    <( ldd "${docker_binary}" \
+                       | egrep -v "libc.so|libpthread.so" \
+                       | awk '{print $3}' | egrep '^/'; )
+                )\
+                $( if [[ "${OW}" == "${W}" ]];then
+                    while read v; do echo " -v ${v}:${v}:ro";done < \
+                        <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
+                fi
+                )\
+                -v "${docker_binary}:${docker_binary}" \
+                -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+                -v "/var/lib/docker:/var/lib/docker" \
+                -v "/var/run/docker:/var/run/docker" \
+                -v "/var/run/docker.sock:/var/run/docker.sock" \
+                -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
+                -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
+                "${docker_args}" "${img}"
+        fi
         save_container $n
         imgid=$(get_image "${n}")
         if [[ -n ${imgid} ]]; then
@@ -129,7 +158,7 @@ main() {
     done
 }
 
-docker_binary=${docker_binary:-$(which docker)}
+docker_binary=${docker_binary:-$(get_command docker)}
 docker_args=${docker_args-}
 default_systemd_ep=/sbin/cops_systemd_entry_point.sh
 default_img="corpusops/ubuntu:16.04"
@@ -142,8 +171,10 @@ rootfs_mp="${rootfs_mp:-/HOST_ROOTFS}"
 cwd_mp="${cwd_mp:-/HOST_CWD}"
 cwd_mount_mode="${rootfs_mount_mode:-}"
 default_ep=$W/hacking/container_rootfs/$default_systemd_ep
+img_args="${@}"
 
 parse_cli "${@}"
 trap trap_cleanup SIGQUIT SIGINT SIGTERM
+
 main
 # vim:set et sts=4 ts=4 tw=80:
