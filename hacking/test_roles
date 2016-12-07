@@ -36,30 +36,15 @@ success_roles=""
 role_num=0
 
 tmp_files=""
+tmp_dockers=""
 tmp_imgs=""
-
-do_cleanup() {
-    log "Tests cleanup"
-    for tmp_file in ${tmp_files};do
-        if [ -e "${tmp_file}" ]; then
-            vv rm -f "${tmp_file}"
-        fi
-    done
-    for test_tag in ${tmp_imgs};do
-        test_tagid=$(vvv get_image ${test_tag})
-        if [[ "${test_tagid}" != "" ]]; then
-            log "Removing produced test image: ${test_tagid}"
-            docker rmi "${test_tagid}"
-        fi
-    done
-}
 
 post_cleanup() {
     rc=${?}
     if [[ -n "${NO_CLEANUP}" ]]; then
         log "Skip Post tests cleanup"
     else
-        do_cleanup
+        do_tmp_cleanup "${tmp_files}" "${tmp_dockers}" "${tmp_imgs}"
     fi
     exit ${rc}
 }
