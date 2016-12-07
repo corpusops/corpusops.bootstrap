@@ -225,7 +225,7 @@ do_tmp_cleanup() {
     local tmp_dockers=$2
     local tmp_files=$1
     local tmp_imgs=$3
-    log "Tests cleanup"
+    log "Post cleanup"
     for tmp_file in ${tmp_files};do
         if [ -e "${tmp_file}" ]; then
             vv rm -f "${tmp_file}"
