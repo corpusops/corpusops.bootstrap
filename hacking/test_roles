@@ -18,6 +18,7 @@ against a set of docker \$IMAGES.
  [NO_FORCE_USER_TAG=] \
  [IMAGES=xxx] \
  [ROLES_TO_TEST=]\
+ [NOT_IN_DOCKER=]
  [ROLE_DOCKERFILE_TEMPLATE=xxx]
  [NOCOLOR=y] \
  [DEBUG=y] \
@@ -36,34 +37,16 @@ success_roles=""
 role_num=0
 
 tmp_files=""
+tmp_dockers=""
 tmp_imgs=""
 
-do_cleanup() {
-    log "Tests cleanup"
-    for tmp_file in ${tmp_files};do
-        if [ -e "${tmp_file}" ]; then
-            vv rm -f "${tmp_file}"
-        fi
-    done
-    for test_tag in ${tmp_imgs};do
-        test_tagid=$(vvv get_image ${test_tag})
-        if [[ "${test_tagid}" != "" ]]; then
-            log "Removing produced test image: ${test_tagid}"
-            docker rmi "${test_tagid}"
-        fi
-    done
-}
-
-post_cleanup() {
-    rc=${?}
+post_tests_cleanup() {
     if [[ -n "${NO_CLEANUP}" ]]; then
         log "Skip Post tests cleanup"
     else
-        do_cleanup
+        vvv do_tmp_cleanup "${tmp_files}" "${tmp_dockers}" "${tmp_imgs}"
     fi
-    exit ${rc}
 }
-trap post_cleanup SIGQUIT SIGINT SIGTERM
 
 dockerfile_template() {
     role=$1
@@ -76,14 +59,38 @@ dockerfile_template() {
     echo "$r"
 }
 
-rewrite_role_dockerfile() {
-    role_num=$((role_num+1))
-    image="${1}"
-    role="${2}"
-    rolename="$(basename $role)"
-    template="${3}"
+testscript_template() {
+    role=$1
+    t="${role}/testcript"
+    if [ -e "$t" ];then
+        r="$t"
+    else
+        r="${ROLE_TESTSCRIPT_TEMPLATE}"
+    fi
+    echo "$r"
+}
+
+rewrite_role_file() {
+    local cops_root=${COPS_ROOT}
+    local role_num=$((role_num+1))
+    local image="${1}"
+    local role="${2}"
+    local rolename="$(basename $role)"
+    local template="${3}"
+    local role_script="${4}"
+    local roles_wd=$( cd "${role}" && cd .. && pwd )
+    local rolesd=$( basename "${roles_wd}" )
+    if echo "${rolesd}" | egrep -q '^roles?'; then
+        roles_wd=$( cd "${roles_wd}/.." && pwd )
+    fi
+    if [[ -n ${NOT_IN_DOCKER} ]]; then
+        cops_root=${W}
+    fi
     rewrite_dockerfile "${template}" "${image}" |\
         sed -r\
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
+        -e "s|__ROLE_SCRIPT__|${role_script}|g" \
+        -e "s|__ROLES_WD__|${roles_wd}|g" \
         -e "s|__ROLEPATH__|${role}|g" \
         -e "s|__ROLENAME__|${rolename}|g"\
         -e "s|__ROLE_NUM__|${role_num}|g"
@@ -107,18 +114,31 @@ test_role() {
     fi
     rolename="$(basename ${role})"
     dockerfile="$(dockerfile_template $role)"
+    testscript="$(testscript_template $role)"
     tmpstr=$(get_random_slug 8)
     tmpdockerfile=${role}/dockerfile.testtmp.${tmpstr}
+    tmptestscript=${role}/testscript.testtmp.${tmpstr}
     raw_test_tag=$(basename ${tmpdockerfile}):copstest
     raw_test_tag=${raw_test_tag//*dockerfile.testtmp./${rolename}}
     test_tag=$(cleanup_docker_tag $raw_test_tag)
-    vv rewrite_role_dockerfile "${image}" "${role}" "${dockerfile}" > "${tmpdockerfile}"
+    vv rewrite_role_file \
+        "${image}" "${role}" "${dockerfile}" "${tmptestscript}"\
+        > "${tmpdockerfile}"
+    vv rewrite_role_file \
+        "${image}" "${role}" "${testscript}" "${tmptestscript}"\
+        > "${tmptestscript}"
+    chmod +x "${tmptestscript}"
     local rret=$?
-    tmp_files="${tmp_files} ${tmpdockerfile}"
+    tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
     if [[ ${rret} == 0 ]]; then
-        vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
-        rret=${?}
-        tmp_imgs="${tmp_imgs} ${test_tag}"
+        if [[ -z ${NOT_IN_DOCKER-} ]]; then
+            vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
+            rret=${?}
+            tmp_imgs="${tmp_imgs} ${test_tag}"
+        else
+            ( cd "${role}" && ${tmptestscript} )
+            rret=${?}
+        fi
     fi
     return ${rret}
 }
@@ -149,7 +169,8 @@ while read image_line;do
         # XXX We can make this parralel to speed up builds
         for role in ${roles_to_tests};do
             test_slug=${image}::${role}
-            ( NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
+            ( do_trap post_tests_cleanup EXIT;
+              NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
                  test_role ${image} ${role}; )
             if [[ $? != 0 ]];then
                 ret=1

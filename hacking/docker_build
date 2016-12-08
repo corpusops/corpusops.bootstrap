@@ -12,6 +12,7 @@ Wrapper to docker build, but will also try to squash any created layer up
 
  [NOCOLOR=y] \
  [NO_BUILD=y] \
+ [FORCE_REPULL=y] \
  [FORCE_REBUILD=y] \
  [NO_SQUASH=y] \
  [NO_SQUASH_CLEANUP=y] \
@@ -110,19 +111,23 @@ if egrep -q ^FROM "${dockerfile}"; then
 fi
 
 if [[ -n "${ancestor}" ]]; then
-    vv docker pull "${ancestor}"
-    ret=${?}
-    ancestor_id=$(get_docker_id "${ancestor}")
+    ancestor_id=$(get_docker_ids "${ancestor}")
+    ret=0
+    if [[ -n "${FORCE_REPULL-}" ]] || [[ "${ancestor_id}" == "" ]]; then
+        vv docker pull "${ancestor}"
+        ret=${?}
+        ancestor_id=$(get_docker_ids "${ancestor}")
+    fi
     if [[ ${ret} != 0 ]]; then
-        if [[ "${ancestor_id}" == "" ]]; then
-            die "docker pull ${ancestor} failed"
-        else
+        if [[ "${ancestor_id}" != "" ]]; then
             warn "docker pull ${ancestor} failed"
             warn "but tag exists locally, using it"
         fi
     fi
-    debug "Ancestor ${CYAN}${ancestor}"
-    debug "Ancestor id: ${CYAN}${ancestor_id}"
+    if [[ "${ancestor_id}" == "" ]]; then
+        die "docker image: ${ancestor} not found"
+    fi
+    log "Ancestor ${CYAN}${ancestor} (id: ${ancestor_id})"
 fi
 
 if [[ -z ${NO_BUILD} ]]; then

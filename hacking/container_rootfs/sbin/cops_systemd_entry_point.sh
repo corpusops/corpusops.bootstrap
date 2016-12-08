@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -ex
-W=${CORPUSOPS_W:-/srv/corpusops/corpusops.bootstrap}
+W=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 R=$W/hacking/container_rootfs
 $W/bin/cops_pkgmgr_install.sh \
     "iproute2 strace socat less rsync"

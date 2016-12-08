@@ -342,8 +342,8 @@ done
 # search resetpassword script from wezll known places
 # but default to /sbin
 for RP in \
- /srv/corpusops/corpusops.bootstrap/bin/corps_reset_passwords.sh \
- /sbin/corps_reset_passwords.sh \
+ /srv/corpusops/corpusops.bootstrap/bin/cops_reset_passwords.sh \
+ /sbin/cops_reset_passwords.sh \
  ;do if [ -e "${RP}" ];then break;fi;done
 # if we found the password reset flag, reset any password found
 if [ -e "${RP}" ] || [[ -n "${WANT_PASSWORD_RESET}" ]]; then

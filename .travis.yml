@@ -11,8 +11,24 @@ python: "2.7"
 before_install:
   - sudo apt-get update -qq
 install:
-  - bin/install.sh -C -S -b "$(git log HEAD|head -n1|awk '{print $2}')"
+  - |
+    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+        debug "Is a travis pull request, use changeset: ${changeset}"
+    else
+        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+    fi
+    export CORPUSOPS_BRANCH
+    bin/install.sh -C -S
 script:
-  - hacking/test_script
+  - |
+    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+        debug "Is a travis pull request, use changeset: ${changeset}"
+    else
+        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+    fi
+    export CORPUSOPS_BRANCH
+    hacking/test_script
 after_success:
   - DEBUG=1 hacking/docker_release

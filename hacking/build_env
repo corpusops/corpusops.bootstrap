@@ -5,6 +5,7 @@ sc=bin/cops_shell_common
 . $sc || exit 1
 
 
+COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 DOCKERFILES_FOLDER="${DOCKERFILES_FOLDER:-docker}"
 DOCKER_USER=${DOCKER_USER:-corpusops}
 DOCKER_RELEASER=${DOCKER_RELEASER-corpusopsreleaser}
@@ -35,6 +36,7 @@ SQUASHER_PY="$W/venv/bin/docker-squash"
 BASE_IMAGES="debian:latest debian:jessie ubuntu:latest ubuntu:16.04 ubuntu:14.04"
 DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
+ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
 BASE_ROLES="\
 corpusops.debug
 corpusops.humanlog
@@ -48,6 +50,8 @@ corpusops.localsettings_basepkgs_vars
 corpusops.localsettings_basepkgs
 corpusops.localsettings_dns_vars
 corpusops.localsettings_dns
+corpusops.localsettings_jdk_vars
+corpusops.localsettings_jdk
 corpusops.localsettings_editor_vars
 corpusops.localsettings_etckeeper_vars
 corpusops.localsettings_etckeeper
@@ -70,14 +74,12 @@ corpusops.localsettings_sudo
 corpusops.localsettings_sysctls_vars
 corpusops.localsettings_vim_vars
 corpusops.localsettings_vim"
-# corpusops.localsettings_jdk_vars
-# corpusops.localsettings_jdk
 
-# Skipped for now as not run in docker
-# corpusops.localsettings_editor
-# corpusops.services_virt_docker
-# corpusops.localsettings_sysctls
-# corpusops.services_base_ntp
+NOT_IN_DOCKER_ROLES="\
+corpusops.localsettings_editor
+corpusops.services_virt_docker
+corpusops.localsettings_sysctls
+corpusops.services_base_ntp"
 
 SERVICES_ROLES="\
 corpusops.localsettings_pkgmgr_vars
@@ -188,9 +190,11 @@ add_preprovision_slug() {
 rewrite_dockerfile() {
     local template=${1}
     local image=${2}
+    local cops_root=${3:-${COPS_ROOT}}
     local image_preprovision=$(add_preprovision_slug ${image})
     sed -r \
         -e "/__STRIPME__/d" \
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__IMAGE__|${image}|g" \
         -e "s|__IMAGE_PREPROVISION__|$(may_prepend_docker_user_to_image \
                 ${image_preprovision})|g" \

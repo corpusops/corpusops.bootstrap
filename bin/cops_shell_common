@@ -31,6 +31,29 @@ has_command() {
     return ${ret}
 }
 
+get_command() {
+    local p=
+    local cmd="${@}"
+    if which which >/dev/null 2>/dev/null;then
+        p=$(which "${cmd}" 2>/dev/null)
+    fi
+    if [ "x${p}" = "x" ];then
+        p=$(export IFS=:;
+            echo "${PATH-}" | while read -ra pathea;do
+                for pathe in "${pathea[@]}";do
+                    pc="${pathe}/${cmd}";
+                    if [ -x "${pc}" ]; then
+                        p="${pc}"
+                    fi
+                done
+                if [ "x${p}" != "x" ]; then echo "${p}";break;fi
+            done )
+    fi
+    if [ "x${p}" != "x" ];then
+        echo "${p}"
+    fi
+}
+
 get_random_slug() {
     len=${1:-32}
     strings=${2:-'a-zA-Z0-9'}
@@ -162,8 +185,66 @@ get_image() {
     get_images "${@}" | head -n 1
 }
 
-get_docker_id() {
+get_docker_ids() {
     docker inspect -f '{{.Id}}' "${@}" 2>/dev/null
+}
+
+sane_container_name() {
+    local n=${1}
+    n=${n//:/}
+    n=${n//_/}
+    n=${n//-/}
+    n=${n//\//}
+    n=${n//\./}
+    echo $n
+}
+
+get_container_id() {
+    local n=${1}
+    local cid=$(docker     ps -q -a --filter 'name='$n)
+    echo "${cid}"
+}
+
+save_container() {
+    local n="${1}"
+    local d="${2:-${n}}"
+    local running=$(docker ps -q    --filter 'name='$n)
+    if [[ -n "${running}" ]];then
+        vv docker kill "${running}"
+    fi
+    local cid=$(get_container_id $n)
+    if [[ -n "${cid}" ]];then
+        vv docker commit "$cid" "$d"
+        vv docker rm "$cid"
+    else
+        img=${initial_img}
+    fi
+}
+
+do_tmp_cleanup() {
+    local tmp_dockers=$2
+    local tmp_files=$1
+    local tmp_imgs=$3
+    log "Post cleanup"
+    for tmp_file in ${tmp_files};do
+        if [ -e "${tmp_file}" ]; then
+            vv rm -f "${tmp_file}"
+        fi
+    done
+    for test_docker in ${tmp_dockers};do
+        test_dockerid=$(vvv get_container_id ${test_docker})
+        if [[ "${test_dockerid}" != "" ]]; then
+            log "Removing produced test docker ${test_docker}"
+            docker rm -f "${test_dockerid}"
+        fi
+    done
+    for test_tag in ${tmp_imgs};do
+        test_tagid=$(vvv get_image ${test_tag})
+        if [[ "${test_tagid}" != "" ]]; then
+            log "Removing produced test image: ${test_tag}"
+            docker rmi "${test_tagid}"
+        fi
+    done
 }
 
 detect_os() {
@@ -256,6 +337,27 @@ get_git_branch() {
      git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
      git describe --exact-match HEAD 2> /dev/null || \
      git rev-parse HEAD)
+}
+
+do_trap_() {
+    rc=$?
+    func=$1
+    sig=$2
+    ${func}
+    if [ "x${sig}" != "xEXIT" ];then
+        kill -${sig} $$
+    fi
+    exit $rc
+}
+
+do_trap() {
+    rc=${?}
+    func=${1}
+    shift
+    sigs=${@}
+    for sig in ${sigs};do
+        trap "do_trap_ ${func} ${sig}" "${sig}"
+    done
 }
 
 detect_os no_fail
