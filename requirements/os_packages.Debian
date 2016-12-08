@@ -1,7 +1,6 @@
 acl
 autoconf
 automake
-build-essential
 bzip2
 curl
 debconf-utils
@@ -26,3 +25,5 @@ rsync
 swig
 tcl8.5
 ca-certificates
+build-essential
+binutils
