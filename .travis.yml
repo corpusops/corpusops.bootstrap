@@ -16,10 +16,8 @@ install:
     env | egrep -q TRAVIS | sort -u | sed -re "s/^/  /g" >&2
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        echo "Is a travis pull request" >&2
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
     else
-        echo "Is not a travis pull request" >&2
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
     echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
@@ -28,12 +26,11 @@ install:
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        echo "Is a travis pull request" >&2
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
     else
-        echo "Is not a travis pull request" >&2
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
+    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
     hacking/test_script
 after_success:
