@@ -5,6 +5,7 @@ sc=bin/cops_shell_common
 . $sc || exit 1
 
 
+COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 DOCKERFILES_FOLDER="${DOCKERFILES_FOLDER:-docker}"
 DOCKER_USER=${DOCKER_USER:-corpusops}
 DOCKER_RELEASER=${DOCKER_RELEASER-corpusopsreleaser}
@@ -188,9 +189,11 @@ add_preprovision_slug() {
 rewrite_dockerfile() {
     local template=${1}
     local image=${2}
+    local cops_root=${3:-${COPS_ROOT}}
     local image_preprovision=$(add_preprovision_slug ${image})
     sed -r \
         -e "/__STRIPME__/d" \
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__IMAGE__|${image}|g" \
         -e "s|__IMAGE_PREPROVISION__|$(may_prepend_docker_user_to_image \
                 ${image_preprovision})|g" \

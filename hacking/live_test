@@ -76,9 +76,7 @@ cleanup() {
 }
 
 trap_cleanup() {
-    rc=$?
     ( CLEANUP="${FINAL_CLEANUP-${CLEANUP}}" cleanup $n )
-    exit $rc
 }
 
 parse_cli() {
@@ -174,7 +172,7 @@ default_ep=$W/hacking/container_rootfs/$default_systemd_ep
 img_args="${@}"
 
 parse_cli "${@}"
-trap trap_cleanup SIGQUIT SIGINT SIGTERM
+do_trap trap_cleanup EXIT
 
 main
 # vim:set et sts=4 ts=4 tw=80:
