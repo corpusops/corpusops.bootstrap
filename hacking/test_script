@@ -53,6 +53,7 @@ if [[ -n "${NO_NOT_IN_DOCKER_ROLES_TEST}" ]];then
     log "Skipping not in docker roles test step"
 else
     ret=0
+    if [[ -n $TRAVIS ]]; then NOT_IN_DOCKER_ROLES=;fi
     for i in ${NOT_IN_DOCKER_ROLES}; do
         if ! NOT_IN_DOCKER=1 vv \
                 hacking/test_roles "${W}/roles/${i}"; then
