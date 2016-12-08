@@ -107,7 +107,11 @@ main() {
             )\
             $( if [[ "${OW}" == "${W}" ]];then
                 while read v; do echo " -v ${v}:${v}:ro";done < \
-                    <( find "${W}" -maxdepth 1 -mindepth 1|grep -v venv; )
+                    <( find "${W}" -maxdepth 1 -mindepth 1 \
+                       | egrep -v 'venv|requirements|/.corpusops'; )
+                while read v; do echo " -v ${v}:${v}:rw";done < \
+                    <( find "${W}" -maxdepth 1 -mindepth 1 \
+                       | grep requirements; )
             fi
             )\
             -v "${docker_binary}:${docker_binary}" \
