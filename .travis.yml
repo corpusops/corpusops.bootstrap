@@ -13,7 +13,7 @@ before_install:
 install:
   - |
     echo "TRAVIS_ENV_VARS:" >&2
-    env | egrep -q TRAVIS | sort -u | sed -re "s/^/  /g" >&2
+    env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
