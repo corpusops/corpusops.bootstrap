@@ -11,6 +11,8 @@ python: "2.7"
 before_install:
   - sudo apt-get update -qq
 install:
+  - echo "TRAVIS_ENV_VARS:" >&2
+  - env | egrep -q TRAVIS | sort -u | sed -re "s/^/  /g" >&2
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
         echo "Is a travis pull request" >&2
