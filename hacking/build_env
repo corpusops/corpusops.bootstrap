@@ -223,11 +223,6 @@ esac
 
 reset_colors
 
-if [[ -n "${TRAVIS-}" ]]; then
-    CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-    export CORPUSOPS_BRANCH
-fi
-
 export DOCKERFILE_TEMPLATE
 export DOCKER_USER
 export DOCKER_FOLDER
