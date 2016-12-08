@@ -13,19 +13,22 @@ before_install:
 install:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        echo "Is a travis pull request" >&2
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-        debug "Is a travis pull request, use changeset: ${changeset}"
     else
+        echo "Is not a travis pull request" >&2
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
+    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
-    bin/install.sh -C -S
+    bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        echo "Is a travis pull request" >&2
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-        debug "Is a travis pull request, use changeset: ${changeset}"
     else
+        echo "Is not a travis pull request" >&2
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
     export CORPUSOPS_BRANCH
