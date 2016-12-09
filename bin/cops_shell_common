@@ -248,6 +248,7 @@ do_tmp_cleanup() {
 }
 
 detect_os() {
+    # this function should be copiable in other scripts, dont use adjacent functions
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
     SED="sed"
@@ -256,13 +257,16 @@ detect_os() {
     fi
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
+    DISTRIB_RELEASE=""
     if hash -r lsb_release >/dev/null 2>&1; then
         DISTRIB_ID=$(lsb_release -si)
         DISTRIB_CODENAME=$(lsb_release -sc)
         DISTRIB_RELEASE=$(lsb_release -sr)
     elif [ -e /etc/lsb-release ];then
-        log "No lsb_release, sourcing manually /etc/lsb-release"
-        . /etc/lsb-release
+        debug "No lsb_release, sourcing manually /etc/lsb-release"
+        DISTRIB_ID=$(. /etc/lsb-release;echo ${DISTRIB_ID})
+        DISTRIB_CODENAME=$(. /etc/lsb-release;echo ${DISTRIB_CODENAME})
+        DISTRIB_RELEASE=$(. /etc/lsb-release;echo ${DISTRIB_RELEASE})
     elif [ -e /etc/os-release ];then
         DISTRIB_ID=$(. /etc/os-release;echo $ID)
         DISTRIB_CODENAME=$(. /etc/os-release;echo $VERSION)
