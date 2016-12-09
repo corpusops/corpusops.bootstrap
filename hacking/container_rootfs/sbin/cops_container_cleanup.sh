@@ -1,9 +1,45 @@
 #!/usr/bin/env bash
-if [ -f /etc/lsb-release ];then . /etc/lsb-release;fi
+detect_os() {
+    # this function should be copiable in other scripts, dont use adjacent functions
+    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
+    PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+    SED="sed"
+    if [ "x${UNAME}" != "xlinux" ] && has_command gsed; then
+        SED=gsed
+    fi
+    DISTRIB_CODENAME=""
+    DISTRIB_ID=""
+    DISTRIB_RELEASE=""
+    if hash -r lsb_release >/dev/null 2>&1; then
+        DISTRIB_ID=$(lsb_release -si)
+        DISTRIB_CODENAME=$(lsb_release -sc)
+        DISTRIB_RELEASE=$(lsb_release -sr)
+    elif [ -e /etc/lsb-release ];then
+        debug "No lsb_release, sourcing manually /etc/lsb-release"
+        DISTRIB_ID=$(. /etc/lsb-release;echo ${DISTRIB_ID})
+        DISTRIB_CODENAME=$(. /etc/lsb-release;echo ${DISTRIB_CODENAME})
+        DISTRIB_RELEASE=$(. /etc/lsb-release;echo ${DISTRIB_RELEASE})
+    elif [ -e /etc/os-release ];then
+        DISTRIB_ID=$(. /etc/os-release;echo $ID)
+        DISTRIB_CODENAME=$(. /etc/os-release;echo $VERSION)
+        DISTRIB_CODENAME=$(echo $DISTRIB_CODENAME |sed -e "s/.*(\([^)]\+\))/\1/")
+        DISTRIB_RELEASE=$(. /etc/os-release;echo $VERSION_ID)
+    elif [ -e /etc/redhat-release ];then
+        RHRELEASE=$(cat /etc/redhat-release)
+        DISTRIB_CODENAME=${RHRELEASE}
+        DISTRIB_RELEASE=${RHRELEASE}
+        DISTRIB_ID=${RHRELEASE}
+        DISTRIB_CODENAME=$(echo $DISTRIB_CODENAME |sed -e "s/.*(\([^)]\+\))/\1/")
+        DISTRIB_RELEASE=$(echo $DISTRIB_RELEASE |sed -e "s/release \([0-9]\)/\1/")
+        DISTRIB_ID=$(echo $DISTRIB_ID | awk '{print tolower($1)}')
+    else
+        if ! ( echo ${@-} | grep -q no_fail );then
+            die "unespected case, no lsb_release"
+        fi
+    fi
+}
+detect_os
 
-DISTRIB_ID=$( lsb_release -si       2>/dev/null || echo "${DISTRIB_ID-default}")
-DISTRIB_CODENAME=$( lsb_release -sc 2>/dev/null || echo "${DISTRIB_CODENAME-default}")
-DISTRIB_RELEASE=$( lsb_release -sr  2>/dev/null || echo "${DISTRIB_RELEASE-"14.04"}" )
 is_docker=""
 is_upstart=""
 
@@ -251,7 +287,7 @@ fi
 
 
 # Disable harmful sysctls
-syscfgs="/etc/sysctl.conf"
+syscfgs="$([[ -e /etc/sysctl.conf ]] && echo /etc/sysctl.conf)"
 if [ -e /etc/sysctl.d ];then
     syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
 fi
