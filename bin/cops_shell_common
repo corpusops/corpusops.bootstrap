@@ -385,5 +385,21 @@ do_trap() {
     done
 }
 
+version_lte() {
+    [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
+}
+
+verseion_lt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+
+version_gte() {
+    [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
+}
+
+verseion_gt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+
 detect_os no_fail
 # vim:set et sts=4 ts=4 tw=80:
