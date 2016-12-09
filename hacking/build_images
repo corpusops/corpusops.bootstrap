@@ -49,7 +49,7 @@ build_image() {
 }
 
 parse_cli() {
-    parse_cli_common
+    parse_cli_common "${@}"
     if [[ -z "${IMAGES-}" ]];then
         die 3 "No IMAGES en var found nor any valid Dockerfile" \
             ", error, bailing out"

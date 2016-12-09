@@ -256,7 +256,7 @@ rh_setup() {
 
 ###
 parse_cli() {
-    parse_cli_common
+    parse_cli_common "${@}"
     if [ "x${DEBIAN_FRONTEND-}" = "noninteractive" ] \
         || [ "x${container-}" = "xdocker" ];then
         NONINTERACTIVE=y
