@@ -12,6 +12,16 @@ CORPUSOPS_VERSION="1.0"
 THIS="$(readlink -f "${0}")"
 LAUNCH_ARGS=${@}
 
+ensure_last_virtualenv() {
+    venv=$(get_command virtualenv)
+    if [[ "x${venv}" == "x/usr/bin/virtualenv" ]] && is_redhat_like; then
+        if version_lt "$(virtualenv --version)" "15.1.0"; then
+			log "Installing last version of virtualenv"
+			$(may_sudo) easy_install -U virtualenv
+        fi
+    fi
+}
+
 bs_log(){
     log_ "${RED}" "${YELLOW}" "${@}"
 }
@@ -362,6 +372,7 @@ synchronize_code() {
 }
 
 setup_virtualenv() {
+    ensure_last_virtualenv
     if [ "x${DO_SETUP_VIRTUALENV}" != "xy" ]; then
         bs_log "virtualenv setup skipped"
         return 0
