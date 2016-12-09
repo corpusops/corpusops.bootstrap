@@ -283,6 +283,18 @@ detect_os() {
     fi
 }
 
+is_archlinux_like() {
+    echo $DISTRIB_ID | egrep -iq "archlinux"
+}
+
+is_debian_like() {
+    echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"
+}
+
+is_redhat_like() {
+    echo $DISTRIB_ID | egrep -iq "fedora|centos|redhat|red-hat"
+}
+
 filtered_ansible_playbook_custom() {
     filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
     shift
