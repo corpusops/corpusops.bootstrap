@@ -69,7 +69,7 @@ FILE_WIPE="
 # just delete/create the caches is sufficient
 TO_RECREATE=""
 
-FIND_EXCLUDES="^/HOST_.*|.*lib/(lxc|docker)/*"
+FIND_EXCLUDES="/mnt|/HOST_(CWD|(ROOT)*FS)|.*lib/(lxc|docker).*"
 
 # wipe various histories
 if [[ -z "${NO_HISTORIES_WIPE-}" ]];then

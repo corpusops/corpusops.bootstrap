@@ -5,6 +5,17 @@
 set -ex
 es=/etc/systemd/system
 services="container-stop container-start"
+
+symlink() {
+    orig=${1}
+    tgt=${2}
+    if test -h "${tgt}" && [[ "x$(readlink -f "${tgt}")" == "x${orig}" ]]; then
+        :
+    else
+        ln -sfv "${orig}" "${tgt}"
+    fi
+}
+
 if [ -e /lib/systemd/systemd ];then
     for s in $services;do
         case $s in
@@ -16,7 +27,7 @@ if [ -e /lib/systemd/systemd ];then
         if [ ! -e "${d}" ];then
             mkdir -pv "${w}"
         fi
-        ln -vs "$es/$s.service" "${w}/$s.service"
+        symlink "$es/$s.service" "${w}/$s.service"
     done
 else
     if LC_ALL=C LANG=C /sbin/init --help 2>&1 | grep -iq upstart;then
