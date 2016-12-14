@@ -31,6 +31,7 @@ If the name is missing, the tag will take the name of the "top folder".
  [NO_OLD_IMAGE_CLEANUP=y] \
  [DEBUG=y] \
  [IMAGES="ubuntu:16.04"] \
+ [SKIP_IMAGES="ubuntu:16.04"] \
     '"$0"' [docker_folder] [docker_folder]
 '
 }
@@ -99,12 +100,22 @@ for docker_folder in ${DOCKER_FOLDERS};do
             build=1
             if [[ -n ${IMAGES} ]]; then
                 build=
+                # when images is set, filter out non wanted images
                 for img in ${IMAGES};do
                     if [[ "${img}" == "${timg}" ]]; then
                         build=1
                         break
                     fi
                 done
+                # when skip images is set, filter out non wanted images
+                if [[ -n "${build}" ]]; then
+                    for img in ${SKIP_IMAGES-};do
+                        if [[ "${img}" == "${tag}" ]]; then
+                            build=
+                            break
+                        fi
+                    done
+                fi
             fi
             if [[ -z ${build} ]]; then
                 debug "Skip: ${tag}"
