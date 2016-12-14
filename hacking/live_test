@@ -108,10 +108,10 @@ main() {
             $( if [[ "${OW}" == "${W}" ]];then
                 while read v; do echo " -v ${v}:${v}:ro";done < \
                     <( find "${W}" -maxdepth 1 -mindepth 1 \
-                       | egrep -v "${W}/src|venv|requirements|/.corpusops"; )
+                    | egrep -v "${W}/src|venv|requirements|roles|playbooks|/.corpusops"; )
                 while read v; do echo " -v ${v}:${v}:rw";done < \
                     <( find "${W}" -maxdepth 1 -mindepth 1 \
-                       | egrep "${W}/src|${W}/requirements"; )
+                    | egrep "${W}/(src|requirements|roles|playbooks)"; )
             fi
             )\
             -v "${docker_binary}:${docker_binary}" \
@@ -121,7 +121,7 @@ main() {
             -v "/var/run/docker.sock:/var/run/docker.sock" \
             -v "${rootfs_start_dir}:${rootfs_mp}${rootfs_mount_mode}" \
             -v "${OW}:${cwd_mp}${cwd_mount_mode}" \
-            "${docker_args}" \
+            ${docker_args} \
             "${img}" \
             $( [[ -n "${img_args}" ]] && echo "${img_args}"; )
         save_container $n
