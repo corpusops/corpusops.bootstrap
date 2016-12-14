@@ -16,7 +16,7 @@ COPY requirements/os_* \
      /bootstrap/
 RUN step_rev=1;\
     :;\
-    . /etc/lsb-release;\
+    DISTRIB_ID=$(. /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
     REQS_PATH=/bootstrap;\
     WANTED_PACKAGES="$(cat $REQS_PATH/os_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_DOCKER_PACKAGES="$(cat $REQS_PATH/os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
@@ -47,6 +47,7 @@ RUN step_rev=2;set -e;cd ${COPS_ROOT};\
     set -x;\
     pip install -U pip;\
     pip install -U -r requirements/python_requirements.txt;\
+    set +x;\
     :;\
     /bootstrap/cops_container_snapshot.sh;
 
@@ -57,7 +58,7 @@ COPY bin ${COPS_ROOT}/bin
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
 RUN step_rev=2;set -ex;\
-    . /etc/lsb-release;\
+    DISTRIB_ID=$(set +x && . /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
     cd ${COPS_ROOT};\
     :;\
     if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then\
