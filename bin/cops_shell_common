@@ -252,7 +252,7 @@ detect_os() {
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
     SED="sed"
-    if [ "x${UNAME}" != "xlinux" ] && has_command gsed; then
+    if [ "x${UNAME}" != "xlinux" ] && hash -r gsed >/dev/null 2>&1; then
         SED=gsed
     fi
     DISTRIB_CODENAME=""
@@ -285,6 +285,7 @@ detect_os() {
             die "unespected case, no lsb_release"
         fi
     fi
+    export DISTRIB_ID DISTRIB_CODENAME DISTRIB_RELEASE
 }
 
 is_archlinux_like() {
