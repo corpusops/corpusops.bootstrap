@@ -1,13 +1,56 @@
 #!/usr/bin/env bash
-if [ -f /etc/lsb-release ];then . /etc/lsb-release;fi
+FIND_EXCLUDES="/mnt|/HOST_(CWD|(ROOT)*FS)|.*lib/(lxc|docker).*"
+detect_os() {
+    # this function should be copiable in other scripts, dont use adjacent functions
+    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
+    PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+    SED="sed"
+    if [ "x${UNAME}" != "xlinux" ] && has_command gsed; then
+        SED=gsed
+    fi
+    DISTRIB_CODENAME=""
+    DISTRIB_ID=""
+    DISTRIB_RELEASE=""
+    if hash -r lsb_release >/dev/null 2>&1; then
+        DISTRIB_ID=$(lsb_release -si)
+        DISTRIB_CODENAME=$(lsb_release -sc)
+        DISTRIB_RELEASE=$(lsb_release -sr)
+    elif [ -e /etc/lsb-release ];then
+        debug "No lsb_release, sourcing manually /etc/lsb-release"
+        DISTRIB_ID=$(. /etc/lsb-release;echo ${DISTRIB_ID})
+        DISTRIB_CODENAME=$(. /etc/lsb-release;echo ${DISTRIB_CODENAME})
+        DISTRIB_RELEASE=$(. /etc/lsb-release;echo ${DISTRIB_RELEASE})
+    elif [ -e /etc/os-release ];then
+        DISTRIB_ID=$(. /etc/os-release;echo $ID)
+        DISTRIB_CODENAME=$(. /etc/os-release;echo $VERSION)
+        DISTRIB_CODENAME=$(echo $DISTRIB_CODENAME |sed -e "s/.*(\([^)]\+\))/\1/")
+        DISTRIB_RELEASE=$(. /etc/os-release;echo $VERSION_ID)
+    elif [ -e /etc/redhat-release ];then
+        RHRELEASE=$(cat /etc/redhat-release)
+        DISTRIB_CODENAME=${RHRELEASE}
+        DISTRIB_RELEASE=${RHRELEASE}
+        DISTRIB_ID=${RHRELEASE}
+        DISTRIB_CODENAME=$(echo $DISTRIB_CODENAME |sed -e "s/.*(\([^)]\+\))/\1/")
+        DISTRIB_RELEASE=$(echo $DISTRIB_RELEASE |sed -e "s/release \([0-9]\)/\1/")
+        DISTRIB_ID=$(echo $DISTRIB_ID | awk '{print tolower($1)}')
+    else
+        if ! ( echo ${@-} | grep -q no_fail );then
+            die "unespected case, no lsb_release"
+        fi
+    fi
+}
+detect_os
 
-DISTRIB_ID=$( lsb_release -si       2>/dev/null || echo "${DISTRIB_ID-default}")
-DISTRIB_CODENAME=$( lsb_release -sc 2>/dev/null || echo "${DISTRIB_CODENAME-default}")
-DISTRIB_RELEASE=$( lsb_release -sr  2>/dev/null || echo "${DISTRIB_RELEASE-"14.04"}" )
 is_docker=""
 is_upstart=""
 
-if /sbin/init --help | grep -iq upstart; then
+init=/sbin/init
+for init in /usr/sbin/init /sbin/init; do
+    if test -e $init; then
+        break;
+    fi
+done
+if $init --help | grep -iq upstart; then
     is_upstart="y"
 fi
 for i in /.dockerinit /.dockerenv;do
@@ -93,6 +136,16 @@ if [ -f /etc/systemd/logind.conf ];then
     done
 fi
 
+symlink() {
+    orig=${1}
+    tgt=${2}
+    if test -h "${tgt}" && [[ "x$(readlink -f "${tgt}")" == "x${orig}" ]]; then
+        :
+    else
+        ln -sfv "${orig}" "${tgt}"
+    fi
+}
+
 # disabling useless and harmfull services instead of deleting them
 # - we must need to rely on direct file system to avoid relying on running
 #   system manager process(es) (pid: 1)
@@ -118,12 +171,11 @@ disable_service() {
             found="x"
             for candidate in ${d}/*/${s}.service ${d}/*/${s} ${d}/*/${sn};do
                 if test -e ${candidate};then
-                    ln -sfv /dev/null \
-                        "/etc/systemd/system/$(basename ${candidate})"
+                    symlink /dev/null "/etc/systemd/system/$(basename ${candidate})"
                 fi
             done
             if [ "x${found}" = "x" ];then
-                ln -sfv /dev/null "/etc/systemd/system/${s}.service"
+                symlink /dev/null "/etc/systemd/system/${s}.service"
             fi
         fi
         rm -vf "${d}/"*/*.wants/${s} || /bin/true
@@ -244,16 +296,16 @@ fi
 # Redirect console log to journald log
 if [ -e /run/systemd/journal/dev-log ] && [ -e /lib/systemd/systemd ];then
     if [ -e /dev/log ];then
-        rm -f /dev/lo
+        rm -f /dev/log
     fi
     ln -fs /run/systemd/journal/dev-log /dev/log
 fi
 
 
 # Disable harmful sysctls
-syscfgs="/etc/sysctl.conf"
+syscfgs="$([[ -e /etc/sysctl.conf ]] && echo /etc/sysctl.conf)"
 if [ -e /etc/sysctl.d ];then
-    syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
+    syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf 2>/dev/null)"
 fi
 for syscfg in ${syscfgs};do
     # if ! grep -q corpusops-cleanup "${syscfg}";then
@@ -275,7 +327,9 @@ done
 # If ssh keys were removed,
 # Be sure to have new keypairs before sshd (re)start
 ssh_keys=""
-find /etc/ssh/ssh_host_*_key -type f 2>/dev/null || ssh_keys="1"
+if ! find /etc/ssh/ssh_host_*_key -type f >/dev/null 2>&1;then
+    ssh_keys="1"
+fi
 if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
     echo "Regenerating SSHD keys" >&2
     ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
@@ -291,15 +345,6 @@ fi
 
 # UID accouting is broken in lxc, breaking in turn pam_ssh login
 sed -re "s/^(session.*\spam_loginuid\.so.*)/#\\1/g" -i /etc/pam.d/* || /bin/true
-# specific to docker
-if [ "x${is_docker}" != "x" ]; then
-    # redirecting console to docker log
-    for i in console tty0 tty1 tty2 tty3 tty4 tty5 tty6 tty7; do
-        rm -f /dev/${i} || /bin/true
-        ln -s /dev/tty /dev/${i} || /bin/true
-    done
-fi
-
 
 # If this isn't lucid, then we need to twiddle the network upstart bits :(
 if [ -f /etc/network/if-up.d/upstart ] &&\

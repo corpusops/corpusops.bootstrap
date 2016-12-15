@@ -33,7 +33,7 @@ SQUASHER_REV="05cd17fe639183e2986fa89b3ddb62bcf903cf2b"
 SQUASHER_FORK="https://github.com/goldmann/docker-squash.git"
 SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
 SQUASHER_PY="$W/venv/bin/docker-squash"
-BASE_IMAGES="debian:latest debian:jessie ubuntu:latest ubuntu:16.04 ubuntu:14.04"
+BASE_IMAGES="ubuntu:latest ubuntu:16.04 ubuntu:14.04 centos:7"
 DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
 ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
@@ -203,7 +203,7 @@ rewrite_dockerfile() {
 
 set_docker_folder
 if [[ -z "${IMAGES-}" ]]; then
-    if echo "${DOCKER_FOLDER}" | grep -q "${W}/?"; then
+    if echo "${DOCKER_FOLDER}" | egrep -q "${W}/?"; then
         IMAGES=${BASE_IMAGES}
     else
         IMAGES=$(get_images_from_folder "${DOCKER_FOLDER}")

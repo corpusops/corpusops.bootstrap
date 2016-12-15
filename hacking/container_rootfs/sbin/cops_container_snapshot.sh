@@ -69,6 +69,7 @@ FILE_WIPE="
 # just delete/create the caches is sufficient
 TO_RECREATE=""
 
+FIND_EXCLUDES="/mnt|/HOST_(CWD|(ROOT)*FS)|.*lib/(lxc|docker).*"
 
 # wipe various histories
 if [[ -z "${NO_HISTORIES_WIPE-}" ]];then
@@ -78,7 +79,8 @@ ${fic}
 "
     done < \
         <( find /root /home /var \
-        -name .bash_history -or -name .viminfo )
+            \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+            -o \( -name .bash_history -or -name .viminfo \) -print)
 fi
 
 
@@ -107,8 +109,9 @@ if [[ -z "${NO_PROJECTS_ARCHIVES_WIPE-}" ]];then
         while read i;do
             rm -rf "${i}" || /bin/true
         done < \
-            <( find /srv/projects/*/archives  \
-            -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+            <( find /srv/projects/*/archives -mindepth 1 -maxdepth 1 \
+            \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+            -o \( -type d \) -print 2>/dev/null)
     fi
 fi
 
@@ -150,7 +153,9 @@ if [[ -z "${NO_WIPE-}" ]]; then
                     rm -fv "${k}" || /bin/true
                 elif [ -f "${k}" ];then
                     while read fic;do rm -fv "${fic}" || /bin/true;done < \
-                        <( find "${k}" -type f 2>/dev/null )
+                        <( find "${k}" \
+                        \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+                        -o -type f -print 2>/dev/null )
                 elif [ -d "${k}" ];then
                     while read j;do
                         if [ ! -h "${j}" ];then
@@ -160,12 +165,14 @@ if [[ -z "${NO_WIPE-}" ]]; then
                         fi
                     done < \
                         <( find "${k}" -mindepth 1 -maxdepth 1 \
-                        -type d 2>/dev/null )
+                        \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+                        -o -type d -print 2>/dev/null )
                     while read j;do
                         rm -vf "${j}" || /bin/true
                     done < \
                         <( find "${i}" -mindepth 1 -maxdepth 1 \
-                        -type f 2>/dev/null)
+                        \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+                        -o -type f -print 2>/dev/null)
                 fi
             done < <(ls -1 ${i} 2>/dev/null)
         fi
@@ -178,7 +185,9 @@ if [[ -z "${NO_FILE_REMOVE-}" ]];then
     while read i;do
         if [ "x${i}" != "x" ];then
             while read f;do rm -f "${f}" || /bin/true;done < \
-                <( find "${i}" -type f 2>/dev/null )
+                <( find "${i}" \
+                \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+                -o -type f -print 2>/dev/null )
         fi
     done <<< "${FILE_REMOVE}"
 fi
@@ -188,7 +197,9 @@ if [[ -z "${NO_FILE_WIPE-}" ]];then
     while read i;do
         if [ "x${i}" != "x" ];then
             while read f;do echo > "${f}" || /bin/true;done < \
-                <( find "${i}" -type f 2>/dev/null )
+                <( find "${i}" \
+                \( -regextype posix-extended -regex "${FIND_EXCLUDES}"  -prune \) \
+                -o -type f -print 2>/dev/null )
         fi
     done <<< "${FILE_WIPE}"
 fi
@@ -219,7 +230,9 @@ if [[ -z "${NO_SSHHOME_WIPE-}" ]];then
             fi
             popd 1>/dev/null 2>&1
         fi
-    done < <( find / -name .ssh )
+    done < <( find / \
+           \( -regextype posix-extended -regex "${FIND_EXCLUDES}" -prune \) \
+           -or -name .ssh -print )
 fi
 
 # reset etckeeper
