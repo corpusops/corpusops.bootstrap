@@ -2,7 +2,9 @@
   vars:
     checkouts:
       - repo: '__CORPUSOPS_ORGA_URL__/include_jinja_vars.git'
-        dest: '{{prefix}}/roles/corpusops.include_jinja_vars'  
+        dest: '{{prefix}}/roles/corpusops.include_jinja_vars'
+      - repo: '__CORPUSOPS_ORGA_URL__/service.git'
+        dest: '{{prefix}}/roles/corpusops.service'
       - repo: '__CORPUSOPS_ORGA_URL__/actionhelper.git'
         dest: '{{prefix}}/roles/corpusops.actionhelper'
       - repo: '__CORPUSOPS_ORGA_URL__/lsb_release.git'
