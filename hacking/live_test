@@ -51,12 +51,13 @@ sane_container_name() {
 save_container() {
     local n="${1}"
     local d="${2:-${n}}"
-    local running=$(docker ps -q    --filter 'name='$n)
-    local cid=$(docker     ps -q -a --filter 'name='$n)
+    # name is prepended by slash as for now
+    local running=$(docker ps -q    --filter 'name=/?'$n'$')
+    local cid=$(docker     ps -q -a --filter 'name=/?'$n'$')
     if [[ -n "${running}" ]];then
         vv docker kill "$running"
     fi
-    local cid=$(docker     ps -q -a --filter 'name='$n)
+    local cid=$(docker     ps -q -a --filter 'name=/?'$n'$')
     if [[ -n "${cid}" ]];then
         vv docker commit "$cid" "$d"
         vv docker rm "$cid"
