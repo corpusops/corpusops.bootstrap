@@ -420,4 +420,14 @@ version_gt() {
 }
 
 detect_os no_fail
+
+if echo "${0}" | egrep -q 'cops_shell_common$';then
+    if declare -f "$1" >/dev/null 2>&1; then
+        ( cd "$(dirname "$(readlink -f ${0})")/.." &&\
+            "${@}" )
+    else
+        echo Could not find function for $@
+        exit 1
+    fi
+fi
 # vim:set et sts=4 ts=4 tw=80:
