@@ -67,17 +67,27 @@ save_container() {
 
 cleanup() {
     local n=$1
+    local CLEANUP_VARS="${CLEANUP_VARS:-"CLEANUP"}"
+    local CLEANUP=
+    for val in $CLEANUP_VARS;do
+        eval "vval=$(echo \${${val}})"
+        if [[ -n "${vval}" ]];then
+            debug "Using $val as CLEANUP var"
+            CLEANUP=${vval}
+            break
+        fi
+    done
     if [[ -n ${CLEANUP} ]]; then
         docker rm -f $n 2>/dev/null
         docker rmi -f $n 2>/dev/null
     else
         log "Skip cleanup, to cleanup livetest images/docker: export one of "
-        log "  CLEANUP, INITIAL_CLEANUP, FINAL_CLEANUP"
+        log "  $CLEANUP_VARS"
     fi
 }
 
 trap_cleanup() {
-    ( CLEANUP="${FINAL_CLEANUP-${CLEANUP}}" cleanup $n )
+    ( CLEANUP_VARS="FINAL_CLEANUP CLEANUP" cleanup $n )
 }
 
 parse_cli() {
@@ -88,7 +98,7 @@ parse_cli() {
 }
 
 main() {
-    ( CLEANUP="${INITIAL_CLEANUP-${CLEANUP}}" cleanup $n )
+    ( CLEANUP_VARS="INITIAL_CLEANUP CLEANUP" cleanup $n )
     imgid=$(get_image "${n}")
     if [[ -n ${imgid} ]]; then
         log "Using preexisting $n <${imgid}>"
@@ -124,7 +134,7 @@ main() {
             ${docker_args} \
             "${img}" \
             $( [[ -n "${img_args}" ]] && echo "${img_args}"; )
-        save_container $n
+        SILENT=1 vv save_container $n
         imgid=$(get_image "${n}")
         if [[ -n ${imgid} ]]; then
             img=${imgid}
