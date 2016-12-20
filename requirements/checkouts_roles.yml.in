@@ -135,6 +135,8 @@
         dest: '{{prefix}}/roles/corpusops.lxc_stop'
       - repo: '__CORPUSOPS_ORGA_URL__/lxc_start.git'
         dest: '{{prefix}}/roles/corpusops.lxc_start'
+      - repo: '__CORPUSOPS_ORGA_URL__/lxc_snapshot.git'
+        dest: '{{prefix}}/roles/corpusops.lxc_snapshot'
       - repo: '__CORPUSOPS_ORGA_URL__/lxc_drop.git'
         dest: '{{prefix}}/roles/corpusops.lxc_drop'
       - repo: '__CORPUSOPS_ORGA_URL__/lxc_vars.git'
