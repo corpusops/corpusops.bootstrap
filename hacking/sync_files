@@ -30,6 +30,9 @@ parse_cli() {
 }
 parse_cli "$@"
 cd $W
+for i in bin/cops_reset_passwords.sh;do
+    cp $i hacking/container_rootfs/sbin
+done
 for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh;do
     df=roles/corpusops.lxc_create/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
     d=$(dirname "$df")
@@ -42,8 +45,11 @@ for i in hacking/container_rootfs/sbin/cops_container_snapshot.sh;do
     if [ ! -e $d ];then mkdir -p $d;fi
     cp -vf $i $df
 done
-for r in corpusops.lxc_snapshot corpusops.lxc_create;do
-    if ! ( cd $W/roles/$r && git diff --exit-code -q ); then
+for r in \
+    $W \
+    $W/roles/corpusops.lxc_snapshot \
+    $W/roles/corpusops.lxc_create;do
+    if ! ( cd $r && git diff --exit-code >/dev/null 2>&1 ); then
         warn "commit $r"
     fi
 done
