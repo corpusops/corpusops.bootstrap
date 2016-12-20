@@ -40,25 +40,25 @@ test_online() {
 
 get_conf() {
     key="${1}"
-    echo $(cat "${CORPUS_OPS_PREFIX}/.corpusops/$key" 2>/dev/null)
+    echo $(cat "${W}/.corpusops/$key" 2>/dev/null)
 }
 
 store_conf() {
     key="${1}"
     val="${2}"
-    if [ ! -e "${CORPUS_OPS_PREFIX}/.corpusops" ]; then
-        mkdir -p "${CORPUS_OPS_PREFIX}/.corpusops"
-        chmod 700 "${CORPUS_OPS_PREFIX}/.corpusops"
+    if [ ! -e "${W}/.corpusops" ]; then
+        mkdir -p "${W}/.corpusops"
+        chmod 700 "${W}/.corpusops"
     fi
-    if [ -e "${CORPUS_OPS_PREFIX}/.corpusops" ]; then
-        echo "${val}">"${CORPUS_OPS_PREFIX}/.corpusops/${key}"
+    if [ -e "${W}/.corpusops" ]; then
+        echo "${val}">"${W}/.corpusops/${key}"
     fi
 }
 
 remove_conf() {
     for key in $@;do
-        if [ -e "${CORPUS_OPS_PREFIX}/.corpusops/${key}" ]; then
-            rm -f "${CORPUS_OPS_PREFIX}/.corpusops/${key}"
+        if [ -e "${W}/.corpusops/${key}" ]; then
+            rm -f "${W}/.corpusops/${key}"
         fi
     done
 }
@@ -110,9 +110,8 @@ get_ansible_branch() {
 
 set_vars() {
     reset_colors
-    SCRIPT_DIR="$(dirname $THIS)"
+    SCRIPT_DIR="${W}/bin"
     QUIET=${QUIET:-}
-    CORPUS_OPS_PREFIX="$(dirname ${SCRIPT_DIR})"
     CHRONO="$(get_chrono)"
     DEBUG="${DEBUG-}"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
@@ -135,8 +134,8 @@ set_vars() {
         DO_VERSION="no"
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
-    BASE_PACKAGES_FILE="${CORPUS_OPS_PREFIX}/requirements/os_packages.${DISTRIB_ID}"
-    EXTRA_PACKAGES_FILE="${CORPUS_OPS_PREFIX}/requirements/os_extra_packages.${DISTRIB_ID}"
+    BASE_PACKAGES_FILE="${W}/requirements/os_packages.${DISTRIB_ID}"
+    EXTRA_PACKAGES_FILE="${W}/requirements/os_extra_packages.${DISTRIB_ID}"
     if [ -e "${BASE_PACKAGES_FILE}" ];then
         BASE_PACKAGES=$(cat "${BASE_PACKAGES_FILE}")
     else
@@ -147,7 +146,7 @@ set_vars() {
     else
         EXTRA_PACKAGES=""
     fi
-    VENV_PATH="${VENV_PATH:-"${CORPUS_OPS_PREFIX}/venv"}"
+    VENV_PATH="${VENV_PATH:-"${W}/venv"}"
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
     if [ "x${QUIET}" = "x" ]; then
@@ -182,7 +181,7 @@ set_vars() {
     #
     export QUIET DEBUG
     #
-    export VENV_PATH PIP_CACHE CORPUS_OPS_PREFIX
+    export VENV_PATH PIP_CACHE W
 }
 
 check_py_modules() {
@@ -217,7 +216,7 @@ recap_(){
     bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${NORMAL}"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "DATE: ${CHRONO}"
-    bs_log "CORPUS_OPS_PREFIX: ${CORPUS_OPS_PREFIX}"
+    bs_log "W: ${W}"
     bs_yellow_log "---------------------------------------------------"
     if [ "x${DO_SYNC_CODE}" != "xno" ];then
         msg="Syncing:"
@@ -266,7 +265,7 @@ install_prerequisites() {
     SKIP_UPGRADE=y\
         WANTED_EXTRA_PACKAGES="${EXTRA_PACKAGES}" \
         WANTED_PACKAGES="${BASE_PACKAGES}" \
-        $(may_sudo) $CORPUS_OPS_PREFIX/bin/cops_pkgmgr_install.sh 2>&1\
+        $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
         || die " [bs] Failed install prerequisites"
 }
 
@@ -325,7 +324,7 @@ checkouter () {
 
 checkout_code() {
     if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
-        cd "${CORPUS_OPS_PREFIX}" &&\
+        cd "${W}" &&\
             TO_CHECKOUT=""
             if [ "x$DO_SYNC_CORE" != "xno" ];then
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
@@ -402,7 +401,7 @@ setup_virtualenv() {
         . "${VENV_PATH}/bin/activate"
     fi
     # install requirements
-    cd "${CORPUS_OPS_PREFIX}"
+    cd "${W}"
     install_git=""
     for i in ${EGGS_GIT_DIRS};do
         if [ ! -e "${VENV_PATH}/src/${i}" ]; then
@@ -445,7 +444,7 @@ setup_virtualenv() {
 }
 
 reconfigure() {
-    for i in ${CORPUS_OPS_PREFIX}/requirements/*.in;do
+    for i in ${W}/requirements/*.in;do
         ${SED} -r \
             -e "s#^\# (-e.*__(ANSIBLE))#\1#g" \
             -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
@@ -453,7 +452,7 @@ reconfigure() {
             -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
             -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
             -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
-            "${i}" > "${CORPUS_OPS_PREFIX}/requirements/$(basename "${i}" .in)"
+            "${i}" > "${W}/requirements/$(basename "${i}" .in)"
     done
 }
 
