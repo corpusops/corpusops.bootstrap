@@ -293,10 +293,14 @@ filtered_ansible_playbook_custom() {
     filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
     shift
     if [[ -n ${DEBUG} ]]; then
-        vv bin/ansible-playbook  "${@}"
+        SILENT="${SILENT_CHECKOUTS-${SILENT-1}}" \
+        SILENT_LOG="${SILENT_CHECKOUTS_LOG-${SILENT_LOG-1}}" \
+            vv bin/ansible-playbook "${@}"
     else
         (((( \
-            vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
+            SILENT="${SILENT_CHECKOUTS-${SILENT-1}}" \
+            SILENT_LOG="${SILENT_CHECKOUTS_LOG-${SILENT_LOG-1}}" \
+            vv bin/ansible-playbook "${@}" ; echo $? >&3) \
             | egrep -iv "${filter}" >&4) 3>&1) \
             | (read xs; exit $xs)) 4>&1
     fi

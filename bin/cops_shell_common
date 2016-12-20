@@ -129,27 +129,56 @@ debug() {
     fi
 }
 
-silent_run() {
-    local tmpf=$(mktemp)
-    if [[ -n ${DEBUG} ]] || [[ -n ${SILENT_DEBUG} ]];then
-        log "Logging command output to ${tmpf}"
-    fi
-    "${@}" >"${tmpf}" 2>&1
-    local ret=${?}
-    if [ "x${ret}" != "x0" ]; then cat "${tmpf}";fi
-    if [ -e "${tmpf}" ];then rm -f "${tmpf}";fi
-    return "${ret}"
+test_silent_log() {
+    ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] )
 }
 
+test_silent() {
+    ( [[ -n ${SILENT-} ]] || test_silent_log )
+}
+
+silent_run_post() {
+    if [ -e "${tmpf}" ];then rm -f "${tmpf}";fi
+}
+
+silent_run_() {
+    tmpf=$(mktemp)
+    do_trap silent_run_post EXIT TERM QUIT INT
+    if test_silent_log;then
+        log "Logging command output to ${tmpf}"
+    fi
+    if [[ -n "${NO_SILENT-}" ]];then
+        "${@}"
+    else
+        "${@}" >"${tmpf}" 2>&1
+    fi
+    local ret=${?}
+    if [ "x${rc}" != "x0" ] && [ -e "${tmpf}" ]; then
+        cat "${tmpf}"
+    fi
+    return ${ret}
+}
+
+silent_run() {
+    ( silent_run_ "${@}" ; )
+}
 
 vvv() {
     debug "${@}"
-    "${@}"
+    if test_silent;then
+        silent_run "${@}"
+    else
+        "${@}"
+    fi
 }
 
 vv() {
     log "${@}"
-    "${@}"
+    if test_silent;then
+        silent_run "${@}"
+    else
+        "${@}"
+    fi
 }
 
 usage() {
@@ -423,8 +452,7 @@ detect_os no_fail
 
 if echo "${0}" | egrep -q 'cops_shell_common$';then
     if declare -f "$1" >/dev/null 2>&1; then
-        ( cd "$(dirname "$(readlink -f ${0})")/.." &&\
-            "${@}" )
+        "${@}"
     else
         echo Could not find function for $@
         exit 1
