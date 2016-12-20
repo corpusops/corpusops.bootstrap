@@ -1,9 +1,9 @@
-# help cmds
+# helper cmds
 
 ## build image
 
 ```
-NO_SQUASH=y SKIP_FOUND_CANDIDATE_EXIT=y DEBUG=y IMAGES="ubuntu:16.04" ./hacking/build_images
+./hacking/docker_gen_dockerfiles;NO_SQUASH=y SKIP_FOUND_CANDIDATE_EXIT=y DEBUG=y IMAGES="ubuntu:16.04" ./hacking/build_images
 ```
 
 ## init_repo
@@ -18,4 +18,17 @@ for i in ${role}*;do
   cd ..
   ansible-galaxy import corpusops $short
 done
+```
+
+## list test an image
+```
+INITIAL_CLEANUP=1 name="c7p" docker_args=" -ti" img="corpusops/centos:7_preprovision" \
+  /srv/corpusops/corpusops.bootstrap/hacking/live_test bash
+INITIAL_CLEANUP=1 name="c7p" docker_args=" -ti" img="corpusops/ubuntu:16.04_preprovision" \
+  /srv/corpusops/corpusops.bootstrap/hacking/live_test bash
+```
+
+## attaching pdb
+```
+docker exec -ti c7p /srv/corpusops/corpusops.bootstrap/venv/bin/pdb-attach
 ```
