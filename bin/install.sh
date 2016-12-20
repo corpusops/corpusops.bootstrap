@@ -309,7 +309,6 @@ filtered_ansible_playbook_custom() {
 
 filtered_ansible_playbook() {
     filtered_ansible_playbook_ "" "${@}"
-
 }
 
 checkouter () {
