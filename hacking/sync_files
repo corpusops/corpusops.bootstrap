@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+export LOGGER_NAME=$(basename $0)
+
+API=https://api.github.com
+username=${username:-kiorky}
+token=${token-}
+orga=${prefix:-corpusops}
+operators=${operators:-operators}
+repos=${@:-}
+
+curl_() { curl -s -u "${username}:${token}" "${@}" ; }
+
+cd "$(dirname "${0}")/.."
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+
+usage () {
+    NO_HEADER=y die '
+Refresh files to various roles
+
+    '"$0"'
+'
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+parse_cli "$@"
+cd $W
+for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh;do
+    df=roles/corpusops.lxc_create/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
+    d=$(dirname "$df")
+    if [ ! -e $d ];then mkdir $d;fi
+    cp -vf $i $df
+done
+for r in corpusops.lxc_create;do
+    if ! ( cd $W/roles/$r && git diff --exit-code -q ); then
+        warn "commit $r"
+    fi
+done
+log 'done'
+# vim:set et sts=4 ts=4 tw=80 ft=sh:
