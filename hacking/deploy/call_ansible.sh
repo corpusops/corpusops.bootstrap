@@ -55,7 +55,7 @@ else
     if [[ -z $NONINTERACTIVE ]];then
         printf "Do you really want to launch: $launchlog\n[Y/N] ?\nexport NONINTERACTIVE=1  # to skip check\n >" >&2
         while read i;do
-            if echo $i | egrep -iq "^(y|yes|oui|o)"
+            if echo $i | grep -E -iq "^(y|yes|oui|o)"
             then break
             else die_ 16 "aborting"
             fi

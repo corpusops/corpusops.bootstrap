@@ -12,7 +12,7 @@
         bin hacking
         |awk -F: '{print $1}')
         |awk -F: '{print $1}'
-        |egrep -v "hacking/shell_glue|refresh_glue.yml");
+        |grep -E -v "hacking/shell_glue|refresh_glue.yml");
         if [ "x$fics" != "x" ];then find $fics -type f -and -not -type l|awk '!seen[$0]++';fi
       register: fics
     - shell: |

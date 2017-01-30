@@ -6,7 +6,7 @@ FROM __IMAGE_PREPROVISION__-__ANSIBLE_RELEASE__
 
 # Rewarm apt cache
 RUN bash -c '\
-  if egrep -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
+  if grep -E -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
       apt-get update -y -qq;\
       if [ "x${PKGS_REMOVES-}" != "x" ];then\
         apt-get install -y $PKGS_REMOVES;\

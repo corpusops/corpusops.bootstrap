@@ -60,7 +60,7 @@ if [[ -n $CORPUSOPS_VAULT_PASSWORD ]];then setup_vault_vars _default_;fi
 # Setup ansible vault password files if any (via gitlab secret variable)
 # from each found CORPUSOPS_VAULT_PASSWORD_XXX
 export VAULT_VARS=$( printenv \
- | egrep -oe "^${VAULT_PASSWORD_VARIABLES_PREFIX}([a-zA-Z0-9]+|_default_)=" \
+ | grep -E -oe "^${VAULT_PASSWORD_VARIABLES_PREFIX}([a-zA-Z0-9]+|_default_)=" \
  | sed -e "s/=$//g"|awk '!seen[$0]++')
 
 debug "VAULT_VARS: $( echo $VAULT_VARS )"
@@ -74,7 +74,7 @@ for vault_var in $VAULT_VARS;do
     f="$SECRET_VAULT_PREFIX.$vault_name"
     log "Setup $vault_name vault password file: (${f//._default_/})"
     if [[ -n "$val" ]];then
-        if ( echo "$f" | egrep -q "/" )then
+        if ( echo "$f" | grep -E -q "/" )then
             vaultsfolder="$(dirname $f)"
             if [ ! -e "$vaultf" ];then
                 mkdir -p "$vaultsfolder"

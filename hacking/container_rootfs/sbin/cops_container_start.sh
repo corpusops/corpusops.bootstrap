@@ -4,7 +4,7 @@ export PATH=${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 
 # BE sure to have SHM mounted, if possible
-if [ "x$(mount|awk '{print $3}'|egrep "^/dev/shm"|wc -l|sed -e "s/ //g")" = "x0" ];then
+if [ "x$(mount|awk '{print $3}'|grep -E "^/dev/shm"|wc -l|sed -e "s/ //g")" = "x0" ];then
     mount -t tmpfs none /dev/shm || /bin/true
 fi
 
