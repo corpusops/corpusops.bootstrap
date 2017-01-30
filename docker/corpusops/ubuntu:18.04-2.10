@@ -5,7 +5,7 @@ FROM corpusops/ubuntu:18.04_preprovision-2.10
 
 # Rewarm apt cache
 RUN bash -c '\
-  if egrep -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
+  if grep -E -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
       apt-get update -y -qq;\
       if [ "x${PKGS_REMOVES-}" != "x" ];then\
         apt-get install -y $PKGS_REMOVES;\

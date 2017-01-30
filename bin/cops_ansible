@@ -23,7 +23,7 @@
 #   - nocows
 #   - better controlpath
 readlinkf() {
-    if ( uname | egrep -iq "darwin|bsd" );then
+    if ( uname | grep -E -iq "darwin|bsd" );then
         if ( which greadlink 2>&1 >/dev/null );then
             greadlink -f "$@"
         elif ( which perl 2>&1 >/dev/null );then
@@ -46,7 +46,7 @@ SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
 
 # BEGIN: corpusops common glue
 readlinkf() {
-    if ( uname | egrep -iq "darwin|bsd" );then
+    if ( uname | grep -E -iq "darwin|bsd" );then
         if ( which greadlink 2>&1 >/dev/null );then
             greadlink -f "$@"
         elif ( which perl 2>&1 >/dev/null );then
@@ -122,7 +122,7 @@ LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
 is_container() {
     if ( grep -q container= /proc/1/environ 2>/dev/null ) \
-       || ( egrep -q 'docker|lxc' /proc/1/cgroup 2>/dev/null ) \
+       || ( grep -E -q 'docker|lxc' /proc/1/cgroup 2>/dev/null ) \
        || [ -e /.dockerenv ];then
            return 0
     fi
@@ -311,12 +311,12 @@ version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
 lowcase_distribid() { echo $DISTRIB_ID| awk '{print tolower($0)}'; }
-is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
-is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
-is_suse_like() { echo $DISTRIB_ID | egrep -iq "suse"; }
-is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine" || test -e /etc/alpine-release; }
+is_archlinux_like() { echo $DISTRIB_ID | grep -E -iq "archlinux|arch"; }
+is_debian_like() { echo $DISTRIB_ID | grep -E -iq "debian|ubuntu|mint"; }
+is_suse_like() { echo $DISTRIB_ID | grep -E -iq "suse"; }
+is_alpine_like() { echo $DISTRIB_ID | grep -E -iq "alpine" || test -e /etc/alpine-release; }
 is_redhat_like() { echo $DISTRIB_ID \
-        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
+        | grep -E -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
 is_darwin () {
     if [ "x${FORCE_DARWIN-}" != "x" ];then return 0;fi
@@ -450,8 +450,8 @@ may_sudo() {
 get_ancestor_from_dockerfile() {
     local dockerfile=${1}
     local ancestor=
-    if [ -e "${dockerfile}" ] && egrep -q ^FROM "${dockerfile}"; then
-        ancestor=$(egrep ^FROM "${dockerfile}"\
+    if [ -e "${dockerfile}" ] && grep -E -q ^FROM "${dockerfile}"; then
+        ancestor=$(grep -E ^FROM "${dockerfile}"\
             | head -n1 | awk '{print $2}' | xargs -n1| sort -u )
     fi
     echo ${ancestor}
@@ -508,7 +508,7 @@ upgrade_wd_to_br() {
         if [ "x${test_branch}" != "x${up_branch}" ];then
             warn "Upgrading $wd to branch: $up_branch"
             git fetch --all || die "git fetch in $wd failed"
-            if get_git_branchs | egrep -q "^${up_branch}$";then
+            if get_git_branchs | grep -E -q "^${up_branch}$";then
                 vv git checkout ${up_branch} &&\
                     vv git reset --hard origin/${up_branch}
             else
@@ -541,7 +541,7 @@ get_python_() {
     local py_bins="$@"
     for i in $py_bins;do
         local lpy=$(get_command $i 2>/dev/null)
-        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi "python $py_ver" );then
+        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| grep -E -qi "python $py_ver" );then
             selectedpy=${lpy}
             break
         fi
@@ -895,7 +895,7 @@ done
 export ANSIBLE_COLLECTIONS_PATHS=${ANSIBLE_COLLECTIONS_PATHS:-"$DEFAULT_ANSIBLE_COLLECTION_PATH"}
 declare -a ANSIBLE_SCRIPT_ARGS
 for arg in "$@";do
-    if (echo $arg | egrep -q "^--sudo" );then
+    if (echo $arg | grep -E -q "^--sudo" );then
         if ( version_gte $aversion 2.9);then
             arg="$(echo "$arg"| sed -e "s/--sudo/--become/g")"
         fi
@@ -903,7 +903,7 @@ for arg in "$@";do
     ANSIBLE_SCRIPT_ARGS+=("${arg}")
 done
 # if not included, but executed directly from a wrapper
-if echo "${EXEC_SCRIPT}" | egrep -vq '^cops_ansible$';then
+if echo "${EXEC_SCRIPT}" | grep -E -vq '^cops_ansible$';then
     exec ${EXEC_SCRIPT} "${ANSIBLE_SCRIPT_ARGS[@]}"
 fi
 # vim:set et sts=4 ts=4 tw=0:

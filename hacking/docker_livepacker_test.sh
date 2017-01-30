@@ -3,7 +3,7 @@
 # Launch a container like packer would have to debug builds
 #
 readlinkf() {
-    if ( uname | egrep -iq "linux|darwin|bsd" );then
+    if ( uname | grep -E -iq "linux|darwin|bsd" );then
         if ( which greadlink 2>&1 >/dev/null );then
             greadlink -f "$@"
         elif ( which perl 2>&1 >/dev/null );then
