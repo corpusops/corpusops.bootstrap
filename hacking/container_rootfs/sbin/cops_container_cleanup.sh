@@ -70,7 +70,7 @@ fi
 
 # Freeze hostile packages
 FROZEN_PACKAGES="whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
-if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then
+if echo ${DISTRIB_ID} | grep -E -iq "ubuntu|debian";then
     if [[ "${DISTRIB_RELEASE//\./}" -lt "1604" ]];then
         FROZEN_PACKAGES="${FROZEN_PACKAGES} udev"
     fi

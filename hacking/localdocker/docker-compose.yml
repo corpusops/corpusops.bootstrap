@@ -28,7 +28,7 @@ services:
       rm -fv ${ROOTDIRECTORY}/*configured
       for cn in $$rcn $$dcn;do
        for i in /hosts;do
-          egrep -v "\s+$${cn}\s?$$" $${i} > $${i}.sed
+          grep -E -v "\s+$${cn}\s?$$" $${i} > $${i}.sed
           echo "$${LISTEN} $${cn}" >> $${i}.sed
           cat $${i}.sed > $${i}
         done

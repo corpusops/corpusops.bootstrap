@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 readlinkf() {
-    if ( uname | egrep -iq "linux|darwin|bsd" );then
+    if ( uname | grep -E -iq "linux|darwin|bsd" );then
         if ( which greadlink 2>&1 >/dev/null );then
             greadlink -f "$@"
         elif ( which perl 2>&1 >/dev/null );then
@@ -130,7 +130,7 @@ cleanup_import_box() {
         log "NO_BOX_CLEANUP set, skip box cleanup for ${boximportname}"
         return 0
     fi
-    if vagrant box list | egrep -q "$boximportname";then
+    if vagrant box list | grep -E -q "$boximportname";then
         vv vagrant box remove --force "${boximportname}"
     fi
 }
@@ -173,7 +173,7 @@ install_python() {
     fi
     installpy() { NONINTERACTIVE=y bash "$installer" python;  }
     c="mint|debian|ubuntu|redhat|red-hat"
-    if cat /etc/*-release 2>/dev/null | egrep -qi "$c";then
+    if cat /etc/*-release 2>/dev/null | grep -E -qi "$c";then
         installpy
     else
         echo "No method to check python install"
@@ -185,7 +185,7 @@ set_hosts_args() {
     hosts=""
     cmd_args=""
     for i in ${@};do
-        if echo $i |grep -v help| egrep -ivq -- "^-";then
+        if echo $i |grep -v help| grep -E -ivq -- "^-";then
             hosts="$hosts $i"
         else
             cmd_args="$cmd_args $i"
@@ -280,7 +280,7 @@ activate_arcfour() {
     if [ ! -e .vagrant/cops-sshconfig-$h ];then
         do_sshgen $h
     fi
-    if ! ( ssh_host=$h do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
+    if ! ( ssh_host=$h do_ssh_ grep -E -q "^Ciphers.*arcfour" $scfg; );then
         ciphers=$(ssh_host=$h do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
         if [[ -n $ciphers ]];then
             cmd="sed -i '/^Ciphers /d' $scfg"
@@ -445,7 +445,7 @@ do_export() {
         die "give a box name"
     fi
     for h in $hosts;do
-        if vagrant status $h | egrep -q running;then
+        if vagrant status $h | grep -E -q running;then
             die "Vagrant $h is running, poweroff VMs first with: vagrant halt -f"
         fi
         f="${BOX}.box"
@@ -573,7 +573,7 @@ export_usage() {
 Export a vagrant vm
 
     '"$0"' toto [id]
-'"$(vagrant package --help|egrep -v -- '--(base|help|output)')"
+'"$(vagrant package --help|grep -E -v -- '--(base|help|output)')"
 }
 
 
@@ -585,7 +585,7 @@ Import a vagrant vm inside vagrant catalog and
 setup vagrant_config.yml to point to it
 
     '"$0 $action"' toto.box
-'"$(vagrant box add --help|egrep -v -- '--(name|help)')"
+'"$(vagrant box add --help|grep -E -v -- '--(name|help)')"
 }
 
 
