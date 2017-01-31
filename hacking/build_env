@@ -78,6 +78,7 @@ corpusops.localsettings_vim"
 NOT_IN_DOCKER_ROLES="\
 corpusops.localsettings_editor
 corpusops.services_virt_docker
+corpusops.services_virt_lxc
 corpusops.localsettings_sysctls
 corpusops.services_base_ntp"
 
@@ -88,6 +89,9 @@ corpusops.services_base_cron
 corpusops.services_base_ntp_vars
 corpusops.services_base_sshd_vars
 corpusops.services_base_sshd
+corpusops.services_magicbridge
+corpusops.services_magicbridge_vars
+corpusops.services_virt_lxc_vars
 corpusops.services_virt_docker_vars"
 DEBIAN_ROLES="\
 corpusops.localsettings_autoupgrades_vars
