@@ -38,6 +38,7 @@ DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
 ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
 BASE_ROLES="\
+corpusops.filter_plugins
 corpusops.debug
 corpusops.humanlog
 corpusops.include_jinja_vars
