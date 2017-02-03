@@ -33,10 +33,16 @@ cd $W
 for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh;do
     df=roles/corpusops.lxc_create/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
     d=$(dirname "$df")
-    if [ ! -e $d ];then mkdir $d;fi
+    if [ ! -e $d ];then mkdir -p $d;fi
     cp -vf $i $df
 done
-for r in corpusops.lxc_create;do
+for i in hacking/container_rootfs/sbin/cops_container_snapshot.sh;do
+    df=roles/corpusops.lxc_snapshot/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
+    d=$(dirname "$df")
+    if [ ! -e $d ];then mkdir -p $d;fi
+    cp -vf $i $df
+done
+for r in corpusops.lxc_snapshot corpusops.lxc_create;do
     if ! ( cd $W/roles/$r && git diff --exit-code -q ); then
         warn "commit $r"
     fi
