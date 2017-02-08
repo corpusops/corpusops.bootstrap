@@ -394,7 +394,7 @@ version_lte() {
     [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
 }
 
-verseion_lt() {
+version_lt() {
     [ "$1" = "$2" ] && return 1 || verlte $1 $2
 }
 
@@ -402,7 +402,7 @@ version_gte() {
     [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
 }
 
-verseion_gt() {
+version_gt() {
     [ "$1" = "$2" ] && return 1 || verlte $1 $2
 }
 
