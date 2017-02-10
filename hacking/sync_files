@@ -33,7 +33,7 @@ cd $W
 for i in bin/cops_reset_passwords.sh;do
     cp $i hacking/container_rootfs/sbin
 done
-for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh;do
+for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh bin/cops_shell_common;do
     df=roles/corpusops.lxc_create/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
     d=$(dirname "$df")
     if [ ! -e $d ];then mkdir -p $d;fi
