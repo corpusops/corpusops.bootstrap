@@ -88,7 +88,7 @@ ancestor_id=
 # If we are free from any candidates, build a new image
 if [[ -n ${candidate_id} ]]; then
     if [[ -n ${FORCE_REBUILD} ]]; then
-        vv docker rmi -f "${candidate_id}"
+        SILENT_LOG=1 vv docker rmi -f "${candidate_id}"
         die_in_error "${candidate_id} cleanup failed"
         init_candidate_vars
     fi
@@ -114,7 +114,7 @@ if [[ -n "${ancestor}" ]]; then
     ancestor_id=$(get_docker_ids "${ancestor}")
     ret=0
     if [[ -n "${FORCE_REPULL-}" ]] || [[ "${ancestor_id}" == "" ]]; then
-        vv docker pull "${ancestor}"
+        SILENT_LOG=1 vv docker pull "${ancestor}"
         ret=${?}
         ancestor_id=$(get_docker_ids "${ancestor}")
     fi
@@ -132,7 +132,7 @@ fi
 
 if [[ -z ${NO_BUILD} ]]; then
     log "Building ${candidate}"
-    vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
+    SILENT_LOG=1 vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
     ret=$?
 else
     debug "Skip build of ${tag} :: ${dockerfile} :: ${wd}"
@@ -154,7 +154,7 @@ if [[ ${ret} == 0 ]] && [[ -z ${NO_CANDIDATE_CLEANUP} ]]; then
         if [[ -n ${dtag_id} ]];then
             # delete by id to be sure to not delete blindy a candidate used
             # via other tags
-            vvv docker rmi ${old_candidate_id}
+            SILENT_LOG=1 vvv docker rmi ${old_candidate_id}
             if [[ ${?} != 0 ]];then
                 log "Error when cleaning old candidate: ${old_candidate_id} for ${tag}"
             else
@@ -175,15 +175,15 @@ if [[ ${ret} == 0 ]]; then
         taggued=${candidate_squashed}
         case "${SQUASHER}" in
             $SQUASHER_GO)
-                vvv docker save "${candidate_id}" \
-                    | vv "${SQUASHER}" \
+                SILENT_LOG=1 vvv docker save "${candidate_id}" \
+                    | SILENT_LOG=1 vv "${SQUASHER}" \
                         -t "${candidate_squashed}" \
                         $( [[ -n "${ancestor_id}" ]] && echo  "-from '${ancestor_id}'" ) \
-                    | vvv docker load
+                    | SILENT_LOG=1 vvv docker load
                 ret=$?
                 ;;
             *)
-                vv "${SQUASHER}" \
+                SILENT_LOG=1 vv "${SQUASHER}" \
                     -t "${candidate_squashed}" \
                     $( [[ -n "${ancestor_id}" ]] && echo  "-f ${ancestor_id}" ) \
                     ${candidate_id}
@@ -202,7 +202,7 @@ fi
 # Everything has gone well, tag back candidate to img
 if [[ ${ret} == 0 ]];then
     log "Tagging candidate ${taggued} to ${tag}"
-    vvv docker tag "${taggued}" "${tag}"
+    SILENT_LOG=1 vvv docker tag "${taggued}" "${tag}"
     ret=${?}
     if [[ ${ret} == 0 ]];then
         tag_id=$(get_image "${tag}")
@@ -219,7 +219,7 @@ if [[ ${ret} == 0 ]]; then
             if [[ -n ${dtag_id} ]];then
                 # delete by id to be sure to delete an image which has only one tag
                 # left, the 'squashed tag'
-                vvv docker rmi "${candidate}"
+                SILENT_LOG=1 vvv docker rmi "${candidate}"
                 if [[ ${?} != 0 ]];then
                     log "Error when cleaning candidate tag: ${candidate}"
                 else
@@ -236,7 +236,7 @@ if [[ ${ret} == 0 ]]; then
             if [[ -n ${dtag_id} ]];then
                 # delete by id to be sure to delete an image which has only one tag
                 # left, the 'squashed tag'
-                vvv docker rmi "${dtag_id}"
+                SILENT_LOG=1 vvv docker rmi "${dtag_id}"
                 if [[ ${?} != 0 ]];then
                     log "Error when cleaning old squashed image: ${candidate_squashed}"
                 else
@@ -257,8 +257,8 @@ if [[ ${ret} == 0 ]]; then
             dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_tag_id}" 2>/dev/null)
             if [[ -n ${dtag_id} ]];then
                 # delete by id to be sure to delete an image which isnt used by
-                # other means
-                vvv docker rmi ${dtag_id}
+                # other mean s
+                SILENT_LOG=1 vvv docker rmi ${dtag_id}
                 if [[ ${?} != 0 ]];then
                     log "Error when cleaning old image: ${dtag_id} for ${tag}"
                 else

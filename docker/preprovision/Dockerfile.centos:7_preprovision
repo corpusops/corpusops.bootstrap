@@ -16,12 +16,13 @@ COPY requirements/os_* \
      /bootstrap/
 RUN bash -c 'step_rev=1;\
     :;\
-    DISTRIB_ID=$(. /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
+    silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
+    cd /bootstrap;\
+    DISTRIB_ID=$(. cops_shell_common && echo $DISTRIB_ID);\
     if [ "x$DISTRIB_ID" = "x" ]; then exit 139;fi;\
-    REQS_PATH=/bootstrap;\
-    WANTED_PACKAGES="$(cat $REQS_PATH/os_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
-    WANTED_DOCKER_PACKAGES="$(cat $REQS_PATH/os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
-    WANTED_EXTRA_PACKAGES="$(cat $REQS_PATH/os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_PACKAGES="$(cat os_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
     if ((which which && which systemd) || \
          command -v systemd )>/dev/null 2>&1 \
@@ -29,28 +30,29 @@ RUN bash -c 'step_rev=1;\
       WANTED_PACKAGES="systemd ${WANTED_PACKAGES}";\
     fi;\
     :;\
-    set -ex;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y\
-      WANTED_PACKAGES="$(echo ${WANTED_PACKAGES} ${WANTED_DOCKER_PACKAGES})"\
-      WANTED_EXTRA_PACKAGES="$(echo ${WANTED_EXTRA_PACKAGES})"\
-        /bootstrap/cops_pkgmgr_install.sh;\
-    /bootstrap/cops_container_cleanup.sh;\
-    /bootstrap/cops_container_snapshot.sh;'
+    WANTED_PACKAGES="${WANTED_PACKAGES} ${WANTED_DOCKER_PACKAGES}";\
+    export WANTED_PACKAGES WANTED_EXTRA_PACKAGES;\
+    set -e;\
+    echo "packages: " $WANTED_PACKAGES >&2;\
+    echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;\
+    silent ./cops_container_cleanup.sh;\
+    silent ./cops_container_snapshot.sh;'
 
 # 2/ isolate virtualenv contruction
 COPY requirements/os_* \
      requirements/python_* \
      ${COPS_ROOT}/requirements/
-RUN bash -c 'step_rev=2;set -e;cd ${COPS_ROOT};\
-    virtualenv --system-site-packages --unzip-setuptools venv;\
+RUN bash -c 'step_rev=2;set -e;\
+    silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
+    cd ${COPS_ROOT};\
+    silent virtualenv --system-site-packages --unzip-setuptools venv;\
     . venv/bin/activate;\
     :;\
-    set -x;\
-    pip install -U pip;\
-    pip install -U -r requirements/python_requirements.txt;\
-    set +x;\
+    silent pip install -U pip;\
+    silent pip install -U -r requirements/python_requirements.txt;\
     :;\
-    /bootstrap/cops_container_snapshot.sh;'
+    silent /bootstrap/cops_container_snapshot.sh;'
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
@@ -58,42 +60,48 @@ COPY .corpusops ${COPS_ROOT}/.corpusops
 COPY bin ${COPS_ROOT}/bin
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
-RUN bash -c 'step_rev=2;set -ex;\
+RUN bash -c 'step_rev=2;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     DISTRIB_ID=$(. /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
     cd ${COPS_ROOT};\
     :;\
     if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then\
-        apt-get remove -y --force-yes git;\
-        apt-get update -qq;\
+        silent apt-get remove -y --force-yes git;\
+        silent apt-get update -qq;\
     fi;\
     :;\
-    bin/install.sh -C --skip-sync-code;\
+    silent bin/install.sh -C --skip-sync-code;\
     :;\
-    /bootstrap/cops_container_snapshot.sh;\
+    silent /bootstrap/cops_container_snapshot.sh;\
     rm -rf /bootstrap;'
 
 # 4/ Bring in all playbooks & roles
 COPY .git ${COPS_ROOT}/.git
 COPY roles ${COPS_ROOT}/roles
 COPY playbooks ${COPS_ROOT}/playbooks
-RUN step_rev=3;set -ex;\
-    cd ${COPS_ROOT};\
-    git reset --hard HEAD;\
-    bin/install.sh -C --only-sync-code;\
-    hacking/container_rootfs/sbin/cops_container_snapshot.sh;
+RUN bash -c 'step_rev=3;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    cd $COPS_ROOT;\
+    : be sure every file is in place;\
+    silent git reset --hard HEAD;\
+    : DISABLED, use only local checkout;\
+    : bin/install.sh -C --only-sync-code;\
+    silent hacking/container_rootfs/sbin/cops_container_snapshot.sh;'
 
 # Now copy all rootfs helpers & make the container a good systemd / process
 # manager citizen
-RUN step_rev=1;set -ex;\
-    cd ${COPS_ROOT}/;\
-    cp bin/cops_reset_passwords.sh /sbin;\
-    rsync -av hacking/container_rootfs/ /;\
-    /sbin/cops_container_activate_core_services.sh;\
-    /sbin/cops_container_cleanup.sh;\
-    /sbin/cops_container_snapshot.sh;
+RUN bash -c 'step_rev=3;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent $COPS_ROOT/hacking/sync_files ;\
+    silent rsync -av $COPS_ROOT/hacking/container_rootfs/ /;\
+    silent /sbin/cops_container_activate_core_services.sh;\
+    silent /sbin/cops_container_cleanup.sh;\
+    silent /sbin/cops_container_snapshot.sh;'
 
 # pack any found git repo
-RUN step_rev=1;set -ex;${COPS_ROOT}/bin/git_pack /;\
-    /sbin/cops_container_cleanup.sh;\
-    /sbin/cops_container_snapshot.sh;
+RUN bash -c 'step_rev=3;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent $COPS_ROOT/bin/git_pack /;\
+    silent /sbin/cops_container_cleanup.sh;\
+    silent /sbin/cops_container_snapshot.sh;'
 # vim:set et:
