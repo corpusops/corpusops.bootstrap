@@ -7,14 +7,17 @@ ENV container docker
 ARG COPS_ROOT=__COPS_ROOT__
 
 # 5/ Make the docker image a preconfigured-for-production image
-RUN step_rev=1;set -ex;\
+RUN bash -c 'step_rev=2;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     crole="${COPS_ROOT}/bin/cops_apply_role -vvvv";\
-    $crole "${COPS_ROOT}/playbooks/corpusops/provision/server.yml";\
-    /sbin/cops_container_cleanup.sh;\
-    /sbin/cops_container_snapshot.sh;
+    silent $crole "${COPS_ROOT}/playbooks/corpusops/provision/server.yml";\
+    silent /sbin/cops_container_cleanup.sh;\
+    silent /sbin/cops_container_snapshot.sh;'
 
 # pack any found git repo
-RUN step_rev=1;set -ex;${COPS_ROOT}/bin/git_pack /;\
-    /sbin/cops_container_cleanup.sh;\
-    /sbin/cops_container_snapshot.sh;
+RUN bash -c 'step_rev=2;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent ${COPS_ROOT}/bin/git_pack /;\
+    silent /sbin/cops_container_cleanup.sh;\
+    silent /sbin/cops_container_snapshot.sh;'
 # vim:set et:
