@@ -14,10 +14,16 @@ LAUNCH_ARGS=${@}
 
 ensure_last_virtualenv() {
     venv=$(get_command virtualenv)
-    if [[ "x${venv}" == "x/usr/bin/virtualenv" ]] && is_redhat_like; then
+    if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]]
+        [[ "x${venv}" == "x/bin/virtualenv" ]] )\
+            && is_redhat_like; then
         if version_lt "$(virtualenv --version)" "15.1.0"; then
 			log "Installing last version of virtualenv"
-			$(may_sudo) easy_install -U virtualenv
+            if has_command pip;then
+                vv $(may_sudo) pip install --upgrade pip
+            elif has_command easy_install;then
+                vv $(may_sudo) easy_install -U virtualenv
+            fi
         fi
     fi
 }
@@ -260,14 +266,16 @@ may_sudo() {
 }
 
 install_prerequisites() {
+    local pkgs="$(echo $EXTRA_PACKAGES $BASE_PACKAGES)"
     if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
         bs_log "prerequisites setup skipped"
         return 0
     fi
+    debug "Ensuring system packages are installed: ${pkgs}"
     SKIP_UPGRADE=y\
-        WANTED_EXTRA_PACKAGES="${EXTRA_PACKAGES}" \
-        WANTED_PACKAGES="${BASE_PACKAGES}" \
-        $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
+        WANTED_EXTRA_PACKAGES="$(echo ${EXTRA_PACKAGES})" \
+        WANTED_PACKAGES="$(echo ${BASE_PACKAGES})" \
+        vv $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
         || die " [bs] Failed install prerequisites"
 }
 
