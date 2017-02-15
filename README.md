@@ -79,11 +79,9 @@ It will in ./corpusops/corpusops.bootstrap:
 
 
 ## Helpers
-|  Role                                | DESC         |
-| ------------------------------------ | ------------ |
-| [corpusops.lxc_create      ](https://github.com/corpusops/lxc_create)   |  |
-| [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     |  |
-| [corpusops.lxc_register    ](https://github.com/corpusops/lxc_register) |  |
-| [corpusops.lxc_sshauth     ](https://github.com/corpusops/lxc_sshauth)  |  |
-| [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     |  |
-| [corpusops.lxc_sync        ](https://github.com/corpusops/lxc_sync)     | TODO |
+|  Role                                                                   | status       |  Role                                                                   | status       |  
+| ------------------------------------                                    | ------------ | ------------------------------------                                    | ------------ |  
+| [corpusops.lxc_create      ](https://github.com/corpusops/lxc_create)   | [![Build Status master  Branch](https://travis-ci.org/corpusops/lxc_create.svg?branch=master)](https://travis-ci.org/corpusops/lxc_create/badges)       | [corpusops.lxc_sshauth     ](https://github.com/corpusops/lxc_sshauth)  | [![Build Status master  Branch](https://travis-ci.org/corpusops/lxc_sshauth.svg?branch=master)](https://travis-ci.org/corpusops/lxc_sshauth/badges) |   
+| [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     | [![Build Status master  Branch](https://travis-ci.org/corpusops/lxc_drop.svg?branch=master)](https://travis-ci.org/corpusops/lxc_drop/badges)           | [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     | [![Build Status master  Branch](https://travis-ci.org/corpusops/lxc_drop.svg?branch=master)](https://travis-ci.org/corpusops/lxc_register/badges)   |   
+| [corpusops.lxc_register    ](https://github.com/corpusops/lxc_register) | [![Build Status master  Branch](https://travis-ci.org/corpusops/lxc_register.svg?branch=master)](https://travis-ci.org/corpusops/lxc_register/badges)   | [corpusops.lxc_sync        ](https://github.com/corpusops/lxc_sync)     | todo                                                                                                                                                |   
+
