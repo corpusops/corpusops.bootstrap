@@ -160,6 +160,9 @@ get_roles_to_test() {
 }
 
 ret=0
+if [[ -n $NOT_IN_DOCKER ]];then
+    IMAGES=system
+fi
 while read image_line;do
     for image in ${image_line};do
         image=$(may_prepend_docker_user_to_image ${image})
