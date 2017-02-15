@@ -14,9 +14,8 @@ LAUNCH_ARGS=${@}
 
 ensure_last_virtualenv() {
     venv=$(get_command virtualenv)
-    if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]]
-        [[ "x${venv}" == "x/bin/virtualenv" ]] )\
-            && is_redhat_like; then
+    if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
+         || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
         if version_lt "$(virtualenv --version)" "15.1.0"; then
 			log "Installing last version of virtualenv"
             if has_command pip;then
