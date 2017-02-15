@@ -156,11 +156,17 @@ case cfg['OS']
     cfg.setdefault('OS_RELEASE', 'sid')
   else
     cfg.setdefault('OS_RELEASE', 'xenial')
-    cfg.setdefault("BOX", "ubuntuorg#{cfg['OS_RELEASE']}64")
-    cfg.setdefault("BOX_URI",
-       "https://cloud-images.ubuntu.com/"\
-       "#{cfg['OS_RELEASE']}/current/"\
-       "#{cfg['OS_RELEASE']}-server-cloudimg-amd64-vagrant.box")
+    case cfg['OS_RELEASE']
+      when /trusty|vivid/i
+        cfg.setdefault("BOX", "ubuntu/#{cfg['OS_RELEASE']}64")
+        cfg.setdefault("BOX_URI", nil)
+      else
+        cfg.setdefault("BOX", "ubuntuorg#{cfg['OS_RELEASE']}64")
+        cfg.setdefault("BOX_URI",
+           "https://cloud-images.ubuntu.com/"\
+           "#{cfg['OS_RELEASE']}/current/"\
+           "#{cfg['OS_RELEASE']}-server-cloudimg-amd64-vagrant.box")
+    end
 end
 
 # save back config to yaml (mainly for persiting corpusops)
