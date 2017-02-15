@@ -437,7 +437,7 @@ version_lte() {
 }
 
 version_lt() {
-    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+    [ "$1" = "$2" ] && return 1 || version_lte $1 $2
 }
 
 version_gte() {
@@ -445,7 +445,7 @@ version_gte() {
 }
 
 version_gt() {
-    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+    [ "$1" = "$2" ] && return 1 || version_gte $1 $2
 }
 
 detect_os no_fail
