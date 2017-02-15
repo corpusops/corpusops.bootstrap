@@ -14,6 +14,7 @@ usage() {
 Universal shell wrapper to manage OS package manager
 OS SUPPORT: debian(& ubuntu) / archlinux / red-hat (centos/rh/fedora)
 
+[NONINTERACTIVE="y"] \
 [WANTED_EXTRA_PACKAGES="vim"] \
 [WANTED_EXTRA_PACKAGES="nano"] \
 [DO_SETUP=y] [SKIP_SETUP=y] \
