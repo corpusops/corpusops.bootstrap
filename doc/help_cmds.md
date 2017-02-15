@@ -32,3 +32,12 @@ INITIAL_CLEANUP=1 name="c7p" docker_args=" -ti" img="corpusops/ubuntu:16.04_prep
 ```
 docker exec -ti c7p /srv/corpusops/corpusops.bootstrap/venv/bin/pdb-attach
 ```
+
+## Clone the existing installation elsewere on filesytem
+To make for example a copy where you will try something
+```
+./hacking/clone.sh /path/to/other
+cd /path/to/other
+# reinstall the python virtualenv
+./bin/install.sh -C -S
+```

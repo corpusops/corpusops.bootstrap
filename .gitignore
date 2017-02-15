@@ -22,3 +22,5 @@
 !/requirements/*.in
 /ignored
 /.corpusops
+/.vagrant
+/vagrant_config.yml
