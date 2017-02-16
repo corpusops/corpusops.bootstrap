@@ -153,7 +153,6 @@ vagrant halt -f
 ### Import a VM
 From a file ``vm.box`` produced by export.sh
 ```
-cd myothervm
 git clone https://github.com/corpusops/corpusops.bootstrap vmx
 cd vmx
 ./hacking/vagrant/import.sh /path/to/myvm.box
