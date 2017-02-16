@@ -264,7 +264,7 @@ may_sudo() {
     fi
 }
 
-install_prerequisites() {
+install_prerequisites_() {
     local pkgs="$(echo $EXTRA_PACKAGES $BASE_PACKAGES)"
     if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
         bs_log "prerequisites setup skipped"
@@ -276,6 +276,10 @@ install_prerequisites() {
         WANTED_PACKAGES="$(echo ${BASE_PACKAGES})" \
         vv $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
         || die " [bs] Failed install prerequisites"
+}
+
+install_prerequisites() {
+    ( set_lang C && install_prerequisites_; )
 }
 
 sys_info(){
@@ -382,7 +386,7 @@ synchronize_code() {
     fi
 }
 
-setup_virtualenv() {
+setup_virtualenv_() {
     ensure_last_virtualenv
     if [ "x${DO_SETUP_VIRTUALENV}" != "xy" ]; then
         bs_log "virtualenv setup skipped"
@@ -453,6 +457,10 @@ setup_virtualenv() {
             cd "${cwd}"
         fi
     fi
+}
+
+setup_virtualenv() {
+    ( set_lang C && setup_virtualenv_; )
 }
 
 reconfigure() {

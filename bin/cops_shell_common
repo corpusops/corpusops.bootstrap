@@ -289,6 +289,12 @@ do_tmp_cleanup() {
     done
 }
 
+set_lang() {
+    locale=${1:-C}
+    export LANG=${locale}
+    export LC_ALL=${locale}
+}
+
 detect_os() {
     # this function should be copiable in other scripts, dont use adjacent functions
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
