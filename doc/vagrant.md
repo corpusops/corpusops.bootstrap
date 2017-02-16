@@ -126,9 +126,9 @@ Host vagrant
 
 ```
 
-then
+Then, each time you want to mount it, issue:
 ```
-mkdir mountpoint
+if [ ! -e mountpoint ];then mkdir mountpoint;fi
 sshfs -F $(pwd)/sshconfig vagrant:/ mountpoint
 ```
 
