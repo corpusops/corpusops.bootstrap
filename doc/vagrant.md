@@ -1,7 +1,7 @@
 # vagrant corpusops setup
-We provide a vagrantfile to test corpusops inside vms.
+We also provide a vagrantfile to test corpusops.
 
-The install prefix is in ``/srv/corpusops/corpusops.bootstrap``.
+The install prefix inside the VM is in ``/srv/corpusops/corpusops.bootstrap``.
 
 ## Common intruction
 Make a [corpusops.bootstrap](https://github.com/corpusops/corpusops.bootstrap) clone per VM
@@ -21,6 +21,7 @@ OS: centos
 
 Launch the vm
 ```
+git clone https://github.com/corpusops/corpusops.bootstrap vm_centos
 cd vm_centos
 vagrant up
 ```
@@ -35,6 +36,7 @@ OS: Ubuntu
 ```
 Launch the vm
 ```
+git clone https://github.com/corpusops/corpusops.bootstrap vm_ubuntu
 cd vm_ubuntu
 vagrant up
 ```
@@ -49,6 +51,7 @@ OS: debian
 ```
 Launch the vm
 ```
+git clone https://github.com/corpusops/corpusops.bootstrap vm_debian
 cd vm_debian
 vagrant up
 ```
@@ -61,6 +64,7 @@ BOX_URI: nil
 ```
 Launch the vm
 ```
+git clone https://github.com/corpusops/corpusops.bootstrap vm_customb
 cd vm_customb
 vagrant up
 ```
@@ -73,6 +77,7 @@ BOX_URI: http://super/box.box
 ```
 Launch the vm
 ```
+git clone https://github.com/corpusops/corpusops.bootstrap vm_customu
 cd vm_customu
 vagrant up
 ```
