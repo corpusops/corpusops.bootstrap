@@ -139,7 +139,7 @@ fusermount -u mountpoint
 ```
 
 ### Helpers
-We made helpers to make the previous work more straighforward.
+We made helpers to make the previous work more straighforward.<br/>
 Those scripts can be called directly, without. any argument
 
 - Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
