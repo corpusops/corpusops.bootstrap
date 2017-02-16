@@ -103,6 +103,7 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 ```
 
 ## Mounting the VM as a sshfs mountpoint onto the host
+### Manually
 - You must install sshfs onto your host
 - Generate a local sshconfig to access your VM
 ```
@@ -135,6 +136,30 @@ sshfs -F $(pwd)/sshconfig vagrant:/ mountpoint
 To umount
 ```
 fusermount -u mountpoint
+```
+
+### Helper to generate a sshconfig
+We made this work way more easy
+```
+hacking/vagrant/sshgen.sh
+```
+
+### Helper to connect
+We made this work way more easy
+```
+hacking/vagrant/ssh.sh
+```
+
+### Helper to mount
+We made this work way more easy
+```
+hacking/vagrant/mount.sh
+```
+
+### Helper to umount
+We made this work way more easy
+```
+hacking/vagrant/umount.sh
 ```
 
 ## Import/Export of an exiting VM
