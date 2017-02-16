@@ -104,17 +104,16 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 
 ## Mounting the VM as a sshfs mountpoint onto the host
 - You must install sshfs onto your host
-Add to your ``~/.ssh/config`` the output of
+- Generate a local sshconfig to access your VM
 ```
-vagrant ssh-config
+vagrant ssh-config \
+    | sed \
+        -e "s/User .*/User root/g"
+        -e "s/Host .*/Host vagrant/g" > sshconfig
 ```
-
-- Be sure to adapt the hostname to something familiar to you
-- Change the user from ``$user`` to root
-
-This will result in something like
+This will result in ``./sshconfig`` like
 ```
-Host corpusops-ubuntu
+Host vagrant
   HostName 127.0.0.1
   User root
   Port 2200
@@ -130,7 +129,7 @@ Host corpusops-ubuntu
 then
 ```
 mkdir mountpoint
-sshfs myvm:/ mountpoint
+sshfs -F $(pwd)/sshconfig vagrant:/ mountpoint
 ```
 
 To umount
@@ -159,6 +158,19 @@ git clone https://github.com/corpusops/corpusops.bootstrap vmx
 cd vmx
 ./hacking/vagrant/import.sh /path/to/myvm.box
 ```
+
+### Cleaning up transient import boxes
+After working a while, issue
+```
+vagrant box list
+```
+
+You can then remove stale import files with
+```
+vagrant box remove <id>
+```
+If the box is really stale and not in used anymore, it will be no warning before
+it to be removed
 
 ## INSTALL knobs
 Edit ``vm_x/vagrant_config.yml`` to adapt to your convenience

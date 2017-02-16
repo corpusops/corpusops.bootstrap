@@ -43,7 +43,7 @@ cleanup_import_box() {
         return 0
     fi
     if vagrant box list | egrep -q "$boximportname";then
-        vv vagrant box remove "${boximportname}"
+        vv vagrant box remove --force "${boximportname}"
     fi
 }
 vv vagrant box add --force "${boximportname}" "${BOX}"
@@ -66,5 +66,6 @@ BOX_URI: file://$(readlink -f ${BOX})
 EOF
 vagrant up
 die_in_error "vagrant import from $BOX failed"
-cleanup_import_box
+# we cant as the ssh key is contained inside !
+# cleanup_import_box
 # vim:set et sts=4 ts=4 tw=80:
