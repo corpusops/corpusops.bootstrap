@@ -144,8 +144,21 @@ Be careful
 - Roles & playbook will be recheckouted at each VM new spawn from an exported one unless
   you use ``hacking/clone.sh`` to speed up the spawn process.
 - Roles & checkouts pinnings are done via ``requirements/*.in`` files of your corpusops clone.
+
 ### Export a VM
+```
+cd myvm
+vagrant halt -f
+./hacking/vagrant/export.sh myvm
+```
 ### Import a VM
+From a file ``vm.box`` produced by export.sh
+```
+cd myothervm
+git clone https://github.com/corpusops/corpusops.bootstrap vmx
+cd vmx
+./hacking/vagrant/import.sh /path/to/myvm.box
+```
 
 ## INSTALL knobs
 Edit ``vm_x/vagrant_config.yml`` to adapt to your convenience
