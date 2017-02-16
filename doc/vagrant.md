@@ -90,7 +90,7 @@ MAX_CPU_USAGE_PERCENT: 25
 
 ### Prepare the working copy from one another, to avoid recloning everything
 ```
-cd othervm
+cd myvl
 ./hacking/clone.sh /path/to/othervm
 $EDITOR /path/to/othervm/vagrant_config.yml
 ```
