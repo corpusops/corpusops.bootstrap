@@ -108,9 +108,9 @@ We made helpers to make the tedious work of using sshfs over an alternate config
 Those scripts can be called directly, without. any argument
 
 - ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
-- ``hacking/vagrant/mount.sh``, Mount the VM inside ``./mountpoint``.
+- ``hacking/vagrant/mount.sh``, Mount the VM inside ``./mountpoint``. (call sshgen.sh automatically)
 - ``hacking/vagrant/umount.sh``, Umount the sshfs mountpoint.
-- ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client
+- ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client. (call sshgen.sh automatically)
 
 ### Manually
 - You must install sshfs onto your host
