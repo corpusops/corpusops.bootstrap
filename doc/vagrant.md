@@ -112,6 +112,14 @@ Those scripts can be called directly, without. any argument
 - ``hacking/vagrant/umount.sh``, Umount the sshfs mountpoint.
 - ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client. (call sshgen.sh automatically)
 
+
+Eg, to mount the vm
+```
+cd myvm
+vagrant up
+hacking/vagrant/mount.sh
+```
+
 ### Manually
 - You must install sshfs onto your host
 - Generate a local sshconfig to access your VM
