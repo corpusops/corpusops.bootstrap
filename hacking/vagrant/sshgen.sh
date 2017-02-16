@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd $(dirname $0)/../..
+cd "$(dirname "$0")/../.."
 . bin/cops_shell_common
 vagrant ssh-config | sed \
     -e "s/User .*/User root/g" \

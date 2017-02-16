@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-cd $(dirname "$0")/../..
+cd "$(dirname "$0")/../.."
 export LOGGER_NAME=cops_vagrant
 sc=bin/cops_shell_common
-[[ ! -e $sc ]] && echo "missing $sc" >&2
-. $sc || exit 1
+[[ ! -e "$sc" ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
 
 usage () {
     NO_HEADER=y die '
@@ -23,7 +23,7 @@ parse_cli "$@"
 if vagrant status | egrep -q running;then
     die "Vagrant is running, poweroff VMs first with: vagrant halt -f"
 fi
-vv vagrant package --output ${BOX}.box \
+vv vagrant package --output "${BOX}.box" \
     $([[ -f vagrant_config.yml ]] && \
             echo --include vagrant_config.yml ; )
 die_in_error "vagrant export to $BOX failed"

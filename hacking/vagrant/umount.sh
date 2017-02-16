@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd $(dirname $0)/../..                        z
+cd "$(dirname "$0")/../.."
 . bin/cops_shell_common
 if [ -e mountpoint/bin ];then
     vv fusermount -u mountpoint

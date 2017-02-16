@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd $(dirname "$0")/../..
+cd "$(dirname "$0")/../.."
 export LOGGER_NAME=cops_vagrant
 sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
