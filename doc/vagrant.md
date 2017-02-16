@@ -139,11 +139,13 @@ fusermount -u mountpoint
 ```
 
 ### Helpers
-We made helpers that does not needs arguments
-- Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``
-- Helper to mount: ``hacking/vagrant/mount.sh``
-- Helper to umount: ``hacking/vagrant/umount.sh``
-- Helper to connect: ``hacking/vagrant/ssh.sh``. This one can take arguments that will be appened, to behave like a ssh client
+We made helpers to make the previous work more straighforward.
+Those scripts can be called directly, without. any argument
+
+- Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
+- Helper to mount: ``hacking/vagrant/mount.sh``, Mount the VM inside ``./mountpoint``.
+- Helper to umount: ``hacking/vagrant/umount.sh``, Umount the sshfs mountpoint.
+- Helper to connect: ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client
 
 ## Import/Export of an exiting VM
 Be careful
