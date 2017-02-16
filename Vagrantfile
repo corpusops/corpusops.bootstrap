@@ -28,6 +28,8 @@
 ## INSTALL knobs
 # FORCE_INSTALL: 1
 # FORCE_SYNC: 1
+# SKIP_INSTALL: 1
+# SKIP_ROOTSSHKEYS_SYNC: 1
 # -------------o<---------------
 require 'yaml'
 require 'digest/md5'
@@ -215,7 +217,6 @@ Vagrant.configure("2") do |config|
          File.delete("#{CWD}/.vagrant/machines/#{machine}/virtualbox/action_provision")
        end
        provision_scripts = [
-         "",
          "if [ ! -d /root/vagrant ];then mkdir /root/vagrant;fi;",
          %{cat > /root/vagrant/provision_settings.sh  << EOF
 export CORPUSOPS_NUM="#{cfg['CORPUSOPS_NUM']}"
@@ -231,11 +232,11 @@ export APT_MIRROR="#{cfg['APT_MIRROR']}"
 export APT_PROXY="#{cfg['APT_PROXY']}"
 export CORPUSOPS_AUTO_UPDATE="#{cfg['CORPUSOPS_AUTO_UPDATE']}"
 export CORPUSOPS_HOST_OS="#{cfg['UNAME']}"
-export CORPUSOPS_HOST_OS="#{cfg['UNAME']}"
 export FORCE_INSTALL="#{cfg['FORCE_INSTALL']}"
 export FORCE_SYNC="#{cfg['FORCE_SYNC']}"
+export SKIP_ROOTSSHKEYS_SYNC="#{cfg['SKIP_ROOTSSHKEYS_SYNC']}"
+export SKIP_INSTALL="#{cfg['SKIP_INSTALL']}"
 EOF},
-         "",
          %{cat > /root/vagrant/provision_net.sh  << EOF
 #!/usr/bin/env bash
 . "/root/vagrant/provision_settings.sh" || exit 1
@@ -252,9 +253,8 @@ for i in \\$DNS_SERVERS;do
     echo "nameserver \\$i" >>  /etc/resolv.conf
 done
 EOF},
-         "",
          "chmod 700 /root/vagrant/provision_*.sh",
-         "su -l -c /root/vagrant/provision_net.sh;",
+         "su -c /root/vagrant/provision_net.sh;",
          "su -l -c /srv/corpusops/corpusops.bootstrap/hacking/vagrant_provision_script.sh"]
        provision_script = provision_scripts.join("\n")
        sub.vm.provision :shell, :inline => provision_script

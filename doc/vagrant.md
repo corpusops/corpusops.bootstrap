@@ -96,11 +96,46 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 ```
 
 ## Mounting the VM as a sshfs mountpoint onto the host
+Add to your ``~/.ssh/config`` the output of
+```
+vagrant ssh-config
+```
+
+- Be sure to adapt the hostname to something familiar to you
+- Change the user from ``$user`` to root
+
+This will result in something like
+```
+Host corpusops-ubuntu
+  HostName 127.0.0.1
+  User root
+  Port 2200
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  PasswordAuthentication no
+  IdentityFile /home/u/vm/.vagrant/machines/corpusops2-1/virtualbox/private_key
+  IdentitiesOnly yes
+  LogLevel FATAL
+
+```
+
+then
+```
+mkdir mountpoint
+sshfs myvm:/ mountpoint
+```
+
+To umount
+```
+fusermount -u mountpoint
+```
 
 ## INSTALL knobs
 Edit ``vm_x/vagrant_config.yml`` to adapt to your convenience
 ```yaml
 FORCE_INSTALL: 1 (or empty string)
-FORCE_SYNC: 1(or empty string)
+FORCE_SYNC: 1 (or empty string)
+SKIP_INSTALL: 1 (or empty string)
+SKIP_ROOTSSHKEYS_SYNC: 1 (or empty string)
 ```
 
