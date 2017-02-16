@@ -1,4 +1,6 @@
 *.swp
+*.box
+*.bak
 *.egg-info
 *.retry
 *.log
@@ -24,3 +26,4 @@
 /.corpusops
 /.vagrant
 /vagrant_config.yml
+/sshconfig

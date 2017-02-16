@@ -1,9 +1,14 @@
 # vagrant corpusops setup
-We also provide a vagrantfile to test corpusops.
-
-The install prefix inside the VM is in ``/srv/corpusops/corpusops.bootstrap``.
 
 ## Common intruction
+
+- The install prefix inside the VM is in ``/srv/corpusops/corpusops.bootstrap``.
+- The current folder is mounted on ``/host``.
+- If you want to edit files from within your host (aka from your favourite IDE), see the ``mounting`` section.
+- The files of the local clone are pushed inside the VM on the first launch.
+- But after, everything lives in the VM except the Vagrant file and the provision script.
+- If you want to edit files, connect to the VM first or mount it !
+
 Make a [corpusops.bootstrap](https://github.com/corpusops/corpusops.bootstrap) clone per VM
 ```
 git clone https://github.com/corpusops/corpusops.bootstrap vmx
@@ -98,6 +103,7 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 ```
 
 ## Mounting the VM as a sshfs mountpoint onto the host
+- You must install sshfs onto your host
 Add to your ``~/.ssh/config`` the output of
 ```
 vagrant ssh-config
@@ -131,6 +137,15 @@ To umount
 ```
 fusermount -u mountpoint
 ```
+
+## Import/Export of an exiting VM
+Be careful
+- Virtualenv will be reconstructed, as of it's ansible subcheckout
+- Roles & playbook will be recheckouted at each VM new spawn from an exported one unless
+  you use ``hacking/clone.sh`` to speed up the spawn process.
+- Roles & checkouts pinnings are done via ``requirements/*.in`` files of your corpusops clone.
+### Export a VM
+### Import a VM
 
 ## INSTALL knobs
 Edit ``vm_x/vagrant_config.yml`` to adapt to your convenience

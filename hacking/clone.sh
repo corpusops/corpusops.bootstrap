@@ -33,6 +33,9 @@ fi
 
 cd "$W"
 vv rsync -a ./ "${CLONE_PATH}" \
+    --exclude=sshconfig \
+    --exclude=mountpoint \
+    --exclude=*.box \
     --exclude=venv \
     --exclude=vagrant_config.yml \
     --exclude=.vagrant
