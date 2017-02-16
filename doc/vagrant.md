@@ -104,7 +104,7 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 
 ## Mounting the VM as a sshfs mountpoint onto the host
 ### Helpers
-We made helpers to make the previous work more straighforward.<br/>
+We made helpers to make the tedious work of using sshfs over an alternate config more straighforward.<br/>
 Those scripts can be called directly, without. any argument
 
 - Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
