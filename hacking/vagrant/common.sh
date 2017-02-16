@@ -95,6 +95,7 @@ install_corpusops_copy() {
         FORCE_SYNC=y
         if [ -e "$ORIG/.git" ];then
             vv rsync -az "$ORIG/" "$PREFIX/" \
+                --exclude=.vagrant \
                 --exclude=hacking/vagrant \
                 --exclude=venv \
                 --exclude=roles \
