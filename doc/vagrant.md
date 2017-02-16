@@ -103,6 +103,15 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 ```
 
 ## Mounting the VM as a sshfs mountpoint onto the host
+### Helpers
+We made helpers to make the previous work more straighforward.<br/>
+Those scripts can be called directly, without. any argument
+
+- Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
+- Helper to mount: ``hacking/vagrant/mount.sh``, Mount the VM inside ``./mountpoint``.
+- Helper to umount: ``hacking/vagrant/umount.sh``, Umount the sshfs mountpoint.
+- Helper to connect: ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client
+
 ### Manually
 - You must install sshfs onto your host
 - Generate a local sshconfig to access your VM
@@ -137,15 +146,7 @@ To umount
 ```
 fusermount -u mountpoint
 ```
-
-### Helpers
-We made helpers to make the previous work more straighforward.<br/>
-Those scripts can be called directly, without. any argument
-
-- Helper to generate a sshconfig: ``hacking/vagrant/sshgen.sh``, Generates ``sshconfig``.
-- Helper to mount: ``hacking/vagrant/mount.sh``, Mount the VM inside ``./mountpoint``.
-- Helper to umount: ``hacking/vagrant/umount.sh``, Umount the sshfs mountpoint.
-- Helper to connect: ``hacking/vagrant/ssh.sh``, connect to the VM using SSH. This one can take arguments that will be appened, to behave like a ssh client
+ 
 
 ## Import/Export of an exiting VM
 Be careful
