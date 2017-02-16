@@ -50,8 +50,10 @@ sync_ssh() {
 }
 
 install_corpusops() {
-	[ ! -e "$PREFIX/venv/bin/ansible" ] && FORCE_INSTALL=1
-
+	if [ ! -e "$PREFIX/venv/bin/ansible" ]  ||\
+        ! ( has_command virtualenv ) ;then
+        FORCE_INSTALL=1
+    fi
 	if      [ ! -e "$PREFIX/roles/corpusops.vars" ] \
 		||  [ ! -e "$PREFIX/venv/src/ansible" ] \
 		||  [ ! -e "$PREFIX/playbooks/corpusops" ] \
@@ -72,7 +74,6 @@ install_corpusops() {
 	fi
 }
 
-echo "->$SKIP_ROOTSSHKEYS_SYNC<-"
 if [[ -z "${SKIP_ROOTSSHKEYS_SYNC}" ]];then
 	sync_ssh
 else

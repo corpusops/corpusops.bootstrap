@@ -14,7 +14,6 @@ git clone https://github.com/corpusops/corpusops.bootstrap vmx
 ### Create a centos VM
 Before launching vagrant up, edit ``vm_centos/vagrant_config.yml`` to looks like
 ```yaml
-CORPUSOPS_NUM: '2'
 OS: centos
 #ÔS_RELEASE: "7"
 ```
@@ -29,7 +28,6 @@ vagrant up
 ### Create a ubuntu VM
 Before launching vagrant up, edit dit ``vm_ubuntu/vagrant_config.yml`` to looks like
 ```yaml
-CORPUSOPS_NUM: '2'
 OS: Ubuntu
 #ÔS_RELEASE: xenial
 
@@ -44,7 +42,6 @@ vagrant up
 ### Create a debian VM
 Before launching vagrant up, edit ``vm_debian/vagrant_config.yml`` to looks like
 ```yaml
-CORPUSOPS_NUM: '2'
 OS: debian
 #ÔS_RELEASE: sid
 

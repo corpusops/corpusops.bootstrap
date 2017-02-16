@@ -4,7 +4,6 @@
 # If you want to alter any configuration setting, put theses settings in a ./vagrant_config.yml file
 # This file would contain a combinaison of those settings
 # -------------o<---------------
-# CORPUSOPS_NUM: 3
 # CPUS: 1
 # MEMORY: 512
 # MAX_CPU_USAGE_PERCENT: 25
@@ -86,7 +85,6 @@ end
 
 cfg = Hash.new
 # Number of machines to spawn
-cfg['CORPUSOPS_NUM'] = nil
 cfg['UNAME'] = `uname`.strip
 cfg['FORCE_INSTALL'] = ''
 cfg['FORCE_SYNC'] = ''
@@ -124,27 +122,8 @@ cfg.each_pair { |i, val| cfg[i] = ENV.fetch("CORPUSOPS_#{i}", val) }
 end
 
 # IP managment
-# The box used a default NAT private IP, defined automatically by vagrant and virtualbox
-if not cfg['CORPUSOPS_NUM']
-    consumed_nums = []
-    skipped_nums = ["1", "254"]
-    `VBoxManage list vms|grep -i corpusops`.split(/\n/).each do |l|
-      n = l.downcase.sub(/.*corpusops ([0-9]*) .*/, '\\1')
-      if not consumed_nums.include?(n) and not n.empty?
-          consumed_nums << n
-      end
-    end
-    ("1".."254").each do |num|
-      if !consumed_nums.include?(num) && !skipped_nums.include?(num)
-        cfg['CORPUSOPS_NUM'] = num
-        break
-      end
-    end
-    if not cfg['CORPUSOPS_NUM']
-      raise "There is no corpusops numbers left in (#{consumed_nums})"
-    end
-end
-localcfg['CORPUSOPS_NUM'] = cfg['CORPUSOPS_NUM']
+# The box used a default NAT private IP
+# defined automatically by vagrant and virtualbox
 
 # OS/BOX SELECTION
 case cfg['OS']
@@ -178,8 +157,8 @@ File.open("#{VSETTINGS_Y}", 'w') {|f| f.write localcfg.to_yaml }
 mountpoints = {CWD => "/srv/corpusops/corpusops.bootstrap"}
 
 #------------ Computed variables ------------------------
-cfg['VIRTUALBOX_BASE_VM_NAME'] = "corpusops #{cfg['CORPUSOPS_NUM']} #{cfg['OS']} #{cfg['OS_RELEASE']}64"
-cfg['VM_HOST'] = "corpusops#{cfg['CORPUSOPS_NUM']}"
+cfg['VIRTUALBOX_BASE_VM_NAME'] = "corpusops #{cfg['OS']} #{cfg['OS_RELEASE']}64"
+cfg['VM_HOST'] = "corpusops"
 
 Vagrant.configure("2") do |config|
   if Vagrant.has_plugin?('vbguest management')
@@ -219,7 +198,6 @@ Vagrant.configure("2") do |config|
        provision_scripts = [
          "if [ ! -d /root/vagrant ];then mkdir /root/vagrant;fi;",
          %{cat > /root/vagrant/provision_settings.sh  << EOF
-export CORPUSOPS_NUM="#{cfg['CORPUSOPS_NUM']}"
 export CORPUSOPS_MACHINE="#{machine}"
 export CORPUSOPS_MACHINE_NUM="#{machine_num}"
 export CORPUSOPS_BASE_NAME="#{cfg['VIRTUALBOX_BASE_VM_NAME']}"
