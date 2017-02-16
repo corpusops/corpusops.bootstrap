@@ -108,7 +108,7 @@ $EDITOR /path/to/othervm/vagrant_config.yml
 ```
 vagrant ssh-config \
     | sed \
-        -e "s/User .*/User root/g"
+        -e "s/User .*/User root/g" \
         -e "s/Host .*/Host vagrant/g" > sshconfig
 ```
 This will result in ``./sshconfig`` like
