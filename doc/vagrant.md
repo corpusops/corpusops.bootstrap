@@ -12,7 +12,7 @@ git clone https://github.com/corpusops/corpusops.bootstrap vmx
 ## Setup a vagrant VM (before launching it the first time)
 
 ### Create a centos VM
-Edit ``vm_centos/vagrant_config.yml`` to looks like
+Before launching vagrant up, edit ``vm_centos/vagrant_config.yml`` to looks like
 ```yaml
 CORPUSOPS_NUM: '2'
 OS: centos
@@ -27,7 +27,7 @@ vagrant up
 ```
 
 ### Create a ubuntu VM
-Edit ``vm_ubuntu/vagrant_config.yml`` to looks like
+Before launching vagrant up, edit dit ``vm_ubuntu/vagrant_config.yml`` to looks like
 ```yaml
 CORPUSOPS_NUM: '2'
 OS: Ubuntu
@@ -42,7 +42,7 @@ vagrant up
 ```
 
 ### Create a debian VM
-Edit ``vm_debian/vagrant_config.yml`` to looks like
+Before launching vagrant up, edit ``vm_debian/vagrant_config.yml`` to looks like
 ```yaml
 CORPUSOPS_NUM: '2'
 OS: debian
@@ -57,7 +57,7 @@ vagrant up
 ```
 
 ### Create a VM from an existing box
-Edit ``vm_customb/vagrant_config.yml`` to looks like
+Before launching vagrant up, edit ``vm_customb/vagrant_config.yml`` to looks like
 ```yaml
 BOX: acustomnameb
 BOX_URI: nil
@@ -70,7 +70,7 @@ vagrant up
 ```
 
 ### Create a box from a custom URI
-Edit ``vm_customu/vagrant_config.yml`` to looks like
+Before launching vagrant up, edit ``vm_customu/vagrant_config.yml`` to looks like
 ```yaml
 BOX: acustomnameu
 BOX_URI: http://super/box.box
