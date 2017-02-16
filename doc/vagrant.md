@@ -1,6 +1,6 @@
 # vagrant corpusops setup
 
-## Common intruction
+## Common instructions
 
 - The install prefix inside the VM is in ``/srv/corpusops/corpusops.bootstrap``.
 - The current folder is mounted on ``/host``.
