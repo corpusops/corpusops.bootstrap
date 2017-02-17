@@ -276,13 +276,13 @@ parse_cli() {
         INSTALLER=aptget
     elif echo ${DISTRIB_ID} | egrep -iq "archlinux";then
         INSTALLER=pacman
-    elif echo ${DISTRIB_ID} | egrep -iq "redhat|red-hat|centos|fedora";then
+    elif echo ${DISTRIB_ID} | egrep -iq "rhel|redhat|red-hat|centos|fedora";then
         INSTALLER=yum
         if has_command dnf;then
             INSTALLER=dnf
         fi
     else
-        die "Not supported os"
+        die "Not supported os ${DISTRIB_ID}"
     fi
     debug "INSTALLER: ${INSTALLER}"
 }
