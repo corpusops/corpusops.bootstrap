@@ -240,7 +240,7 @@ recap_(){
         bs_yellow_log "---------------------------------------------------"
     fi
     if [ "x${need_confirm}" != "xno" ] && [ "x${DO_NOCONFIRM}" = "x" ]; then
-        bs_yellow_log "To not have this confirmation message, do:"
+        bs_yellow_log "To avoid this confirmation message, do:"
         bs_yellow_log "    export DO_NOCONFIRM='1'"
     fi
 
