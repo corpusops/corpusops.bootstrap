@@ -274,7 +274,7 @@ parse_cli() {
         INSTALLER=aptget
     elif echo ${DISTRIB_ID} | egrep -iq "archlinux";then
         INSTALLER=pacman
-    elif echo ${DISTRIB_ID} | egrep -iq "rhel|redhat|red-hat|centos|fedora";then
+    elif echo ${DISTRIB_ID} | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)";then
         INSTALLER=yum
         if has_command dnf;then
             INSTALLER=dnf

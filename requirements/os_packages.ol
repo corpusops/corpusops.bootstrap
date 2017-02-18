@@ -7,7 +7,7 @@ curl
 libcurl-devel
 gettext
 git
-groff
+groff-base
 iputils
 libffi
 libffi-devel
@@ -17,14 +17,12 @@ openssl
 openssl-devel
 openssl-libs
 libsigc++20
-libsigc++20-devel
 libtool
 m4
 man-db
 pkgconfig
 python
 python-devel
-python-test
 python-six
 python-virtualenv
 rsync
