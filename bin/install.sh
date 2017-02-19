@@ -17,7 +17,7 @@ ensure_last_virtualenv() {
     if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
          || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
         if version_lt "$(virtualenv --version)" "15.1.0"; then
-			log "Installing last version of virtualenv"
+            log "Installing last version of virtualenv"
             if has_command pip;then
                 vv $(may_sudo) pip install --upgrade pip
             elif has_command easy_install;then
@@ -136,6 +136,8 @@ set_vars() {
     CORPUSOPS_BRANCH="${CORPUSOPS_BRANCH-}"
     ANSIBLE_URL="${ANSIBLE_URL-}"
     ANSIBLE_BRANCH="${ANSIBLE_BRANCH-}"
+    PYTESTRPM="${PYTESTRPM:-python-test-2.7.5-48.el7.x86_64.rpm}"
+    CENTOSMIRROR="${CENTOSMIRROR:-http://centos.mirrors.ovh.net/ftp.centos.org/7/os/x86_64/Packages/}"
     if [ "x${DO_VERSION}" != "xy" ];then
         DO_VERSION="no"
     fi
@@ -187,6 +189,7 @@ set_vars() {
     export TRAVIS_DEBUG TRAVIS
     #
     export QUIET DEBUG
+    export PYTESTRPM PYTESTURL
     #
     export VENV_PATH PIP_CACHE W
 }
@@ -269,6 +272,17 @@ install_prerequisites_() {
     if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
         bs_log "prerequisites setup skipped"
         return 0
+    fi
+
+    if echo ${DISTRIB_ID} | egrep -iq "^ol$";then
+        if ! ( rpm -ql python-test 1>/dev/null 2>&1 );then
+            PYTESTURL="${CENTOSMIRROR}/${PYTESTRPM}"
+            log "Installing python-test on $DISTRIB_ID"
+            curl -LO  "${PYTESTURL}"
+            die_in_error "Can't get $PYTESTURL"
+            rpm -ivh --nodeps "$PYTESTRPM"
+            die_in_error "Can't install $PYTESTRPM"
+        fi
     fi
     debug "Ensuring system packages are installed: ${pkgs}"
     SKIP_UPGRADE=y\
