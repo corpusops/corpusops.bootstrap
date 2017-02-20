@@ -1,6 +1,8 @@
 - hosts: all
   vars:
     checkouts:
+      - repo: "https://github.com/geerlingguy/ansible-role-repo-epel.git"
+        dest: '{{prefix}}/roles/geerlingguy.repo-epel'
       - repo: '__CORPUSOPS_ORGA_URL__/filter_plugins.git'
         dest: '{{prefix}}/roles/corpusops.filter_plugins'
       - repo: '__CORPUSOPS_ORGA_URL__/include_jinja_vars.git'
@@ -146,6 +148,6 @@
   tasks:
     - include: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
-      tags: checkouts,checkout
+      tags: checkouts,checkout,checkout_cops
       loop_control:
         loop_var: checkout_item
