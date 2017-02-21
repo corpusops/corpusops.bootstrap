@@ -5,7 +5,7 @@ if [[ -n ${1} ]];then
     ROLEWD=${ROLEWD:-${2:-$(cd $1/.. && pwd)}}
     COPS_ROOT=${COPS_ROOT:-${3:-$(cd $1/../.. && pwd)}}
 fi
-ROLEWD=${ROLEWD:-__ROLES_WD__}
+ROLEWD=${ROLEWD:-$(cd "${ROLEPATH}/.." && pwd)}
 COPS_ROOT=${COPS_ROOT:-__COPS_ROOT__}
 crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
 cd "${COPS_ROOT}"
@@ -19,17 +19,16 @@ if [ -e "${README}" ];then
   done
 fi
 for i in $COPS_DEPS_ROLES;do
-    if ! ( $crole "roles/${i}/role.yml" );then
+    if ! ( echo $crole "roles/${i}/role.yml" );then
         echo "roles/${i}/role.yml failed"
         exit 4
     fi
 done
-cd "${ROLEWD}"
 ret=0
 # try to readd a link to mimic the namespace
 # when we have a rolepath without DOT (missing namespace)
 lnk=""
-if ( echo $ROLENAME | egrep -vq [.] ) && \
+if ( $ROLENAME | egrep -vq [.] ) && \
     [ -e "${ROLEPATH}/meta/main.yml" ];then
     NS=$( echo $(grep namespace: "${ROLEPATH}/meta/main.yml" \
                  | awk -F: '{print $2}'))
@@ -40,14 +39,15 @@ if ( echo $ROLENAME | egrep -vq [.] ) && \
         lnk=""
     fi
 fi
+if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
+    export ANSIBLE_ROLES_PATH="${ROLEWD}"
+else
+    export ANSIBLE_ROLES_PATH="${ROLEWD}:${ANSIBLE_ROLES_PATH}"
+fi
 for test_role_file in test.yml role.yml;do
     ftest_role_file="${ROLEPATH}/${test_role_file}"
     if [ -e "${ftest_role_file}" ]; then
-        if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
-            export ANSIBLE_ROLES_PATH="${ROLEWD}"
-        else
-            export ANSIBLE_ROLES_PATH="${ROLEWD}:${ANSIBLE_ROLES_PATH}"
-        fi
+        echo "Using ${ftest_role_file}" >&2
         ${crole} "${ftest_role_file}"
         ret=${?}
         if [ "x${ret}" != "x0" ];then
