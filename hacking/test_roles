@@ -78,11 +78,7 @@ rewrite_role_file() {
     local rolename="$(basename $role)"
     local template="${3}"
     local role_script="${4}"
-    local roles_wd=$( cd "${role}" && cd .. && pwd )
     local rolesd=$( basename "${roles_wd}" )
-    if echo "${rolesd}" | egrep -q '^roles?'; then
-        roles_wd=$( cd "${roles_wd}/.." && pwd )
-    fi
     if [[ -n ${NOT_IN_DOCKER} ]]; then
         cops_root=${W}
     fi
@@ -90,7 +86,6 @@ rewrite_role_file() {
         sed -r\
         -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__ROLE_SCRIPT__|${role_script}|g" \
-        -e "s|__ROLES_WD__|${roles_wd}|g" \
         -e "s|__ROLEPATH__|${role}|g" \
         -e "s|__ROLENAME__|${rolename}|g"\
         -e "s|__ROLE_NUM__|${role_num}|g"
