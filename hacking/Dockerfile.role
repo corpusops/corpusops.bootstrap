@@ -4,7 +4,7 @@ ENV container docker
 ARG COPS_ROOT=__COPS_ROOT__
 
 ADD . __ROLEPATH__
-RUN step_rev=1;set -ex;cd "${COPS_ROOT}";\
+RUN step_rev=1;set -e;cd "${COPS_ROOT}";\
     crole="${COPS_ROOT}/bin/cops_apply_role -vvvv";\
     __ROLE_SCRIPT__
 # vim:set et:
