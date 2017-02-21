@@ -19,7 +19,7 @@ if [ -e "${README}" ];then
   done
 fi
 for i in $COPS_DEPS_ROLES;do
-    if ! ( echo $crole "roles/${i}/role.yml" );then
+    if ! ( $crole "roles/${i}/role.yml" );then
         echo "roles/${i}/role.yml failed"
         exit 4
     fi
