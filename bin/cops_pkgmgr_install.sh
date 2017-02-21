@@ -270,8 +270,6 @@ parse_cli() {
             *) WANTED_PACKAGES="${WANTED_PACKAGES} ${i}";;
         esac
     done
-    WANTED_PACKAGES="$(echo "$(echo "${WANTED_PACKAGES}" | xargs -n1 | sort -u)")"
-    WANTED_EXTRA_PACKAGES="$(echo "$(echo "${WANTED_EXTRA_PACKAGES}" | xargs -n1 | sort -u)")"
     if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then
         INSTALLER=aptget
     elif echo ${DISTRIB_ID} | egrep -iq "archlinux";then
@@ -397,6 +395,9 @@ setup() {
     else
         debug "Skip setup"
     fi
+    # be sure to use xargs only after we installed it
+    WANTED_PACKAGES="$(echo "$(echo "${WANTED_PACKAGES}" | xargs -n1 | sort -u)")"
+    WANTED_EXTRA_PACKAGES="$(echo "$(echo "${WANTED_EXTRA_PACKAGES}" | xargs -n1 | sort -u)")"
 }
 
 upgrade() {
