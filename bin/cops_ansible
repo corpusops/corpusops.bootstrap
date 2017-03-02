@@ -53,7 +53,7 @@ else
 fi
 
 while read p;do
-    if [ -e "${p}" ];then
+    if [[ -z "${NO_ANSIBLE_CONTEXTUAL_PLUGINS_LOAD}" ]] && [ -e "${p}" ];then
         for inventory in "${p}/inventories" "${p}/inventory";do
             if [ -e "${inventory}" ] && [[ -z ${ANSIBLE_HOSTS-} ]] ; then
                 export ANSIBLE_HOSTS="${inventory}"
@@ -91,7 +91,6 @@ done < <(find \
             -mindepth 0 -maxdepth 0 -and \
             \( -type d -or -type l \) \
             2>/dev/null | uniq )
-
 export ANSIBLE_SSH_CONTROL_PATH=${ANSIBLE_SSH_CONTROL_PATH:-"~/.assh_%%h.%%p-%%r"}
 export ANSIBLE_HOST_KEY_CHECKING${ANSIBLE_HOST_KEY_CHECKING:-"False"}
 export ANSIBLE_NOCOWS=${ANSIBLE_NOCOWS:-False}
