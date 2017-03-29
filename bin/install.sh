@@ -19,7 +19,7 @@ ensure_last_virtualenv() {
         if version_lt "$(virtualenv --version)" "15.1.0"; then
             log "Installing last version of virtualenv"
             if has_command pip;then
-                vv $(may_sudo) pip install --upgrade pip
+                vv $(may_sudo) pip install --upgrade virtualenv
             elif has_command easy_install;then
                 vv $(may_sudo) easy_install -U virtualenv
             fi
