@@ -114,7 +114,7 @@ install_corpusops_copy() {
         ! ( has_command virtualenv ) ;then
         FORCE_INSTALL=1
     fi
-    if      [ ! -e "$PREFIX/roles/corpusops.vars" ] \
+    if      [ ! -e "$PREFIX/roles/corpusops.roles" ] \
         ||  [ ! -e "$PREFIX/venv/src/ansible" ] \
         ||  [ ! -e "$PREFIX/playbooks/corpusops" ] \
         ||  [ ! -e "$PREFIX/venv/bin/ansible" ]; then
@@ -144,7 +144,7 @@ install_corpusops() {
         ! ( has_command virtualenv ) ;then
         FORCE_INSTALL=1
     fi
-    if      [ ! -e "$PREFIX/roles/corpusops.vars" ] \
+    if      [ ! -e "$PREFIX/roles/corpusops.roles" ] \
         ||  [ ! -e "$PREFIX/venv/src/ansible" ] \
         ||  [ ! -e "$PREFIX/playbooks/corpusops" ] \
         ||  [ ! -e "$PREFIX/venv/bin/ansible" ]; then

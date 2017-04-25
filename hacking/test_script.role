@@ -28,7 +28,7 @@ ret=0
 # try to readd a link to mimic the namespace
 # when we have a rolepath without DOT (missing namespace)
 lnk=""
-if ( $ROLENAME | egrep -vq [.] ) && \
+if ( echo $ROLENAME | egrep -vq [.] ) && \
     [ -e "${ROLEPATH}/meta/main.yml" ];then
     NS=$( echo $(grep namespace: "${ROLEPATH}/meta/main.yml" \
                  | awk -F: '{print $2}'))
