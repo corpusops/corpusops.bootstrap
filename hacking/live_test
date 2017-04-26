@@ -117,10 +117,16 @@ main() {
                    | awk '{print $3}' | egrep '^/'; )
             )\
             $( if [[ "${OW}" == "${W}" ]];then
-                while read v; do echo " -v ${v}:${v}:ro";done < \
+                while read v; do \
+                    echo " -v ${v}:${v}:ro"; \
+                    echo " -v ${v}:$COPS_ROOT/$(basename ${v}):ro"; \
+                done < \
                     <( find "${W}" -maxdepth 1 -mindepth 1 \
                     | egrep -v "${W}/src|venv|requirements|roles|playbooks|/.corpusops"; )
-                while read v; do echo " -v ${v}:${v}:rw";done < \
+                while read v; do \
+                    echo " -v ${v}:${v}:rw"; \
+                    echo " -v ${v}:$COPS_ROOT/$(basename ${v}):ro"; \
+                done < \
                     <( find "${W}" -maxdepth 1 -mindepth 1 \
                     | egrep "${W}/(src|requirements|roles|playbooks)"; )
             fi
