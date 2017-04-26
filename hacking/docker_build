@@ -93,22 +93,12 @@ if [[ -n ${candidate_id} ]]; then
         init_candidate_vars
     fi
 fi
-if [[ -n ${candidate_id} ]]; then
-    if [[ -z ${SKIP_FOUND_CANDIDATE_EXIT} ]]; then
-        errmsg="Candidate already found: ${candidate},"
-        errmsg="${errmsg} build in progress or already failed ?"
-        errmsg="${errmsg} set SKIP_FOUND_CANDIDATE_EXIT=1 to skip"
-        die 1 "${errmsg}"
-    fi
-fi
 
 if [[ -z ${candidate_id} ]];then
     debug "No candidates found prior to build"
 fi
 
-if egrep -q ^FROM "${dockerfile}"; then
-    ancestor=$(egrep ^FROM "${dockerfile}"|head -n1|awk '{print $2}'|xargs -n1|sort -u)
-fi
+ancestor=$(get_ancestor_from_dockerfile "${dockerfile}")
 
 if [[ -n "${ancestor}" ]]; then
     ancestor_id=$(get_docker_ids "${ancestor}")
@@ -147,26 +137,47 @@ if [[ ${ret} == 0 ]];then
     fi
 fi
 
-# Candidate is ready, delete now previous candidate image if found
-if [[ ${ret} == 0 ]] && [[ -z ${NO_CANDIDATE_CLEANUP} ]]; then
-    if [[ ${candidate_id} != ${old_candidate_id} ]]; then
-        dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_candidate_id}" 2>/dev/null)
-        if [[ -n ${dtag_id} ]];then
-            # delete by id to be sure to not delete blindy a candidate used
-            # via other tags
-            SILENT_LOG=1 vvv docker rmi ${old_candidate_id}
+cleanup_tag() {
+    local old_tag_or_id="$1" tag="$2" suf="$3"
+    if [[ -z ${old_tag_or_id} ]];then
+        debug "Skip cleanup, no old tag id for $tag (${suf})"
+        return 0
+    fi
+    if [[ -z ${tag} ]];then
+        debug "Skip cleanup, no tag for $tag (${suf})"
+        return 0
+    fi
+    local ctag_id=$(vv docker inspect -f '{{.Id}}' "${old_tag_or_id}" 2>/dev/null)
+    local dtag_id=$(vv docker inspect -f '{{.Id}}' "${tag}" 2>/dev/null)
+    if [[ -z "${ctag_id}" ]];then
+        log "Old image id for ${old_tag_or_id} not found, skipping tag cleanup for $tag"
+        return 0
+    fi
+    if [[ -z "${dtag_id}" ]];then
+        log "Image ${tag} not found, skipping tag cleanup for $tag"
+        return 0
+    fi
+    if [[ "${dtag_id}" != "${ctag_id}" ]];then
+        # delete by id to be sure to delete an image which has only one tag
+        # left, the 'squashed tag'
+        SILENT_LOG=1 vvv docker rmi "${old_tag_or_id}" >/dev/null 2>&1
+        if [[ ${?} != 0 ]];then
+            # retry to verify if the failure is because of dependant images
+            # and we should not bail out here
+            SILENT_LOG=1 vvv docker rmi "${old_tag_or_id}" 2>&1\
+                | grep -q 'image has dependent'
             if [[ ${?} != 0 ]];then
-                log "Error when cleaning old candidate: ${old_candidate_id} for ${tag}"
+                die "Error when cleaning ${suf} tag: ${tag}/${old_tag_or_id}/${ctag_id}/${dtag_id}"
             else
-                log "Old candidate for ${tag} untaggued"
+                debug "skip tag $tag cleanup: has dependant images"
             fi
+        else
+            log "Cleaned ${suf} tag: ${tag}"
         fi
     else
         log "We do not have produced a new image for ${tag}"
     fi
-else
-    debug "Skip old candidate cleanup of ${tag} :: ${dockerfile} :: ${wd}"
-fi
+}
 
 # Maybe squash produced candidate
 if [[ ${ret} == 0 ]]; then
@@ -213,64 +224,26 @@ fi
 
 # Last cleanup bits (cleanup if found leftover squashed candidates
 if [[ ${ret} == 0 ]]; then
-    if [[ -n ${NO_SQUASH} ]];then
-        if [[ -n ${candidate_id} ]]; then
-            dtag_id=$(vv docker inspect -f '{{.Id}}' "${candidate_id}" 2>/dev/null)
-            if [[ -n ${dtag_id} ]];then
-                # delete by id to be sure to delete an image which has only one tag
-                # left, the 'squashed tag'
-                SILENT_LOG=1 vvv docker rmi "${candidate}"
-                if [[ ${?} != 0 ]];then
-                    log "Error when cleaning candidate tag: ${candidate}"
-                else
-                    log "Cleaned candidate tag: ${candidate}"
-                fi
-            fi
-        else
-            log "When cleaning up, old squashed image was not found for tag: ${candidate_squashed}"
-        fi
-    elif [[ -z ${NO_SQUASH} ]] && [[ -z ${NO_SQUASH_CLEANUP} ]]; then
-        if [[ -n ${squashed_id} ]] && [[ -n ${old_squashed_id} ]] \
-            && [[ ${squashed_id} != ${old_squashed_id} ]]; then
-            dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_squashed_id}" 2>/dev/null)
-            if [[ -n ${dtag_id} ]];then
-                # delete by id to be sure to delete an image which has only one tag
-                # left, the 'squashed tag'
-                SILENT_LOG=1 vvv docker rmi "${dtag_id}"
-                if [[ ${?} != 0 ]];then
-                    log "Error when cleaning old squashed image: ${candidate_squashed}"
-                else
-                    log "Cleaned old squashed image: ${candidate_squashed}"
-                fi
-            fi
-        else
-            log "When cleaning up, old squashed image was not found for tag: ${candidate_squashed}"
-        fi
+    if [[ -z ${NO_CANDIDATE_CLEANUP} ]]; then
+        cleanup_tag "${old_candidate_id}" "${candidate}" candidate
     else
-        debug "Skip tags cleanup"
+        debug "Skip old candidate cleanup of ${tag} :: ${dockerfile} :: ${wd}"
+    fi
+    if [[ -z ${NO_SQUASH} ]] && [[ -z ${NO_SQUASH_CLEANUP} ]]; then
+        cleanup_tag "${old_squashed_id}" "${candidate_squashed}" squashed
+    else
+        debug "Skip squashed image tag cleanup"
     fi
     if [[ -z ${NO_OLD_IMAGE_CLEANUP} ]]; then
-        if [[ -z ${tag_id} ]];then
-            log "We do not have anymore an image for ${tag}"
-            ret=8
-        elif [[ ${tag_id} != ${old_tag_id} ]]; then
-            dtag_id=$(vv docker inspect -f '{{.Id}}' "${old_tag_id}" 2>/dev/null)
-            if [[ -n ${dtag_id} ]];then
-                # delete by id to be sure to delete an image which isnt used by
-                # other mean s
-                SILENT_LOG=1 vvv docker rmi ${dtag_id}
-                if [[ ${?} != 0 ]];then
-                    log "Error when cleaning old image: ${dtag_id} for ${tag}"
-                else
-                    log "Old image for ${tag} untaggued"
-                fi
-            fi
-        else
-            log "We do not have produced a new image for ${tag}"
-        fi
+        cleanup_tag "${old_tag_id}" "${tag}" image
     else
         debug "Skip old image cleanup of ${tag} :: ${dockerfile} :: ${wd}"
     fi
+fi
+
+if [[ -z ${tag_id} ]];then
+    log "We do not have anymore an image for ${tag}"
+    ret=8
 fi
 
 debug "${0} ret: ${ret}"

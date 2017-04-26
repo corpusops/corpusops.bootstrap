@@ -78,31 +78,36 @@ success=""
 
 ret=0
 
-log $DOCKER_FOLDERS
 for docker_folder in ${DOCKER_FOLDERS};do
     set_docker_folder "${docker_folder}"
     dockerfiles="$(get_dockerfiles_from_folder "${docker_folder}")"
     # for base image, build preprovision before !
-    if echo "${docker_folder}" \
-        | grep -q "${W}/docker"; then
+    if [[ -e "${docker_folder}/docker/preprovision" ]] && \
+       [[ -e "${docker_folder}/docker/preprovision" ]];then
         dockerfiles="$(get_dockerfiles_from_folder \
-                          "${W}/docker/preprovision")"
+                          "${docker_folder}/docker/preprovision")"
         dockerfiles="${dockerfiles} \
                      $(get_dockerfiles_from_folder \
-                          "${W}/docker/images")"
+                          "${docker_folder}/docker/images")"
+    else
+        dockerfiles="${dockerfiles} \
+            $(get_dockerfiles_from_folder "${docker_folder}")"
     fi
-    dockerfiles="$(echo "${dockerfiles}"|xargs -n1)"
+    dockerfiles="$(echo "${dockerfiles}"|xargs -n1|uniq)"
     debug "Using dockerfiles: ${dockerfiles}"
     while read dockerfile_line;do
         for dockerfile in ${dockerfile_line};do
             tag=$(get_tag_from_dockerfile ${dockerfile} ${docker_folder})
+            utag=$(may_prepend_docker_user_to_image ${tag})
             timg=$(echo ${tag} | sed -re "s/:?_preprovision$//g")
+            utimg=$(may_prepend_docker_user_to_image ${timg})
             build=1
             if [[ -n ${IMAGES} ]]; then
                 build=
                 # when images is set, filter out non wanted images
                 for img in ${IMAGES};do
-                    if [[ "${img}" == "${timg}" ]]; then
+                    if [[ "${img}" == "${utimg}" ]] || \
+                       [[ "${img}" == "${timg}" ]]; then
                         build=1
                         break
                     fi
@@ -110,18 +115,24 @@ for docker_folder in ${DOCKER_FOLDERS};do
                 # when skip images is set, filter out non wanted images
                 if [[ -n "${build}" ]]; then
                     for img in ${SKIP_IMAGES-};do
-                        if [[ "${img}" == "${tag}" ]]; then
+                        if [[ "${img}" == "${utag}" ]] || \
+                           [[ "${img}" == "${tag}" ]]; then
                             build=
                             break
                         fi
                     done
                 fi
             fi
+            ancestor=$(get_ancestor_from_dockerfile "${dockerfile}")
+            if [[ -n ${ancestor} ]] && echo $failed | xargs -n1 | egrep -q "^${ancestor}$";then
+                log "$tag: Ancestor ${ancestor} failed building, skip"
+                build=
+            fi
             if [[ -z ${build} ]]; then
                 debug "Skip: ${tag}"
                 continue
             fi
-            tag=$(may_prepend_docker_user_to_image ${tag})
+            tag=${utag}
             log "Building image: ${tag}"
             # XXX We can make this parralel to speed up builds
             NO_OUTPUT=${NO_BUILD_OUTPUT-${TRAVIS-}} output_in_error \

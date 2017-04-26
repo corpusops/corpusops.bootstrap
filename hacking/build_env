@@ -38,10 +38,12 @@ DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
 ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
 BASE_ROLES="\
-corpusops.roles/filter_plugins
+corpusops.roles/actionhelper
+corpusops.roles/ansible_plugins
 corpusops.roles/debug
 corpusops.roles/humanlog
 corpusops.roles/include_jinja_vars
+corpusops.roles/service
 corpusops.roles/saltcall
 corpusops.roles/vars"
 CONFIG_ROLES="\
