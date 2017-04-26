@@ -21,6 +21,7 @@ python-dev
 python-six
 python-software-properties
 python-virtualenv
+python-pip
 rsync
 swig
 tcl8.5

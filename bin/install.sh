@@ -400,6 +400,18 @@ synchronize_code() {
     fi
 }
 
+get_python2() {
+    local py=
+    for i in python python-2 python-2.7 python-2.6;do
+        local lpy=$(get_command $i 2>/dev/null)
+        if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
+            py=${lpy}
+            break
+        fi
+    done
+    echo $py
+}
+
 setup_virtualenv_() {
     ensure_last_virtualenv
     if [ "x${DO_SETUP_VIRTUALENV}" != "xy" ]; then
@@ -417,7 +429,13 @@ setup_virtualenv_() {
         if [ ! -e "${VENV_PATH}" ]; then
             mkdir -p "${VENV_PATH}"
         fi
-        virtualenv --system-site-packages --unzip-setuptools "${VENV_PATH}" &&\
+        py=$(get_python2)
+        if [[ -z $py ]];then
+            die "No Python2 interpreter found"
+        fi
+        virtualenv --python="$py" \
+            --system-site-packages --unzip-setuptools \
+            "${VENV_PATH}" &&\
         . "${VENV_PATH}/bin/activate" &&\
         "${VENV_PATH}/bin/easy_install" -U setuptools &&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
