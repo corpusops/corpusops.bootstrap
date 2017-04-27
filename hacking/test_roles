@@ -14,7 +14,7 @@ Test script for ansible roles in ./roles or arbitrary rolepath
 against a set of docker \$IMAGES.
 
  [COPS_DOCKER_TEST_MODE=build/run] \
- [COPS_DOCKER_CMD="/sbin/init"] \
+ [COPS_DOCKER_CMD="/sbin/cops_systemd_entry_point.sh"] \
  [NO_CLEANUP=] \
  [NO_TESTS_OUTPUT=] \
  [NO_FORCE_USER_TAG=] \
@@ -146,7 +146,7 @@ test_role() {
                     args=${COPS_DOCKER_CMD:-${COPS_DOCKER_SHELL_CMD}}
                     cmd=${COPS_DOCKER_SHELL}
                 fi
-                vv sudo "$docker" run -ti -d --name="$docker_test_tag" \
+                vv sudo "$docker" run -ti --privileged -d --name="$docker_test_tag" \
                     -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
                     -v "/var/lib/docker:/var/lib/docker" \
                     -v "/var/run/docker:/var/run/docker" \
