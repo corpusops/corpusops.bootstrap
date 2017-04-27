@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-ROLEPATH=${ROLEPATH:-${1:-__ROLEPATH__}}
+set -x
+W=$(pwd)
+ROLEPATH=${ROLEPATH:-${1:-${W}}}
 ROLENAME=$(basename $ROLEPATH)
-if [[ -n ${1} ]];then
-    ROLEWD=${ROLEWD:-${2:-$(cd $1/.. && pwd)}}
-    COPS_ROOT=${COPS_ROOT:-${3:-$(cd $1/../.. && pwd)}}
-fi
-ROLEWD=${ROLEWD:-$(cd "${ROLEPATH}/.." && pwd)}
-COPS_ROOT=${COPS_ROOT:-__COPS_ROOT__}
+COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
 cd "${COPS_ROOT}"
 default_deps="corpusops.roles/localsettings_pkgmgr"

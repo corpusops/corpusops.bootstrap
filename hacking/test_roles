@@ -13,6 +13,8 @@ usage () {
 Test script for ansible roles in ./roles or arbitrary rolepath
 against a set of docker \$IMAGES.
 
+ [COPS_DOCKER_TEST_MODE=build/run] \
+ [COPS_DOCKER_CMD="/sbin/init"] \
  [NO_CLEANUP=] \
  [NO_TESTS_OUTPUT=] \
  [NO_FORCE_USER_TAG=] \
@@ -82,9 +84,8 @@ rewrite_role_file() {
     if [[ -n ${NOT_IN_DOCKER} ]]; then
         cops_root=${W}
     fi
-    rewrite_dockerfile "${template}" "${image}" |\
+    rewrite_dockerfile "${template}" "${image}" "${cops_root}" |\
         sed -r\
-        -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__ROLE_SCRIPT__|${role_script}|g" \
         -e "s|__ROLEPATH__|${role}|g" \
         -e "s|__ROLENAME__|${rolename}|g"\
@@ -106,6 +107,8 @@ test_role() {
     if ! test -d ${role}; then
         log "non existing role: ${role}"
         return 1
+    else
+        role=$(echo "${role}" | sed -e 's#/\+$##g')
     fi
     rolename="$(basename ${role})"
     dockerfile="$(dockerfile_template $role)"
@@ -116,20 +119,70 @@ test_role() {
     raw_test_tag=$(basename ${tmpdockerfile}):copstest
     raw_test_tag=${raw_test_tag//*dockerfile.testtmp./${rolename}}
     test_tag=$(cleanup_docker_tag $raw_test_tag)
-    vv rewrite_role_file \
-        "${image}" "${role}" "${dockerfile}" "${tmptestscript}"\
-        > "${tmpdockerfile}"
+    docker_test_tag=copstest_${tmpstr}
+    pimg="$(may_prepend_docker_user_to_image \
+        $(add_preprovision_slug $image))"
+    local rret=$?
+    tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
     vv rewrite_role_file \
         "${image}" "${role}" "${testscript}" "${tmptestscript}"\
         > "${tmptestscript}"
     chmod +x "${tmptestscript}"
-    local rret=$?
-    tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
     if [[ ${rret} == 0 ]]; then
-        if [[ "${image}" != "$(may_prepend_docker_user_to_image system)" ]]; then
-            vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
-            rret=${?}
-            tmp_imgs="${tmp_imgs} ${test_tag}"
+        if ! ( echo "${image}" | egrep -q "\/system"; ); then
+            if [[ "${COPS_DOCKER_TEST_MODE}" == "build" ]];then
+                vv rewrite_role_file \
+                    "${image}" "${role}" "${dockerfile}" "${tmptestscript}"\
+                    > "${tmpdockerfile}"
+                tmp_imgs="${tmp_imgs} ${test_tag}"
+                vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
+                rret=${?}
+            else
+                tmp_dockers="${tmp_dockers} ${docker_test_tag}"
+                docker=$(get_command docker)
+                local cmd=${COPS_DOCKER_CMD:-${COPS_DOCKER_INIT_CMD}}
+                local args=
+                if echo $image | egrep "ubuntu$|ubuntu.*14.04";then
+                    args=${COPS_DOCKER_CMD:-${COPS_DOCKER_SHELL_CMD}}
+                    cmd=${COPS_DOCKER_SHELL}
+                fi
+                vv sudo "$docker" run -ti -d --name="$docker_test_tag" \
+                    -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+                    -v "/var/lib/docker:/var/lib/docker" \
+                    -v "/var/run/docker:/var/run/docker" \
+                    -v "/var/run/docker.sock:/var/run/docker.sock" \
+                    -v "${COPS_ROOT}:${COPS_ROOT}.orig:ro" \
+                    -v "${role}:${role}.orig:ro" \
+                    "${image}" ${cmd} "${args}" > /dev/null
+                if [[ $? != 0 ]];then
+                    log "$image failed to spawn"
+                    return 1
+                else
+                    sleep 1
+                fi
+                vvv docker exec "$docker_test_tag" bash -c "printf ''"
+                if [[ $? != 0 ]];then
+                    log "${docker_test_tag}@${image} doest accept commands"
+                    return 1
+                fi
+                vvv docker exec \
+                    -e IMAGES="$IMAGES" \
+                    -e ROLEPATH="$role" \
+                    -e COPS_ROOT="$COPS_ROOT" \
+                    "$docker_test_tag" \
+                    bash -c "\
+                    for i in "'"'"\$ROLEPATH"'"'";do
+                        if [ ! -e "\${i}" ];then
+                            mkdir -p "'"'"\${i}"'"'"
+                        fi &&
+                        if [ -e "'"'"\${i}.orig"'"'" ];then
+                            rsync -a --delete \
+                               "'"'"\${i}.orig"'"'"/ "'"'"\${i}"'"'"/
+                        fi
+                    done &&
+                    ${tmptestscript}"
+                rret=${?}
+            fi
         else
             ( \
                 export ROLEPATH="$role";\

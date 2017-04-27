@@ -5,6 +5,11 @@ sc=bin/cops_shell_common
 . $sc || exit 1
 
 
+COPS_DOCKER_TEST_MODE="${COPS_DOCKER_TEST_MODE:-run}"
+COPS_DOCKER_CMD=${COPS_DOCKER_CMD:-}
+COPS_DOCKER_SHELL="/bin/bash -c "
+COPS_DOCKER_INIT_CMD=/sbin/init
+COPS_DOCKER_SHELL_CMD="while true;do sleep 50000;done"
 COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 DOCKERFILES_FOLDER="${DOCKERFILES_FOLDER:-docker}"
 DOCKER_USER=${DOCKER_USER:-corpusops}
@@ -230,6 +235,7 @@ esac
 
 reset_colors
 
+export COPS_DOCKER_TEST_MODE
 export DOCKERFILE_TEMPLATE
 export DOCKER_USER
 export DOCKER_FOLDER
