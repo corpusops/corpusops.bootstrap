@@ -7,5 +7,10 @@ if [[ -n ${CORPUSOPS_IN_DEV} ]];then
         rsync -av $R/ /
     fi
 fi
-exec /lib/systemd/systemd --system
+if [ -e /sbin/init ] && \
+    ( /sbin/init --version 2>&1 | grep -iq upstart; ) ;then
+    exec /sbin/upstart
+else
+    exec /lib/systemd/systemd --system
+fi
 # vim:set et sts=4 ts=4 tw=80:
