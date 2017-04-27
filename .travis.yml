@@ -26,12 +26,12 @@ install:
     bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
   - |
     set -ex
-    service docker stop
-    bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
+    sudo service docker stop
+    sudo bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1awk '{print $2}')"
     else
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
