@@ -53,27 +53,29 @@ else
 fi
 
 while read p;do
-    if [[ -z "${NO_ANSIBLE_CONTEXTUAL_PLUGINS_LOAD}" ]] && [ -e "${p}" ];then
+    if [ -e "${p}" ];then
         for inventory in "${p}/inventories" "${p}/inventory";do
             if [ -e "${inventory}" ] && [[ -z ${ANSIBLE_HOSTS-} ]] ; then
                 export ANSIBLE_HOSTS="${inventory}"
             fi
         done
-        while read line;do
-            var=$(echo "$line:"|cut -d: -f1)
-            path=$(echo "$line:"|cut -d: -f2)
-            testdir="${p}/${path}"
-            if [ -e "${testdir}" ];then
-                eval 'val=$'"${var}"
-                if [[ -z ${val-} ]]; then
-                    subpaths="${testdir}"
-                    eval ${var}'="'${testdir}'"'
-                else
-                    subpaths="${testdir}:${subpaths}"
+        if [[ -z "${NO_ANSIBLE_CONTEXTUAL_PLUGINS_LOAD}" ]];then
+            while read line;do
+                var=$(echo "$line:"|cut -d: -f1)
+                path=$(echo "$line:"|cut -d: -f2)
+                testdir="${p}/${path}"
+                if [ -e "${testdir}" ];then
+                    eval 'val=$'"${var}"
+                    if [[ -z ${val-} ]]; then
+                        subpaths="${testdir}"
+                        eval ${var}'="'${testdir}'"'
+                    else
+                        subpaths="${testdir}:${subpaths}"
+                    fi
+                    eval export ${var}'="'${subpaths}'"'
                 fi
-                eval export ${var}'="'${subpaths}'"'
-            fi
-        done <<< "${PLUGINS_OR_MODULES_DIRS}"
+            done <<< "${PLUGINS_OR_MODULES_DIRS}"
+        fi
         roles="${p}/roles"
         if [ -e "${roles}" ];then
             if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
