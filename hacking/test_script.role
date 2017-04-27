@@ -9,7 +9,8 @@ ROLEWD=${ROLEWD:-$(cd "${ROLEPATH}/.." && pwd)}
 COPS_ROOT=${COPS_ROOT:-__COPS_ROOT__}
 crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
 cd "${COPS_ROOT}"
-COPS_DEPS_ROLES="${COPS_DEPS_ROLES:-corpusops.roles/localsettings_pkgmgr}"
+default_deps="corpusops.roles/localsettings_pkgmgr"
+COPS_DEPS_ROLES="${COPS_DEPS_ROLES-${default_deps}}"
 README="$ROLEPATH/README.md"
 if [ -e "${README}" ];then
   for i in $(grep "cops roles dependencies:" "${README}" \

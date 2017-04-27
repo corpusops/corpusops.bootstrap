@@ -126,12 +126,15 @@ test_role() {
     local rret=$?
     tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
     if [[ ${rret} == 0 ]]; then
-        if [[ -z ${NOT_IN_DOCKER-} ]]; then
+        if [[ "${image}" != "$(may_prepend_docker_user_to_image system)" ]]; then
             vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
             rret=${?}
             tmp_imgs="${tmp_imgs} ${test_tag}"
         else
-            ( cd "${role}" && ${tmptestscript} )
+            ( \
+                export ROLEPATH="$role";\
+                export COPS_ROOT="$COPS_ROOT";\
+                cd "${role}" && ${tmptestscript} )
             rret=${?}
         fi
     fi
