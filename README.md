@@ -88,3 +88,4 @@ It will in ./corpusops/corpusops.bootstrap:
 | [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     |                                                                        |
 | [corpusops.lxc_register    ](https://github.com/corpusops/lxc_register) | [corpusops.lxc_sync        ](https://github.com/corpusops/lxc_sync)    |
 | [corpusops.lxc_snapshot    ](https://github.com/corpusops/lxc_snapshot) | [corpusops.lxc_vars        ](https://github.com/corpusops/lxc_vars)    |
+

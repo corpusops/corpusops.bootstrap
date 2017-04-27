@@ -23,7 +23,9 @@ install:
     fi
     echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
+    echo $CORPUSOPS_BRANCH
     bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
+    bin/install.sh -C --synchronize-code
   - sudo service docker stop
   - sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
@@ -35,6 +37,6 @@ script:
     fi
     echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
-    hacking/test_script
+    NO_SYNC=1 hacking/test_script
 after_success:
   - DEBUG=1 hacking/docker_release
