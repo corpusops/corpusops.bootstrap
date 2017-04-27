@@ -27,7 +27,7 @@ install:
   - |
     set -ex
     sudo service docker stop
-    sudo bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
+    sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
