@@ -46,8 +46,8 @@ futures >= 3.0.5
 # CLOUD
 docker-py >= 1.7.0
 
-# Remote/Forking Debugging
-epdb
-pdb_clone
+# Remote/Forking Debugging (install manually, do not work on docker/centos)
+#epdb
+#pdb_clone
 
 
