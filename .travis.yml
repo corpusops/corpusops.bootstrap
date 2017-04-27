@@ -24,6 +24,10 @@ install:
     echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
     bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
+  - |
+    set -ex
+    service docker stop
+    bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
