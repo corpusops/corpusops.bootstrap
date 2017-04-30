@@ -5,18 +5,19 @@ FROM centos:7
 ENV container docker
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ENV COPS_ROOT $COPS_ROOT
+ENV COPS_APPLY_ROLE "${COPS_ROOT}/bin/cops_apply_role -vvvv"
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
 COPY requirements/os_* \
-     hacking/container_rootfs/sbin/cops_container_strip.sh \
      hacking/container_rootfs/sbin/cops_container_snapshot.sh \
+     hacking/container_rootfs/sbin/cops_container_strip.sh \
      hacking/container_rootfs/sbin/cops_container_cleanup.sh \
      bin/cops_shell_common \
      bin/cops_pkgmgr_install.sh \
      bin/cops_reset_passwords.sh \
      /bootstrap/
-RUN bash -c 'step_rev=1;\
+RUN bash -c 'step_rev=2;\
     :;\
     silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
     cd /bootstrap;\
@@ -101,5 +102,7 @@ RUN bash -c 'step_rev=3;set -e;\
     silent /sbin/cops_container_snapshot.sh;'
 
 # pack any found git repo
-RUN /sbin/cops_container_strip.sh
+RUN bash -c 'step_rev=3;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    /sbin/cops_container_strip.sh'
 # vim:set et:
