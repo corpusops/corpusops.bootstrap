@@ -14,14 +14,16 @@ LAUNCH_ARGS=${@}
 
 ensure_last_virtualenv() {
     venv=$(get_command virtualenv)
+    pip=$(get_command pip)
+    ez=$(get_command easy_install)
     if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
          || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
         if version_lt "$(virtualenv --version)" "15.1.0"; then
             log "Installing last version of virtualenv"
-            if has_command pip;then
-                vv $(may_sudo) pip install --upgrade virtualenv
-            elif has_command easy_install;then
-                vv $(may_sudo) easy_install -U virtualenv
+            if [[ -n $pip ]];then
+                $(may_sudo) "$pip" install --upgrade virtualenv
+            elif [[ -n $ez ]];then
+                $(may_sudo) "$ez" -U virtualenv
             fi
         fi
     fi
@@ -450,7 +452,8 @@ setup_virtualenv_() {
 }
 
 setup_virtualenv() {
-    ( set_lang C && setup_virtualenv_; )
+    ( deactivate >/dev/null 2>&1;\
+      set_lang C && setup_virtualenv_; )
 }
 
 reconfigure() {

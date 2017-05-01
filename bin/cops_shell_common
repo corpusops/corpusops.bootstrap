@@ -471,7 +471,7 @@ version_gt() {
 
 get_python2_() {
     local py2=
-    for i in python python-2 python-2.7 python-2.6;do
+    for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
         local lpy=$(get_command $i 2>/dev/null)
         if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
             py2=${lpy}
@@ -482,7 +482,7 @@ get_python2_() {
 }
 
 set_python2() {
-    py2=$(get_python2_)
+    py2=$( deactivate 2>/dev/null;get_python2_)
     if [[ -z $py2 ]];then
         die "No Python2 interpreter found"
     fi
@@ -503,15 +503,15 @@ make_virtualenv() {
         if [ ! -e "${VENV_PATH}" ]; then
             mkdir -p "${VENV_PATH}"
         fi
-    fi
     virtualenv \
         $( [[ -n $py ]] && echo "--python=$py2"; ) \
         --system-site-packages --unzip-setuptools \
         "${VENV_PATH}" &&\
-    . "${VENV_PATH}/bin/activate" &&\
-    "${VENV_PATH}/bin/easy_install" -U setuptools &&\
-    "${VENV_PATH}/bin/pip" install -U pip &&\
-    deactivate
+    ( . "${VENV_PATH}/bin/activate" &&\
+      "${VENV_PATH}/bin/easy_install" -U setuptools &&\
+      "${VENV_PATH}/bin/pip" install -U pip &&\
+      deactivate; )
+    fi
 }
 
 detect_os no_fail
