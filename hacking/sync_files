@@ -39,7 +39,7 @@ for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_instal
     if [ ! -e $d ];then mkdir -p $d;fi
     cp -vf $i $df
 done
-for i in hacking/container_rootfs/sbin/cops_container_snapshot.sh;do
+for i in hacking/container_rootfs/sbin/cops_container_{snapshot,strip}.sh;do
     df=roles/corpusops.roles/lxc_snapshot/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
     d=$(dirname "$df")
     if [ ! -e $d ];then mkdir -p $d;fi
