@@ -4,6 +4,7 @@
 FROM centos:7
 ENV container docker
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
+ENV COPS_ROOT $COPS_ROOT
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers

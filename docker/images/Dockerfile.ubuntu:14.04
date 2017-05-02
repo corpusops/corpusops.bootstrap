@@ -2,8 +2,6 @@
 # and their requisites; together with docker cache
 
 FROM corpusops/ubuntu:14.04_preprovision
-ENV container docker
-ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 
 # 5/ Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
