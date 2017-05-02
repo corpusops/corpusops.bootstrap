@@ -24,6 +24,8 @@ Wrapper to docker build, but will also try to squash any created layer up
  '
 }
 
+cd "$OW"
+
 parse_cli() {
     parse_cli_common "${@}"
     tag=$1
