@@ -23,7 +23,6 @@ install:
     fi
     echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
     export CORPUSOPS_BRANCH
-    echo $CORPUSOPS_BRANCH
     bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
     bin/install.sh -C --synchronize-code
   - sudo service docker stop
@@ -31,7 +30,7 @@ install:
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        CORPUSOPS_BRANCH="$(git log HEAD|head -n1awk '{print $2}')"
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
     else
         CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
     fi
