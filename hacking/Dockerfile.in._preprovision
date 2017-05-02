@@ -10,6 +10,7 @@ ENV COPS_ROOT $COPS_ROOT
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
 COPY requirements/os_* \
+     hacking/container_rootfs/sbin/cops_container_strip.sh \
      hacking/container_rootfs/sbin/cops_container_snapshot.sh \
      hacking/container_rootfs/sbin/cops_container_cleanup.sh \
      bin/cops_shell_common \

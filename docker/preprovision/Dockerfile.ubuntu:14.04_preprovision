@@ -9,6 +9,7 @@ ENV COPS_ROOT $COPS_ROOT
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
 COPY requirements/os_* \
+     hacking/container_rootfs/sbin/cops_container_strip.sh \
      hacking/container_rootfs/sbin/cops_container_snapshot.sh \
      hacking/container_rootfs/sbin/cops_container_cleanup.sh \
      bin/cops_shell_common \
@@ -100,9 +101,5 @@ RUN bash -c 'step_rev=3;set -e;\
     silent /sbin/cops_container_snapshot.sh;'
 
 # pack any found git repo
-RUN bash -c 'step_rev=6;set -e;\
-    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    silent $COPS_ROOT/bin/git_pack /;\
-    silent /sbin/cops_container_cleanup.sh;\
-    silent /sbin/cops_container_snapshot.sh;'
+RUN /sbin/cops_container_strip.sh
 # vim:set et:
