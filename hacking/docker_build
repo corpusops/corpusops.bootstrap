@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+OW=$(pwd)
 cd "$(dirname ${0})/.."
 export LOGGER_NAME=$(basename $0)
 
@@ -27,7 +28,7 @@ parse_cli() {
     parse_cli_common "${@}"
     tag=$1
     dockerfile=${2-}
-    wd=${3:-$(pwd)}
+    wd=${3:-$OW}
     if [[ -z ${3-} ]];then
         # test if 2nd arg is a directory or a file (Dockerfile, in this case)
         if [[ -d ${2-} ]];then
@@ -35,13 +36,34 @@ parse_cli() {
             wd=${2}
         fi
     fi
-    c_dockerfile="Dockerfile.${tag}"
-    if [[ -z "${dockerfile}" ]] && [ -e "${c_dockerfile}" ];then
-        dockerfile=${c_dockerfile}
+    local dockerfiles
+    declare -a dockerfiles
+    if [[ -n "${dockerfile}" ]];then
+        dockerfiles=("$dockerfile" "$wd/$dockerfile")
+    else
+        dockerfiles=("Dockerfile.${tag}"
+                     "$wd/Dockerfile.${tag}"
+                     "Dockerfile"
+                     "$wd/Dockerfile")
+    fi
+    for dfile in ${dockerfiles[@]};do
+        if [ -e "${dfile}" ];then
+            dockerfile="${dfile}"
+            break
+        fi
+    done
+    if [[ -z "${dockerfile}" ]];then
+        die 4 "No dockerfile providen"
+    fi
+    if [ ! -e "${dockerfile}" ];then
+        die 4 "Dockerfile $dockerfile does not exists"
     fi
     if [[ -z ${tag} ]];then
         die 5 "No tag providen"
     fi
+    debug "Dockerfile: $dockerfile"
+    debug "Tag: $tag"
+    debug "WD: $wd"
 }
 
 parse_cli "$@"
@@ -160,13 +182,14 @@ cleanup_tag() {
     if [[ "${dtag_id}" != "${ctag_id}" ]];then
         # delete by id to be sure to delete an image which has only one tag
         # left, the 'squashed tag'
-        SILENT_LOG=1 vvv docker rmi "${old_tag_or_id}" >/dev/null 2>&1
+        SILENT=1 vvv docker rmi "${old_tag_or_id}" >/dev/null 2>&1
         if [[ ${?} != 0 ]];then
             # retry to verify if the failure is because of dependant images
             # and we should not bail out here
-            SILENT_LOG=1 vvv docker rmi "${old_tag_or_id}" 2>&1\
-                | grep -q 'image has dependent'
+            SILENT=1 vvv docker rmi "${old_tag_or_id}" 2>&1\
+                | egrep -q 'image has dependent|being used'
             if [[ ${?} != 0 ]];then
+                vvv docker rmi "${old_tag_or_id}"
                 die "Error when cleaning ${suf} tag: ${tag}/${old_tag_or_id}/${ctag_id}/${dtag_id}"
             else
                 debug "skip tag $tag cleanup: has dependant images"
