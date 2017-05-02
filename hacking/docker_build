@@ -76,19 +76,18 @@ candidate_squashed=${candidate}_s
 ret=1
 
 # If wanted, try to install image squasher if not already done
-if [[ -n "${SQUASHER_URL}" ]] && [ ! -e "$SQUASHER" ];then
-    echo "Getting $SQUASHER_URL -> $SQUASHER" &&\
-    if echo $SQUASHER_URL | egrep -qi amd64;then
-        curl -L -s "$SQUASHER_URL" \
-            | tar xzvf - -C hacking \
-            && chmod +x hacking/docker-squash \
-            && mv -vf hacking/docker-squash "${SQUASHER}"
-        may_die $? $? "$SQUASHER_URL failed to download"
+if [[ -n "${SQUASHER_URL}" ]];then
+    if [ -e "$W/venv/bin/activate" ];then
+        . "$W/venv/bin/activate"
     else
-        if [ -e venv/bin/activate ]; then
-            . venv/bin/activate
-        fi
+        ( VENV_PATH="$W/venv" make_virtualenv; )
+        die_in_error "Virtualenv creation failed"
+        . "$W/venv/bin/activate"
+    fi
+    if [ ! -e "$SQUASHER" ];then
+        echo "Getting $SQUASHER_URL -> $SQUASHER" &&\
         pip install --upgrade -e "${SQUASHER_URL}"
+        die_in_error "$SQUASHER install error"
     fi
 fi
 

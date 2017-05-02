@@ -93,6 +93,15 @@ warn() {
     log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"
 }
 
+
+bs_log(){
+    log_ "${RED}" "${YELLOW}" "${@}"
+}
+
+bs_yellow_log(){
+    log_ "${YELLOW}" "${YELLOW}" "${@}"
+}
+
 may_die() {
     reset_colors
     thetest=${1:-1}
@@ -458,6 +467,51 @@ version_gte() {
 
 version_gt() {
     [ "$1" = "$2" ] && return 1 || version_gte $1 $2
+}
+
+get_python2_() {
+    local py2=
+    for i in python python-2 python-2.7 python-2.6;do
+        local lpy=$(get_command $i 2>/dev/null)
+        if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
+            py2=${lpy}
+            break
+        fi
+    done
+    echo $py2
+}
+
+set_python2() {
+    py2=$(get_python2_)
+    if [[ -z $py2 ]];then
+        die "No Python2 interpreter found"
+    fi
+}
+
+make_virtualenv() {
+    set_python2
+    local py=${1-$py2}
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
+    if     [ ! -e "${VENV_PATH}/bin/activate" ] \
+        || [ ! -e "${VENV_PATH}/lib" ] \
+        || [ ! -e "${VENV_PATH}/include" ] \
+        ; then
+        bs_log "Creating virtualenv in ${VENV_PATH}"
+        if [ ! -e "${PIP_CACHE}" ]; then
+            mkdir -p "${PIP_CACHE}"
+        fi
+        if [ ! -e "${VENV_PATH}" ]; then
+            mkdir -p "${VENV_PATH}"
+        fi
+    fi
+    virtualenv \
+        $( [[ -n $py ]] && echo "--python=$py2"; ) \
+        --system-site-packages --unzip-setuptools \
+        "${VENV_PATH}" &&\
+    . "${VENV_PATH}/bin/activate" &&\
+    "${VENV_PATH}/bin/easy_install" -U setuptools &&\
+    "${VENV_PATH}/bin/pip" install -U pip &&\
+    deactivate
 }
 
 detect_os no_fail

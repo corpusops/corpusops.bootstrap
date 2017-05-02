@@ -27,14 +27,6 @@ ensure_last_virtualenv() {
     fi
 }
 
-bs_log(){
-    log_ "${RED}" "${YELLOW}" "${@}"
-}
-
-bs_yellow_log(){
-    log_ "${YELLOW}" "${YELLOW}" "${@}"
-}
-
 test_online() {
     ping -W 10 -c 1 8.8.8.8 1>/dev/null 2>/dev/null
     if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ]; then
@@ -400,47 +392,13 @@ synchronize_code() {
     fi
 }
 
-get_python2() {
-    local py=
-    for i in python python-2 python-2.7 python-2.6;do
-        local lpy=$(get_command $i 2>/dev/null)
-        if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
-            py=${lpy}
-            break
-        fi
-    done
-    echo $py
-}
-
 setup_virtualenv_() {
     ensure_last_virtualenv
     if [ "x${DO_SETUP_VIRTUALENV}" != "xy" ]; then
         bs_log "virtualenv setup skipped"
         return 0
     fi
-    if     [ ! -e "${VENV_PATH}/bin/activate" ] \
-        || [ ! -e "${VENV_PATH}/lib" ] \
-        || [ ! -e "${VENV_PATH}/include" ] \
-        ; then
-        bs_log "Creating virtualenv in ${VENV_PATH}"
-        if [ ! -e "${PIP_CACHE}" ]; then
-            mkdir -p "${PIP_CACHE}"
-        fi
-        if [ ! -e "${VENV_PATH}" ]; then
-            mkdir -p "${VENV_PATH}"
-        fi
-        py=$(get_python2)
-        if [[ -z $py ]];then
-            die "No Python2 interpreter found"
-        fi
-        virtualenv --python="$py" \
-            --system-site-packages --unzip-setuptools \
-            "${VENV_PATH}" &&\
-        . "${VENV_PATH}/bin/activate" &&\
-        "${VENV_PATH}/bin/easy_install" -U setuptools &&\
-        "${VENV_PATH}/bin/pip" install -U pip &&\
-        deactivate
-    fi
+    make_virtualenv
     # virtualenv is present, activate it
     if [ -e "${VENV_PATH}/bin/activate" ]; then
         if [ "x${QUIET}" = "x" ]; then
