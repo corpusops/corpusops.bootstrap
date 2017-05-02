@@ -59,6 +59,7 @@ WIPE="
 "
 # files to delete
 FILE_REMOVE="
+$(find /var/cache/oracle* -name '*.tar.*' 2>/dev/null)
 /var/cache/apt/archives/
 /var/lib/apt/lists
 "
