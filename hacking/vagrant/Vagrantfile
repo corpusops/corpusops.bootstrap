@@ -19,7 +19,7 @@
 ## You can set boxuri for non defaults or to override
 # BOX_URI: "http://foo/xenial64.img
 # ####
-# APT_MIRROR: "http://mirror.ovh.net/ftp.ubuntu.com/"
+# APT_MIRROR: "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"
 # APT_MIRROR: "http://ubuntu-archive.mirrors.proxad.net/ubuntu/"
 ## alternate dns
 # DNS_SERVERS: "8.8.8.8"
