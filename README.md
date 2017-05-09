@@ -30,7 +30,6 @@ It will in ./corpusops/corpusops.bootstrap:
 |  Branch                                                             | TravisBuild                                                                                                                                                          |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | master                                                              | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap)         |
-| working                                                             | [![Build Status WORKING Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=working)](https://travis-ci.org/corpusops/corpusops.bootstrap)        |
 
 ## Roles
 - [corpusops.roles](https://github.com/corpusops/roles)  -> [![Build Status master  Branch](https://travis-ci.org/corpusops/roles.svg?branch=master)](https://travis-ci.org/corpusops/roles)
