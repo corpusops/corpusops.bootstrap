@@ -9,7 +9,7 @@ cids="
 $( \
     docker ps -a --no-trunc \
     | grep  Exited \
-    | egrep "sh -c '(echo|#\(nop|.*step_rev.*)" \
+    | egrep "sh -c '(.*apt-get ((install|remove )|(-y (install|remove))))|echo|#\(nop|.*step_rev.*)" \
     | awk '{print $1}' )
 $( \
     docker ps -a --no-trunc \
