@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -x
+if [[ -n ${DEBUG} ]];then
+    set -x
+fi
 W=$(pwd)
 ROLEPATH=${ROLEPATH:-${1:-${W}}}
 ROLENAME=$(basename $ROLEPATH)
