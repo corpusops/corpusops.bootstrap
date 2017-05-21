@@ -4,6 +4,8 @@
 LOGGER_NAME=cs
 
 cd "$(dirname "$(readlink -f ${0})")/.."
+export W=$(pwd)
+export OW=${W}
 sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . $sc || exit 1
@@ -343,7 +345,7 @@ checkouter () {
            $( [[ -n "${DEBUG}" ]] && echo "-vvvvv" ) \
            -i localhost, -c local "${@}" \
            -e "$( [[ -n "${DEBUG}" ]] && echo "cops_debug=true " \
-           )prefix='$PWD' venv='${VENV_PATH}'"
+           )prefix='$(pwd)' venv='${VENV_PATH}'"
 }
 
 checkout_code() {
