@@ -266,9 +266,11 @@ ureadahead
 user@
 vnstat"
 
-
 if [ "x${is_docker}" != "x" ];then
     SERVICES="${SERVICES}
+systemd-sysctl*
+dev-hugepages*
+sys-fs-fuse-connections*
 systemd-update-utmp*"
 #ifup-wait-all-auto"
 fi

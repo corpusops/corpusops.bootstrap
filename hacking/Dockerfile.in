@@ -14,6 +14,8 @@ RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     silent /sbin/cops_container_strip.sh'
 
-# You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
-CMD ["/sbin/cops_entry_point.sh"]
+# You have to mount:
+#  -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+STOPSIGNAL SIGRTMIN+3
+CMD ["/entry_point"]
 # vim:set et:

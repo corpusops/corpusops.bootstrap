@@ -30,7 +30,7 @@ RUN bash -c 'step_rev=2;\
     if ((which which && which systemd) || \
          command -v systemd )>/dev/null 2>&1 \
        || [ -e /lib/systemd/systemd ];then \
-      WANTED_PACKAGES="systemd ${WANTED_PACKAGES}";\
+      WANTED_PACKAGES="systemd dbus ${WANTED_PACKAGES}";\
     fi;\
     :;\
     WANTED_PACKAGES="${WANTED_PACKAGES} ${WANTED_DOCKER_PACKAGES}";\
@@ -107,5 +107,6 @@ RUN bash -c 'step_rev=3;set -e;\
     /sbin/cops_container_strip.sh'
 
 # You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
-CMD ["/sbin/cops_systemd_entry_point.sh"]
+STOPSIGNAL SIGRTMIN+3
+CMD ["/entry_point"]
 # vim:set et:
