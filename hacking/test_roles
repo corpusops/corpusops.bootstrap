@@ -14,7 +14,7 @@ Test script for ansible roles in ./roles or arbitrary rolepath
 against a set of docker \$IMAGES.
 
  [COPS_DOCKER_TEST_MODE=build/run] \
- [COPS_DOCKER_CMD="/sbin/cops_systemd_entry_point.sh"] \
+ [COPS_DOCKER_CMD="/entry_point"] \
  [NO_CLEANUP=] \
  [NO_TESTS_OUTPUT=] \
  [NO_FORCE_USER_TAG=] \
