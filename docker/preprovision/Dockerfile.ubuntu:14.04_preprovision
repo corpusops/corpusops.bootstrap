@@ -105,4 +105,7 @@ RUN bash -c 'step_rev=3;set -e;\
 RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     /sbin/cops_container_strip.sh'
+
+# You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+CMD ["/sbin/cops_systemd_entry_point.sh"]
 # vim:set et:

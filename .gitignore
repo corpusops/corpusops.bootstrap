@@ -11,6 +11,7 @@
 /inventories/
 /requirements/python_git_requirements.txt
 /requirements/checkouts_*
+/local
 /tags.*
 /var/ansible
 /var/cache
@@ -20,6 +21,7 @@
 /roles
 /playbooks
 /hacking/docker-squash*
+/docker/**/*.tmp
 #
 !/requirements/*.in
 /ignored
