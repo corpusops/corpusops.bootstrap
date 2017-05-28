@@ -70,16 +70,16 @@ save_container() {
 cleanup() {
     local n=$1
     local CLEANUP_VARS="${CLEANUP_VARS:-"CLEANUP"}"
-    local CLEANUP=
+    local cleanuptest=
     for val in $CLEANUP_VARS;do
         eval "vval=$(echo \${${val}})"
         if [[ -n "${vval}" ]];then
             debug "Using $val as CLEANUP var"
-            CLEANUP=${vval}
+            cleanuptest=${vval}
             break
         fi
     done
-    if [[ -n ${CLEANUP} ]]; then
+    if [[ -n ${cleanuptest} ]]; then
         docker rm -f $n 2>/dev/null
         docker rmi -f $n 2>/dev/null
     else
@@ -112,6 +112,7 @@ main() {
             -e "CORPUSOPS_W=${W}"\
             -e CORPUSOPS_IN_DEV=1\
             --name="$n" \
+            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
             $( while read v; do echo " -v ${v}:${v}:ro";done < \
                 <( ldd "${docker_binary}" \
                    | egrep -v "libc.so|libpthread.so|libdl.so" \
@@ -133,7 +134,6 @@ main() {
             fi
             )\
             -v "${docker_binary}:${docker_binary}" \
-            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
             -v "/var/lib/docker:/var/lib/docker" \
             -v "/var/run/docker:/var/run/docker" \
             -v "/var/run/docker.sock:/var/run/docker.sock" \
