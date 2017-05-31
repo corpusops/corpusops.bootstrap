@@ -66,6 +66,8 @@ It will in ./corpusops/corpusops.bootstrap:
 | [corpusops.localsettings_sysctls     ](https://github.com/corpusops/roles/tree/master/localsettings_sysctls)                 | [corpusops.localsettings_sysctls_vars](https://github.com/corpusops/roles/tree/master/localsettings_sysctls_vars)            |
 | [corpusops.localsettings_timezone    ](https://github.com/corpusops/roles/tree/master/localsettings_timezone)                | [corpusops.localsettings_timezone_vars](https://github.com/corpusops/roles/tree/master/localsettings_timezone_vars)          |
 | [corpusops.localsettings_vim         ](https://github.com/corpusops/roles/tree/master/localsettings_vim)                     | [corpusops.localsettings_vim_vars    ](https://github.com/corpusops/roles/tree/master/localsettings_vim_vars)                |
+| [corpusops.localsettings_packer         ](https://github.com/corpusops/roles/tree/master/localsettings_packer)                     | [corpusops.localsettings_packer_vars    ](https://github.com/corpusops/roles/tree/master/localsettings_packer_vars)                |
+| [corpusops.localsettings_nodejs         ](https://github.com/corpusops/roles/tree/master/localsettings_nodejs)                     | [corpusops.localsettings_nodejs_vars    ](https://github.com/corpusops/roles/tree/master/localsettings_nodejs_vars)                |
 
 ## Services configuration roles
 |  Role                                       |  Role                                       |
