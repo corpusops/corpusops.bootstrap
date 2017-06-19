@@ -19,14 +19,21 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( =>
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
 
+
 has_command() {
     ret=1
-    if which which >/dev/null 2>/dev/null && which "${@}" >/dev/null 2>/dev/null;then
+    if which which >/dev/null 2>/dev/null;then
+      if which "${@}" >/dev/null 2>/dev/null;then
         ret=0
-    elif command -v "${@}" >/dev/null 2>/dev/null;then
+      fi
+    else
+      if command -v "${@}" >/dev/null 2>/dev/null;then
         ret=0
-    elif hash -r "${@}" >/dev/null 2>/dev/null;then
-        ret=0
+      else
+        if hash -r "${@}" >/dev/null 2>/dev/null;then
+            ret=0
+        fi
+      fi
     fi
     return ${ret}
 }
