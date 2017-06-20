@@ -80,13 +80,15 @@ It will in ./corpusops/corpusops.bootstrap:
 | [corpusops.services_misc_xvfb](https://github.com/corpusops/roles/tree/master/services_misc_xvfb)                     | [corpusops.services_misc_xvfb_vars](https://github.com/corpusops/roles/tree/master/services_misc_xvfb_vars)                     |
 | [corpusops.services_virt_docker](https://github.com/corpusops/roles/tree/master/services_virt_docker)                 | [corpusops.services_virt_docker_vars](https://github.com/corpusops/roles/tree/master/services_virt_docker_vars)                 |
 | [corpusops.services_virt_lxc](https://github.com/corpusops/roles/tree/master/services_virt_lxc)                       | [corpusops.services_virt_lxc_vars](https://github.com/corpusops/roles/tree/master/services_virt_lxc_vars)                       |
+| [corpusops.services_virt_lxc](https://github.com/corpusops/roles/tree/master/services_http_nginx)                       |  |
 
 
 ## Helpers
 |  Role                                                                   | role         |
 | ----------------------------------------------------------------------- | ------------ |
-| [corpusops.lxc_create      ](https://github.com/corpusops/lxc_create)   | [corpusops.lxc_sshauth     ](https://github.com/corpusops/lxc_sshauth) |
-| [corpusops.lxc_drop        ](https://github.com/corpusops/lxc_drop)     |                                                                        |
-| [corpusops.lxc_register    ](https://github.com/corpusops/lxc_register) | [corpusops.lxc_sync        ](https://github.com/corpusops/lxc_sync)    |
-| [corpusops.lxc_snapshot    ](https://github.com/corpusops/lxc_snapshot) | [corpusops.lxc_vars        ](https://github.com/corpusops/lxc_vars)    |
+| [corpusops.lxc_create      ](https://github.com/corpusops/roles/tree/master/lxc_create)   | [corpusops.lxc_sshauth     ](https://github.com/corpusops/roles/tree/master/lxc_sshauth) |
+| [corpusops.lxc_drop        ](https://github.com/corpusops/roles/tree/master/lxc_drop)     |                                                                        |
+| [corpusops.lxc_register    ](https://github.com/corpusops/roles/tree/master/lxc_register) | [corpusops.lxc_sync        ](https://github.com/corpusops/roles/tree/master/lxc_sync)    |
+| [corpusops.lxc_snapshot    ](https://github.com/corpusops/roles/tree/master/lxc_snapshot) | [corpusops.lxc_vars        ](https://github.com/corpusops/roles/tree/master/lxc_vars)    |
+| [corpusops.nginx_vhost    ](https://github.com/corpusops/roles/tree/master/nginx_vhost) |  |
 
