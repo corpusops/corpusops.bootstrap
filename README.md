@@ -34,6 +34,9 @@ It will in ./corpusops/corpusops.bootstrap:
 ## Roles
 - [corpusops.roles](https://github.com/corpusops/roles)  -> [![Build Status master  Branch](https://travis-ci.org/corpusops/roles.svg?branch=master)](https://travis-ci.org/corpusops/roles)
 
+### Ansible preconfigured playbooks helpers
+- [corpusops.playbooks](https://github.com/corpusops/playbooks)
+
 ### Ansible plugins roles
 
 |  Role                                       | Role                                                                                                          |
