@@ -70,13 +70,13 @@ save_back_to_host() {
     #    --exclude=roles \
     #    --exclude=playbooks
     #die_in_error "rsync core"
-    for i in venv/src/ansible/ roles/ playbooks/;do
-        if [ ! -e "${ORIG}/${i}" ];then
-            mkdir -p "${ORIG}/${i}"
-        fi
-        vv rsync -az "$PREFIX/${i}" "$ORIG/${i}"
-        die_in_error "rsync back ${i}"
-    done
+    # for i in venv/src/ansible/ roles/ playbooks/;do
+    #     if [ ! -e "${ORIG}/${i}" ];then
+    #         mkdir -p "${ORIG}/${i}"
+    #     fi
+    #     vv rsync -az "$PREFIX/${i}" "$ORIG/${i}"
+    #     die_in_error "rsync back ${i}"
+    # done
 }
 
 install_corpusops_copy() {
