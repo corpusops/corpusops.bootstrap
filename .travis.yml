@@ -11,8 +11,6 @@ language: python
 python: "2.7"
 before_install:
   - sudo apt-get update -qq
-  - sudo apt install python-apt python3-apt
-  - dpkg -l
 install:
   - |
     echo "TRAVIS_ENV_VARS:" >&2
@@ -31,7 +29,7 @@ install:
       bin/install.sh -C --synchronize-code
     fi
   - sudo service docker stop
-  - sudo -E bin/cops_apply_role -vvvvv roles/corpusops.roles/services_virt_docker/role.yml
+  - sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
