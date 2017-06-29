@@ -226,12 +226,14 @@ while read image_line;do
             ( do_trap post_tests_cleanup EXIT;
               NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
                  test_role ${image} ${role}; )
-            if [[ $? != 0 ]];then
+            tret=$?
+            tdate=$(date '+%F %T')
+            if [[ ${tret} != 0 ]];then
                 ret=1
-                log "test failure: ${YELLOW}${test_slug}"
+                log "test failure (${tdate}): ${YELLOW}${test_slug}"
                 failed_roles="${failed_roles} ${test_slug}"
             else
-                log "test success: ${YELLOW}${test_slug}"
+                log "test success (${tdate}): ${YELLOW}${test_slug}"
                 success_roles="${success_roles} ${test_slug}"
             fi
         done
