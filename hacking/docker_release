@@ -92,23 +92,30 @@ parse_cli "$@"
 ret=0
 if release_test; then
     log "Releasing ${RELEASABLE}"
-    log "docker login" && docker login -u="$DOCKER_RELEASER" \
-        -p="$DOCKER_PASSWORD" "${DOCKER_REGISTRY}" \
-        $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}") &&\
-        for img in ${RELEASABLE};do
-            ( if [[ -n $FORCE_NO_RELEASE ]];then
-                vv echo docker push "${img}"
+    log "docker login"
+    docker login \
+        -u="$DOCKER_RELEASER" \
+        -p="$DOCKER_PASSWORD" \
+        $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}")
+    die_in_error "Login for $DOCKER_RELEASER failed on $DOCKER_REGISTRY"
+    for img in ${RELEASABLE};do
+        ( if [[ -n $FORCE_NO_RELEASE ]];then
+            vv echo docker push "${img}"
+          else
+              if [[ -n "${DOCKER_REGISTRY}" ]];then
+                  vv docker push "${DOCKER_REGISTRY}"/"${img}"
               else
-                vv docker push "${img}"
+                  vv docker push "${img}"
               fi
-            )
-            if [[ ${?} != 0 ]];then
-                log "Failed to release: ${img}"
-                ret=1
-            else
-                log "Released: ${img}"
-            fi
-        done
+          fi
+        )
+        if [[ ${?} != 0 ]];then
+            log "Failed to release: ${img}"
+            ret=1
+        else
+            log "Released: ${img}"
+        fi
+    done
     log "release done"
 else
     log "Release test failed, release skipped"
