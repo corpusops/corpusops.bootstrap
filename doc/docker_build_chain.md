@@ -11,19 +11,19 @@
 
 ### overview
 
-Problem with dockerfiles is that we can't control
-how a build container is run, nor privileged mode or volumes nor sec options.
+- Problem with dockerfiles is that we can't control
+  how a build container is run, nor privileged mode or volumes nor sec options.
 
-This can be problematic where you use systemd based images
-and want to have systemd at provision time.
+- This can be problematic where you use systemd based images
+ and want to have systemd at provision time.
 
-The things we need:
+- The things we need:
     - Having a build strategy where we can launch a container with custom flags
       to provision as we want.
     - Having a tool that can chain builds in the proper order to consolidate the
       image creation pipeline
 
-For this, build.py reuse (and only support for now):
+- For this, build.py reuse (and only support for now):
     - [hashicorp/packer](https://www.packer.io) which does most of the work.
     - Dockerfile building, idea is there to use packer
       to produce a complex baseimage, then to use
