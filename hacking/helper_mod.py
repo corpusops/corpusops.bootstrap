@@ -124,7 +124,7 @@ def shellexec(cmd, *args):
         msg += ' {1}'
     debug(msg.format(cmd, args))
     ret = run_cmd(cmd)
-    import pdb;pdb.set_trace()  ## Breakpoint ##
+    return ret
 
 
 def setup_logging(fmt=_LOGGER_FMT, datefmt=_LOGGER_DFMT, level=logging.INFO):
@@ -237,7 +237,14 @@ def _build(cmd, img, fmt=True):
     if fmt:
         cmd = cmd.format(**img)
     ret = shellexec(cmd)
-    return '{0} built'.format(img['file'])
+    if ret[0] == 0:
+        status = True
+    else:
+        status = False
+    msg = ('retcode: {0}\n'
+           'OUT: {1}\n'
+           'ERR: {2}\n'.format(ret[0], ret[1][0], ret[1][1]))
+    return status, msg
 
 
 def packer_build(img, *a, **kw):
