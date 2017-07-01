@@ -106,7 +106,7 @@ get_corpusops_branch() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.2"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.3"
 }
 
 set_vars() {
@@ -123,6 +123,7 @@ set_vars() {
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
     DO_SYNC_PLAYBOOKS="${DO_SYNC_PLAYBOOKS-${DO_SYNC_CODE}}"
     DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_CODE}}"
+    DO_SYNC_ANSIBLE="${DO_SYNC_ANSIBLE-${DO_SYNC_ANSIBLE}}"
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
@@ -178,6 +179,7 @@ set_vars() {
     export DO_SYNC_CODE
     export DO_SYNC_PLAYBOOKS
     export DO_SYNC_ROLES
+    export DO_SYNC_ANSIBLE
     export DO_SYNC_CORE
     export DO_INSTALL_PREREQUISITES
     export DO_SETUP_VIRTUALENV
@@ -226,6 +228,9 @@ recap_(){
     bs_yellow_log "---------------------------------------------------"
     if [ "x${DO_SYNC_CODE}" != "xno" ];then
         msg="Syncing:"
+        if [ "x${DO_SYNC_ANSIBLE}" != "xno" ];then
+            msg="${msg} ansible -"
+        fi
         if [ "x${DO_SYNC_CORE}" != "xno" ];then
             msg="${msg} core -"
         fi
@@ -305,13 +310,6 @@ travis_sys_info() {
     fi
 }
 
-get_git_branch() {
-    cd "${1}" 1>/dev/null 2>/dev/null
-    br="$(git branch | grep "*"|grep -v grep)"
-    echo "${br}" | "${SED}" -e "s/\* //g"
-    cd - 1>/dev/null 2>/dev/null
-}
-
 filtered_ansible_playbook_custom() {
     filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
     shift
@@ -348,10 +346,20 @@ checkouter () {
            )prefix='$(pwd)' venv='${VENV_PATH}'"
 }
 
+upgrade_ansible() {
+    upgrade_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        ensure_ansible_is_usable
+}
+
 checkout_code() {
     if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
         cd "${W}" &&\
             TO_CHECKOUT=""
+            if [ "x$DO_SYNC_ANSIBLE" != "xno" ];then
+                if [ -e "${VENV_PATH}/src/ansible" ] && ! upgrade_ansible;then
+                    die "Upgrading ansible failed"
+                fi
+            fi
             if [ "x$DO_SYNC_CORE" != "xno" ];then
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
             fi
@@ -362,13 +370,29 @@ checkout_code() {
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
             fi
             for co in $TO_CHECKOUT;do
-                if ! checkouter "requirements/${co}";then
-                    bs_log "Code failed to update for <$co>"
-                    return 1
-                else
-                    if [ "x${QUIET}" = "x" ]; then
-                        bs_log "Code updated for <$co>"
+                local retries=1
+                if [ "x${co}" = "xcheckouts_core.yml" ];then
+                    retries=2
+                fi
+                local ret=1
+                while [ ${retries} -gt 0 ];do
+                    retries=$(($retries - 1))
+                    if ! checkouter "requirements/${co}";then
+                        bs_log "Code failed to update for <$co>"
+                        ret=2
+                        if [ "x${co}" = "xcheckouts_core.yml" ];then
+                            vv reconfigure || die "Reconfigure while updating failed"
+                        fi
+                    else
+                        if [ "x${QUIET}" = "x" ]; then
+                            bs_log "Code updated for <$co>"
+                            ret=0
+                            break
+                        fi
                     fi
+                done
+                if [ ${ret} -gt 0 ];then
+                    return ${ret}
                 fi
             done
     else
@@ -377,7 +401,41 @@ checkout_code() {
     fi
 }
 
+test_ansible_state() {
+    "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 &&\
+        "${VENV_PATH}/bin/ansible" --help 2>&1
+
+}
+
+reinstall_egg_path() {
+    ( cd "$1" && \
+        vv "${VENV_PATH}/bin/pip" install -U --force-reinstall --no-deps -e . )
+}
+
+try_fix_ansible()  {
+    bs_log "Try to fix ansible tree"
+    if ( test_ansible_state| grep -iq pkg_resources.DistributionNotFound ) &&
+        [ -e "${VENV_PATH}/src/ansible/.git" ] && \
+        [ -e "${VENV_PATH}/bin/pip" ];then
+        bs_log "Try to reinstall ansible egg"
+        pwd
+        vv reinstall_egg_path "${VENV_PATH}/src/ansible"
+        pwd
+    fi
+}
+
+ensure_ansible_is_usable() {
+    if ! ( test_ansible_state >/dev/null );then
+        bs_log "Error trying to call ansible, will try to fix install"
+        try_fix_ansible
+        if ! test_ansible_state;then
+            die "ansible is unusable"
+        fi
+    fi
+}
+
 synchronize_code() {
+    ensure_ansible_is_usable
     if [ "x${DO_SYNC_CODE}" = "xno" ]; then
         if [ "x${QUIET}" = "x" ];then
             bs_log "Sync code skipped"
@@ -391,7 +449,8 @@ synchronize_code() {
             if [ "x${QUIET}" = "x" ];then
                 bs_yellow_log "If you want to skip checkouts, next time, do export DO_SYNC_CODE=no"
             fi
-            checkout_code
+            checkout_code \
+                && ensure_ansible_is_usable
         fi
     fi
 }
@@ -456,6 +515,7 @@ setup_virtualenv_() {
 setup_virtualenv() {
     ( deactivate >/dev/null 2>&1;\
       set_lang C && setup_virtualenv_; )
+    ensure_ansible_is_usable
 }
 
 reconfigure() {
@@ -544,7 +604,9 @@ usage() {
     bs_help "    --skip-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
     bs_help "    -S|--skip-checkouts|--skip-sync-code" "Skip code synchronnization" \
         "$(print_contrary ${DO_SYNC_CODE})"  y
-    bs_help "     --skip-sync-core" "Do not sync core (ansible, bootstrap)" \
+    bs_help "     --skip-sync-ansible" "Do not sync ansible (ansible)" \
+        "$(print_contrary ${DO_SYNC_ANSIBLE})"  y
+    bs_help "     --skip-sync-core" "Do not sync core (bootstrap)" \
         "$(print_contrary ${DO_SYNC_CORE})"  y
     bs_help "     --skip-sync-playbooks" "Do not sync playbooks" \
         "$(print_contrary ${DO_SYNC_PLAYBOOKS})"  y
@@ -608,6 +670,10 @@ parse_cli_opts() {
             || [ "x${1}" = "x-S" ] \
             || [ "x${2}" = "x--skip-checkouts" ]; then
             DO_SYNC_CODE="no"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--skip-sync-ansible" ]; then
+            DO_SYNC_ANSIBLE="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--skip-sync-core" ]; then

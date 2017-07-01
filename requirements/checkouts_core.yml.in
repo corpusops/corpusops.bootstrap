@@ -4,10 +4,6 @@
       - repo: '__CORPUSOPS_URL__'
         dest: '{{prefix}}'
         version: '__CORPUSOPS_BRANCH__'
-      - repo: '__ANSIBLE_URL__'
-        dest: '{{venv}}/src/ansible'
-        recursive: yes
-        version: '__ANSIBLE_BRANCH__'
   tasks:
     - include: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
