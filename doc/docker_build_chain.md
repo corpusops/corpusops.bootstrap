@@ -90,6 +90,8 @@
      "images": [{
        "file": "Dockerfile", # file living inside docker/packer
        "tag": "mycorp/myimg", # tag to produce
+       "version": "1.0", # version of the image,
+                           default: filewithoutext
        "working_dir": "../", # opt: relative to IMAGES.json
        "extra_args": "", # opt: arguments for packer
        "builder_type": "dockerfile"}

@@ -31,15 +31,14 @@ Main usage:
 
 Other usages:
 
-  - {N} --generate [--versions-file ./docker/VERSIONS]
-     - generate docker/IMAGES.json from docker/VERSIONS [opt]
-
-  - {N} --generate-images [--versions-file ./docker/VERSIONS] \\
-            [--packer-template ./docker/packer.json]
+  - {N} --generate-images \\
+          [--packer-template ./docker/packer.json]
      - rewrite the packer template to docker/packer/IMG_X.json
 
   - {N} --list
     - List all available images
+
+Details in REPO: /doc/docker_chain_build.md
 
 '''.format(N=N)
 
@@ -85,20 +84,25 @@ def make_container(target):
         os.makedirs(container)
 
 
-def generate_images(versions_file, packer_template):
-    versions = get_versions(versions_file)
-    if not os.path.exists(packer_template):
-        print('{0} isnt existing'.format(packer_template))
-        sys.exit(1)
+def generate_images(images_files, packer_template, status=None):
+    if status is None:
+        status = copy.deepcopy(_STATUS)
     with open(packer_template) as fic:
         content = fic.read()
-    for v in versions:
-        res = content.replace('__VERSION__', v)
-        target = 'docker/packer/{0}.json'.format(v)
-        make_container(target)
-        print('Writing {0}'.format(target))
-        with open(target, 'w') as fic:
-            fic.write(res)
+    for images_file in images_files:
+        imagesdata, errors = _H.parse_images_file(images_file)
+        if not os.path.exists(packer_template):
+            print('{0} isnt existing'.format(packer_template))
+            sys.exit(1)
+        for image in imagesdata['images']:
+            v = image['version']
+            res = content.replace('__VERSION__', v)
+            target = 'docker/packer/{0}.json'.format(v)
+            make_container(target)
+            print('Writing {0}'.format(target))
+            with open(target, 'w') as fic:
+                fic.write(res)
+    return status
 
 
 def generate(versions_file, target):
@@ -118,11 +122,6 @@ def generate(versions_file, target):
 
 def parse_cli():
     parser = argparse.ArgumentParser(usage=_HELP)
-    parser.add_argument(
-        '--generate',
-        default=False,
-        help='Generate docker/IMAGES.json from docker/VERSIONS',
-        action='store_true')
     parser.add_argument(
         '--generate-images',
         default=False,
@@ -162,10 +161,6 @@ def parse_cli():
     parser.add_argument(
         '--packer-template',
         default=os.environ.get('PACKER_TEMPLATE', 'docker/packer.json'),
-        help='VERSIONS file')
-    parser.add_argument(
-        '--versions-file',
-        default=os.environ.get('VERSIONS_FILE', 'docker/VERSIONS'),
         help='VERSIONS file')
     parser.add_argument(
         '--images-files',
@@ -271,13 +266,8 @@ def main():
     _H.log('build started')
     done = False
 
-    if vargs['generate']:
-        generate(versions_file=vargs['versions_file'],
-                 target=vargs['images_files'][0])
-        done = True
-
     if vargs['generate_images'] and not done:
-        generate_images(versions_file=vargs['versions_file'],
+        generate_images(images_files=vargs['images_files'],
                         packer_template=vargs['packer_template'])
         done = True
 

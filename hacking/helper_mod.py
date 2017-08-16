@@ -181,6 +181,12 @@ def parse_docker_images(images, images_file='images.json'):
             except KeyError:
                 image_file = None
                 errors.append(('NO_IMAGE_FILE_ERROR', img))
+            version = img.get('version', None)
+            if not version:
+                version = '.'.join(img['file'].split('.')[:-1]).strip()
+            img['version'] = version
+            if not img['version']:
+                errors.append(('NO_VERSION', img))
             try:
                 os.stat(img['fimage_file'])
             except (OSError, IOError):
