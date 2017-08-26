@@ -127,3 +127,11 @@
     - generated: ``docker/packer/*.json``
     - produced docker images
 
+- We provide an helper script to tests image that launch an image the way packer would have
+  and let you connect in the container for you to debug build procedure.
+```
+cd /myimage
+# (call $cops/hacking/docker_livepacker_test.sh)
+bin/run_livepacker_test.sh .docker/packer/<MY_IMAGE>.json
+
+```
