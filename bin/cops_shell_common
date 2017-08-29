@@ -193,6 +193,10 @@ vv() {
     silent_run "${@}"
 }
 
+silent_vv() {
+    SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"
+}
+
 usage() {
     die 128 "No usage found"
 }
