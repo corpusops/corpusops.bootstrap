@@ -99,4 +99,24 @@
     }
 
     ```
+## Sumup: Steps to create corpusops docker compliant images
+- Copy/adapt from another image (eg: [corpusops/elasticsearch](https://github.com/corpusops/setups.elasticsearch))
+    - ``./ansible``
+    - ``./docker``
+    - ``./bin/env.sh``
+    - ``./bin/build.sh``
+- Delete ``docker/packer``
+- Maybe adapt ``bin/buid.sh``
+- Maybe adapt ``docker/provision.sh``
+- Feed ``ansible/``
+- Edit/adapt ``docker/packer.json``
+    - take care that the ``__VERSION__`` placeholder is used correcly
+    - edit the inline shell script to adapt the generated ``ansible_params.yml``
+      ansible variable file accordingly to your provision playbooks & roles.
+- Create & feed ``docker/IMAGES.json``
+- Generate packer files with ``bin/build.sh --generate-images``
+- Launch until success ``bin/build.sh`` which launch **docker_build_chain**.
+- Verify after build:
+    - generated: ``docker/packer/*.json``
+    - produced docker images
 
