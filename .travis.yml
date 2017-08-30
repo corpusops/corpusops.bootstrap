@@ -1,0 +1,51 @@
+---
+sudo: required
+dist: trusty
+env:
+  matrix:
+    - IMAGES="ubuntu:16.04"
+    - IMAGES="ubuntu:14.04"
+    - IMAGES="ubuntu:latest"
+    - IMAGES="centos:7"
+language: python
+python: "2.7"
+before_install:
+  - sudo apt-get update -qq
+install:
+  - |
+    echo "TRAVIS_ENV_VARS:" >&2
+    env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
+  - |
+    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+    else
+        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+    fi
+    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
+    export CORPUSOPS_BRANCH
+    bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
+    if ! bin/install.sh -C --synchronize-code;then
+      rm -rf $TRAVIS_BUILD_DIR/roles/corpusops.roles $TRAVIS_BUILD_DIR/playbooks/corpusops
+      bin/install.sh -C --synchronize-code
+    fi
+  - sudo service docker stop
+  - sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
+script:
+  - |
+    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+    else
+        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+    fi
+    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
+    export CORPUSOPS_BRANCH
+    NO_SYNC=1 hacking/test_script
+after_success:
+  - DEBUG=1 hacking/docker_release
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+    - $TRAVIS_BUILD_DIR/venv
+    - $TRAVIS_BUILD_DIR/roles/corpusops.roles
+    - $TRAVIS_BUILD_DIR/playbooks/corpusops

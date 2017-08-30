@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+
+
+COPS_DOCKER_TEST_MODE="${COPS_DOCKER_TEST_MODE:-run}"
+COPS_DOCKER_CMD=${COPS_DOCKER_CMD:-}
+COPS_DOCKER_SHELL="/bin/bash -c "
+COPS_DOCKER_INIT_CMD=/entry_point
+COPS_DOCKER_SHELL_CMD="while true;do sleep 50000;done"
+COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
+DOCKERFILES_FOLDER="${DOCKERFILES_FOLDER:-docker}"
+DOCKER_USER=${DOCKER_USER:-corpusops}
+DOCKER_RELEASER=${DOCKER_RELEASER-corpusopsreleaser}
+DOCKER_PASSWORD=${DOCKER_PASSWORD-}
+NO_GEN=${NO_GEN-}
+NO_BUILD=${NO_BUILD-}
+NO_REBUILD=${NO_REBUILD-}
+NO_SYNC=${NO_SYNC-}
+NO_SQUASH=${NO_SQUASH-}
+NO_OLD_CANDIDATE_CLEANUP=${NO_OLD_CANDIDATE_CLEANUP-}
+NO_CANDIDATE_CLEANUP=${NO_CANDIDATE_CLEANUP-}
+NO_OLD_IMAGE_CLEANUP=${NO_OLD_IMAGE_CLEANUP-}
+SKIP_FOUND_CANDIDATE_EXIT=${SKIP_FOUND_CANDIDATE_EXIT-}
+SQUASHER_V=0.2.0
+SQUASHER_GO="$W/hacking/docker-squash-${SQUASHER_V}"
+BSQUASHER_URL="https://github.com/jwilder/docker-squash/releases/download"
+if uname -ar | grep -qi linux;then
+    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-linux-amd64-v$SQUASHER_V.tar.gz"
+elif uname -ar | grep -qi darwin;then
+    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-darwin-amd64-v$SQUASHER_V.tar.gz"
+else
+    SQUASHER_GO_URL="${SQUASHER_URL-}"
+fi
+SQUASHER_REV="05cd17fe639183e2986fa89b3ddb62bcf903cf2b"
+SQUASHER_FORK="https://github.com/goldmann/docker-squash.git"
+SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
+SQUASHER_PY="$W/venv/bin/docker-squash"
+BASE_IMAGES="ubuntu:latest ubuntu:16.04 ubuntu:14.04 centos:7"
+DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
+ROLE_DOCKERFILE_TEMPLATE=${ROLE_DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.role}
+ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
+
+
+# Those roles will be tested, to be sure a subset of our roles
+# still perform correctly before any release
+BASE_ROLES="\
+corpusops.roles/actionhelper
+corpusops.roles/ansible_plugins
+corpusops.roles/debug
+corpusops.roles/humanlog
+corpusops.roles/include_jinja_vars
+corpusops.roles/service
+corpusops.roles/saltcall
+corpusops.roles/vars"
+
+CONFIG_ROLES="\
+corpusops.roles/localsettings_pkgmgr_vars
+corpusops.roles/localsettings_pkgmgr
+corpusops.roles/localsettings_basepkgs_vars
+corpusops.roles/localsettings_basepkgs
+corpusops.roles/localsettings_locales_vars
+corpusops.roles/localsettings_locales
+corpusops.roles/localsettings_profile_vars
+corpusops.roles/localsettings_profile
+corpusops.roles/localsettings_ssh_vars
+corpusops.roles/localsettings_ssh
+corpusops.roles/localsettings_sudo_vars
+corpusops.roles/localsettings_sudo"
+
+NOT_IN_DOCKER_ROLES=""
+
+SERVICES_ROLES="\
+corpusops.roles/services_base_cron_vars
+corpusops.roles/services_base_cron
+corpusops.roles/services_base_sshd_vars
+corpusops.roles/services_base_sshd"
+
+DEBIAN_ROLES="\
+corpusops.roles/localsettings_autoupgrades_vars
+corpusops.roles/localsettings_autoupgrades"
+
+UBUNTU_ROLES="\
+corpusops.roles/localsettings_apparmor_vars
+corpusops.roles/localsettings_apparmor"
+
+set_docker_folder() {
+    DOCKER_FOLDER=${1:-${DOCKER_FOLDER}}
+    if [[ -n "${DOCKER_FOLDER}" ]] && [ ! -d "${DOCKER_FOLDER}" ]; then
+        DOCKER_FOLDER=
+    fi
+    if [[ -z "${DOCKER_FOLDER}" ]];then
+        for f in "${OW:-${W}}" "${W}";do
+            DOCKER_FOLDER="${f}"
+            testd=${DOCKER_FOLDER}
+            if test -d "${testd}"; then
+                break
+            fi
+        done
+    fi
+}
+
+get_dockerfiles_folder() {
+    local docker_folder="${1:-${DOCKER_FOLDER}}"
+    local dockerfiles_folder="${2:-${DOCKERFILES_FOLDER}}"
+    echo "${docker_folder}/${dockerfiles_folder}"
+}
+
+get_dockerfiles_from_folder() {
+    local dockerfiles=""
+    local dockerfile=""
+    local docker_folder=${1:-${DOCKER_FOLDER}}
+    local dockerfiles_folder=${2:-${DOCKERFILES_FOLDER}}
+    local testd=$(get_dockerfiles_folder \
+        "${docker_folder}" "${DOCKERFILES_FOLDER}")
+    if [ ! -d "${testd}" ];then
+        testd="${docker_folder}"
+    fi
+    if [ -d "${testd}" ];then
+        while read dockerfile; do
+            if egrep -iq '^FROM ' ${dockerfile}; then
+                dockerfiles="${dockerfiles} ${dockerfile}"
+            fi
+        done < <(find "${testd}" -type f 2>/dev/null\
+                 | grep -i dockerfile)
+    fi
+    echo "${dockerfiles}" | xargs -n1
+}
+
+get_tag_from_dockerfile() {
+    local dockerfile=${1}
+    local docker_folder="${2:-${DOCKER_FOLDER}}"
+    local image=$(basename "${dockerfile}"\
+                  | sed -re "s/Dockerfile\\.?//gi")
+    if [[ -z "${image}" ]];then
+        image=$(basename ${docker_folder})
+    fi
+    echo "${image}"
+}
+
+get_images_from_folder() {
+    local images=""
+    local docker_folder="${1:-${DOCKER_FOLDER}}"
+    while read dockerfile_line;do
+        for dockerfile in ${dockerfile_line};do
+            image=$(get_tag_from_dockerfile \
+                        "${dockerfile}" "${docker_folder}")
+            if [[ -n "${image}" ]]; then
+                images="${images} ${image}"
+            fi
+        done
+    done < <(get_dockerfiles_from_folder "${docker_folder}")
+    echo "${images}" | xargs -n1
+}
+
+may_prepend_docker_user_to_image() {
+    local image=${1}
+    if echo ${image} | grep -vq /;then
+        if [[ -z ${NO_FORCE_USER_TAG} ]]; then
+            debug "Prepending ${DOCKER_USER} to image: ${image}"
+            image=${DOCKER_USER}/${image}
+        fi
+    fi
+    echo ${image}
+}
+
+add_preprovision_slug() {
+    local image_preprovision=${1}
+    if echo ${image_preprovision} | grep -vq :; then
+        image_preprovision="${image_preprovision}:"
+    fi
+    if echo ${image_preprovision} | egrep -vq _preprovision$; then
+        image_preprovision="${image_preprovision}_preprovision"
+    fi
+    echo ${image_preprovision}
+}
+
+rewrite_dockerfile() {
+    local template=${1}
+    local image=${2}
+    local cops_root=${3:-${COPS_ROOT}}
+    local image_preprovision=$(add_preprovision_slug ${image})
+    sed -r \
+        -e "/__STRIPME__/d" \
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
+        -e "s|__IMAGE__|${image}|g" \
+        -e "s|__IMAGE_PREPROVISION__|$(may_prepend_docker_user_to_image \
+                ${image_preprovision})|g" \
+        "${template}"
+}
+
+set_docker_folder
+if [[ -z "${IMAGES-}" ]]; then
+    if echo "${DOCKER_FOLDER}" | egrep -q "${W}/?"; then
+        IMAGES=${BASE_IMAGES}
+    else
+        IMAGES=$(get_images_from_folder "${DOCKER_FOLDER}")
+    fi
+fi
+
+case "${SQUASHER-}" in
+    $SQUASHER_GO)
+        SQUASHER=$SQUASHER_GO
+        SQUASHER_URL=$SQUASHER_GO_URL
+        ;;
+    *)
+        SQUASHER=$SQUASHER_PY
+        SQUASHER_URL=$SQUASHER_PY_URL
+        ;;
+esac
+
+reset_colors
+
+export COPS_DOCKER_TEST_MODE
+export DOCKERFILE_TEMPLATE
+export DOCKER_USER
+export DOCKER_FOLDER
+export DOCKERFILES_FOLDER
+export IMAGES BASE_IMAGES
+export NO_GEN
+export NO_BUILD
+export NO_SYNC
+export NO_SQUASH
+export SKIP_FOUND_CANDIDATE_EXIT
+export SQUASHER
+export SQUASHER_URL
+# vim:set et sts=4 ts=4 tw=80:

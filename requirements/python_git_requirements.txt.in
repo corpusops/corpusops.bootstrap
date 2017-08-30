@@ -1,0 +1,2 @@
+# ansible
+-e git+__ANSIBLE_URL__@__ANSIBLE_BRANCH__#egg=ansible

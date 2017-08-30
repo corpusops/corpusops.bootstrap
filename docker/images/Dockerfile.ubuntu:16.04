@@ -1,0 +1,20 @@
+# For quickier rebuilds, we isolate each step of the installation
+# and their requisites; together with docker cache
+
+FROM corpusops/ubuntu:16.04_preprovision
+
+# 5/ Make the docker image a preconfigured-for-production image
+RUN bash -c 'step_rev=2;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent $COPS_APPLY_ROLE "${COPS_ROOT}/playbooks/corpusops/provision/server.yml"'
+
+# pack any found git repo
+RUN bash -c 'step_rev=3;set -e;\
+    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent /sbin/cops_container_strip.sh'
+
+# You have to mount:
+#  -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+STOPSIGNAL SIGRTMIN+3
+CMD ["/entry_point"]
+# vim:set et:

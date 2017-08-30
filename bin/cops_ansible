@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+#
+# Convenient wrapper to scan & add to ansible search paths :
+#   - inventories
+#   - libraries
+#   - roles
+#   - plugins
+#
+#   - FROM where we call the ansible commands from
+#       - $PWD
+#       - $PWD/ansible
+#       - $PWD/.ansible
+#   - Idem with directories from corpusops
+#       - $CORPUSOPS_ROOT
+#       - $CORPUSOPS_ROOT/ansible
+#       - $CORPUSOPS_ROOT/.ansible
+#
+# It makes also some sensible defaults:
+#
+#   - nosshhostkeychecking
+#   - nocows
+#   - better controlpath
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+
+export W=$(pwd)
+export OW=${OW:-${W}}
+export A=${W}/ansible
+export DA=${W}/.ansible
+export OA=${OW}/ansible
+export ODA=${OW}/.ansible
+export SYS_A=${SYS_A:-/etc/ansible}
+export SCRIPT=$(basename "${0}")
+export VENV_PATH="${VENV_PATH-${W}/venv}"
+PLUGINS_OR_MODULES_DIRS="\
+ANSIBLE_LIBRARY:library
+ANSIBLE_ACTION_PLUGINS:action_plugins
+ANSIBLE_CACHE_PLUGINS:cache_plugins
+ANSIBLE_CALLBACK_PLUGINS:callback_plugins
+ANSIBLE_LOOKUP_PLUGINS:lookup_plugins
+ANSIBLE_CONNECTION_PLUGINS:connection_plugins
+ANSIBLE_INVENTORY_PLUGINS:inventory_plugins
+ANSIBLE_FILTER_PLUGINS:filter_plugins
+ANSIBLE_TEST_PLUGINS:test_plugins
+ANSIBLE_STRATEGY_PLUGINS:strategy_plugins"
+
+if [ -e "${VENV_PATH}/bin/activate" ]; then
+    . "${VENV_PATH}/bin/activate"
+else
+    die "virtualenv not found in ${VENV_PATH}"
+fi
+
+while read p;do
+    if [ -e "${p}" ];then
+        for inventory in "${p}/inventories" "${p}/inventory";do
+            if [ -e "${inventory}" ] && [[ -z ${ANSIBLE_HOSTS-} ]] ; then
+                export ANSIBLE_HOSTS="${inventory}"
+            fi
+        done
+        if [[ -z "${NO_ANSIBLE_CONTEXTUAL_PLUGINS_LOAD}" ]];then
+            while read line;do
+                var=$(echo "$line:"|cut -d: -f1)
+                path=$(echo "$line:"|cut -d: -f2)
+                testdir="${p}/${path}"
+                if [ -e "${testdir}" ];then
+                    eval 'val=$'"${var}"
+                    if [[ -z ${val-} ]]; then
+                        subpaths="${testdir}"
+                        eval ${var}'="'${testdir}'"'
+                    else
+                        subpaths="${testdir}:${subpaths}"
+                    fi
+                    eval export ${var}'="'${subpaths}'"'
+                fi
+            done <<< "${PLUGINS_OR_MODULES_DIRS}"
+        fi
+        roles="${p}/roles"
+        if [ -e "${roles}" ];then
+            if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
+                export ANSIBLE_ROLES_PATH="${roles}"
+            else
+                export ANSIBLE_ROLES_PATH="${ANSIBLE_ROLES_PATH}:${roles}"
+            fi
+        fi
+    fi
+done < <(find \
+            "${W}" "${OW}" \
+            "${ODA}" "${OA}" \
+            "${DA}" "${A}" \
+            "${SYS_A}" \
+            -mindepth 0 -maxdepth 0 -and \
+            \( -type d -or -type l \) \
+            2>/dev/null | uniq )
+export ANSIBLE_SSH_CONTROL_PATH=${ANSIBLE_SSH_CONTROL_PATH:-"~/.assh_%%h.%%p-%%r"}
+export ANSIBLE_HOST_KEY_CHECKING${ANSIBLE_HOST_KEY_CHECKING:-"False"}
+export ANSIBLE_NOCOWS=${ANSIBLE_NOCOWS:-False}
+
+if [[ -n ${ENV_DEBUG-} ]]; then
+    env
+    exit 1
+fi
+cd "${OW}"

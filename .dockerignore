@@ -1,0 +1,14 @@
+inventory
+inventories
+**/inventory
+**/inventories 
+
+host_vars
+**/host_vars
+
+groups_vars
+**/groups_vars 
+
+./venv
+./ignored
+./mountpoint

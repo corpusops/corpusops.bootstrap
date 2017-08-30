@@ -1,0 +1,25 @@
+-r requirements.txt
+# documentation
+docutils >= 0.11
+modernize
+sphinx-rtd-theme == 0.1.7
+sphinx >= 1.3
+pygments >= 2.0.2
+Babel >= 1.3
+
+# testing
+nosexcover
+coveralls
+mock >= 1.0.1
+nose >= 1.3.4
+pylint >= 0.28
+logilab-astng >= 0.24.3
+logilab-common >= 1.5.7
+pylama >= 6.1.1
+mccabe >= 0.2.1
+
+# profiling
+pyprof2calltree >= 1.3.2
+
+# ansible release & rewrite
+ruamel.yaml

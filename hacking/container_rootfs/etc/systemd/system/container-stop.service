@@ -1,0 +1,12 @@
+[Unit]
+Description=container-stop
+Before=shutdown.target reboot.target halt.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/sbin/cops_container_stop.sh
+
+[Install]
+WantedBy=shutdown.target

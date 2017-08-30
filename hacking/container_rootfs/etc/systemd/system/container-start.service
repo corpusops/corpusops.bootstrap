@@ -1,0 +1,14 @@
+[Unit]
+Description=container-setup
+After=sysinit.target
+DefaultDependencies=no
+Before=network-online.target network.target multi-user.target dbus.service
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/cops_container_start.sh systemd
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

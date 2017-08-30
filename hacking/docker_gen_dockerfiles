@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+OW=$(pwd)
+cd "$(dirname "${0}")/.."
+export LOGGER_NAME=$(basename $0)
+
+sc=hacking/build_env
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+usage () {
+    NO_HEADER=y die '
+Regenerate found dockerfiles from template (you need a base template path
+but too dockerfiles, eg ./Dockerfile.in & ./Dockerfile.in._preprovision)
+
+ [DOCKERFILE_TEMPLATE=] \
+ [NOCOLOR=y] \
+ [NO_GEN=y] \
+ [DEBUG=y] \
+ [IMAGES="ubuntu:16.04"] \
+    '"$0"'
+'
+}
+
+if [[ -n ${NO_GEN} ]];then
+    die 0 "Skipping dockerfile generation"
+fi
+
+parse_cli "$@"
+log "Generating dockerfiles"
+cd "${W}"
+for e in images preprovision;do
+    if [ ! -e docker/$e ]; then
+        mkdir docker/$e
+    fi
+done
+while read image_line;do
+    for image in ${image_line}; do
+        if echo ${image} | grep -q _preprovision;then
+            continue
+        fi
+        image_preprovision=$(add_preprovision_slug ${image})
+        dfiles=""
+        dfiles="${dfiles} docker/preprovision/Dockerfile.${image_preprovision}"
+        dfiles="${dfiles} docker/images/Dockerfile.${image}"
+        for f in ${dfiles};do
+            template=${DOCKERFILE_TEMPLATE}
+            if echo $f | grep -q preprovision; then
+                template=${template}._preprovision
+            fi
+            log "   Rewriting ${f} from ${template}"
+                rewrite_dockerfile "${template}" "${image}" > "${f}"
+        done
+    done
+done <<< ${IMAGES}
+# vim:set et sts=4 ts=4 tw=80:

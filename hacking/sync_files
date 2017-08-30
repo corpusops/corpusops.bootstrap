@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+export LOGGER_NAME=$(basename $0)
+
+API=https://api.github.com
+username=${username:-kiorky}
+token=${token-}
+orga=${prefix:-corpusops}
+operators=${operators:-operators}
+repos=${@:-}
+
+curl_() { curl -s -u "${username}:${token}" "${@}" ; }
+
+cd "$(dirname "${0}")/.."
+
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+
+
+usage () {
+    NO_HEADER=y die '
+Refresh files to various roles
+
+    '"$0"'
+'
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+parse_cli "$@"
+cd $W
+for i in bin/cops_reset_passwords.sh;do
+    cp $i hacking/container_rootfs/sbin
+done
+for i in hacking/container_rootfs/sbin/cops_reset-host.py bin/cops_pkgmgr_install.sh bin/cops_shell_common;do
+    df=roles/corpusops.roles/lxc_create/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
+    d=$(dirname "$df")
+    if [ ! -e $d ];then mkdir -p $d;fi
+    cp -vf $i $df
+done
+for i in hacking/container_rootfs/sbin/cops_container_{snapshot,strip}.sh;do
+    df=roles/corpusops.roles/lxc_snapshot/templates/$(echo "$i"|sed -re "s/.*s?(bin.*)/\1/g")
+    d=$(dirname "$df")
+    if [ ! -e $d ];then mkdir -p $d;fi
+    cp -vf $i $df
+done
+for r in \
+    $W \
+    $W/roles/corpusops.roles/lxc_snapshot \
+    $W/roles/corpusops.roles/lxc_create;do
+    if ! ( cd $r && git diff --exit-code >/dev/null 2>&1 ); then
+        warn "commit $r"
+    fi
+done
+log 'done'
+# vim:set et sts=4 ts=4 tw=80 ft=sh:
