@@ -15,6 +15,7 @@ ANSIBLE_FOLDER=$(grep_packer_value ansible_folder)
 ANSIBLE_PLAY=$(grep_packer_value ansible_play)
 ANSIBLE_PLAYBOOK=$(grep_packer_value ansible_playbook)
 SETUP_DIR=$W/local/setup
+DATA_DIR=$W/local/data
 if [ ! -e $SETUP_DIR ];then vv mkdir $SETUP_DIR;fi
 if [ ! -e $SETUP_DIR/reconfigure.yml ];then vv touch $SETUP_DIR/reconfigure.yml;fi
 DNAME=${DNAME:-${TAG_NAME}_live}
@@ -29,6 +30,7 @@ if vv docker run \
     -v $COPS_ROOT/hacking:$croot/hacking \
     -v $COPS_ROOT/roles/corpusops.roles:$croot/roles/corpusops.roles \
     -v $SETUP_DIR:/setup:ro \
+    -v $DATA_DIR:/srv/projects/$TAG_NAME/data \
     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
     -v $W:/provision_dir.in:ro \
     --security-opt seccomp=unconfined \
