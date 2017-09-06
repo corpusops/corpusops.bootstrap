@@ -2,6 +2,8 @@
 # and their requisites; together with docker cache
 
 FROM corpusops/ubuntu:16.04_preprovision
+ADD roles/ /srv/corpusops/corpusops.bootstrap/roles/
+ADD playbooks/ /srv/corpusops/corpusops.bootstrap/playbooks/
 
 # 5/ Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
