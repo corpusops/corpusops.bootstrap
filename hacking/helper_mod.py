@@ -197,10 +197,6 @@ def parse_docker_images(images, images_file='images.json'):
             img['version'] = version
             if not img['version']:
                 errors.append(('NO_VERSION', img))
-            try:
-                os.stat(img['fimage_file'])
-            except (OSError, IOError):
-                errors.append(('IMAGEFILE_DOES_NOT_EXIST', img))
             #
             if builder_type in ['dockerfile']:
                 tag = None
@@ -253,14 +249,28 @@ def _build(cmd, img, fmt=True):
     img.setdefault('extra_args', '')
     if fmt:
         cmd = cmd.format(**img)
-    ret = shellexec(cmd)
-    if ret[0] == 0:
-        status = True
+    img_file = img['fimage_file']
+    try:
+        os.stat(img_file)
+    except (OSError, IOError):
+        msg = ('retcode: {0}\n'
+               'OUT: {1}\n'
+               'ERR: {2}\n'.format(
+                   -1,
+                   '',
+                   'IMAGEFILE_DOES_NOT_EXIST: {0}'.format(
+                       img_file)))
     else:
-        status = False
-    msg = ('retcode: {0}\n'
-           'OUT: {1}\n'
-           'ERR: {2}\n'.format(ret[0], ret[1][0], ret[1][1]))
+        ret = shellexec(cmd)
+        if ret[0] == 0:
+            status = True
+        else:
+            status = False
+        msg = ('retcode: {0}\n'
+               'OUT: {1}\n'
+               'ERR: {2}\n'.format(ret[0],
+                                   ret[1][0],
+                                   ret[1][1]))
     return status, msg
 
 
