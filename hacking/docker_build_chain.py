@@ -27,13 +27,13 @@ Build images
 Main usage:
   - {N} [--images packer__toto.json] [--skip-images packer_toto.json]
     - Iterate and run builds through packer or docker all the images found
-      inside docker/IMAGES.json
+      inside $docker_folder/IMAGES.json
 
 Other usages:
 
   - {N} --generate-images \\
-          [--packer-template ./docker/packer.json]
-     - rewrite the packer template to docker/packer/IMG_X.json
+          [--packer-template $docker_folder/packer.json]
+     - rewrite the packer template to $docker_folder/packer/IMG_X.json
 
   - {N} --list
     - List all available images
@@ -84,7 +84,12 @@ def make_container(target):
         os.makedirs(container)
 
 
-def generate_images(images_files, packer_template, status=None):
+def generate_images(images_files,
+                    packer_template,
+                    docker_folder='.docker',
+                    salt_folder='.salt',
+                    ansible_folder='.ansible',
+                    status=None):
     if status is None:
         status = copy.deepcopy(_STATUS)
     with open(packer_template) as fic:
@@ -96,8 +101,13 @@ def generate_images(images_files, packer_template, status=None):
             sys.exit(1)
         for image in imagesdata['images']:
             v = image['version']
+            n = image['name']
             res = content.replace('__VERSION__', v)
-            target = 'docker/packer/{0}.json'.format(v)
+            res = res.replace('__NAME__', n)
+            res = res.replace('__ANSIBLE_FOLDER', ansible_folder)
+            res = res.replace('__SALT_FOLDER', salt_folder)
+            res = res.replace('__DOCKER_FOLDER', docker_folder)
+            target = '{0}/packer/{1}.json'.format(docker_folder, v)
             make_container(target)
             print('Writing {0}'.format(target))
             with open(target, 'w') as fic:
@@ -125,8 +135,8 @@ def parse_cli():
     parser.add_argument(
         '--generate-images',
         default=False,
-        help=('Generate docker/packer/*'
-              ' from docker/VERSIONS & docker/packer.json'),
+        help=('Generate $docker_folder/packer/*'
+              ' from $docker_folder/IMAGES.json'),
         action='store_true')
     parser.add_argument(
         '--quiet',
@@ -146,13 +156,23 @@ def parse_cli():
         '--log-level',
         default=os.environ.get('LOGLEVEL', 'info'),
         help='loglevel')
-    default_images_files = (
-        '{0}/docker/IMAGES.json'.format(OW))
     parser.add_argument(
         '--skip-images',
         nargs='*',
         default=_H.splitstrip(os.environ.get('SKIP_IMAGES', '')),
         help='do not build these images (all by default)')
+    parser.add_argument(
+        '--salt-folder',
+        default=os.environ.get('SALT_FOLDER', 'salt'),
+        help='salt folder (if used)')
+    parser.add_argument(
+        '--ansible-folder',
+        default=os.environ.get('ANSIBLE_FOLDER', 'ansible'),
+        help='ansible folder (if used)')
+    parser.add_argument(
+        '--docker-folder',
+        default=os.environ.get('DOCKER_FOLDER', 'docker'),
+        help='docker folder')
     parser.add_argument(
         '--images',
         nargs='*',
@@ -160,17 +180,35 @@ def parse_cli():
         help='build only these images (all by default)')
     parser.add_argument(
         '--packer-template',
-        default=os.environ.get('PACKER_TEMPLATE', 'docker/packer.json'),
-        help='VERSIONS file')
+        default=os.environ.get('PACKER_TEMPLATE', ''),
+        help='packer template (default: $docker_folder/packer.json)')
+    parser.add_argument(
+        '--image-name',
+        nargs='*',
+        default='default image name',
+        help='images json file (default: $docker_folder/IMAGES.json)')
     parser.add_argument(
         '--images-files',
         nargs='*',
-        default=_H.splitstrip(
-            os.environ.get(
-                'IMAGES_FILE', default_images_files
-            )),
-        help='images json file')
+        default=_H.splitstrip(os.environ.get('IMAGES_FILE', '')),
+        help='images json file (default: $docker_folder/IMAGES.json)')
     args = parser.parse_args()
+    for i in ['salt', 'ansible', 'docker']:
+        opt = '{0}_folder'.format(i)
+        folder = getattr(args, opt)
+        folders = [folder]
+        if not folder.startswith(('.', os.path.sep)):
+            folders.append('.'+folder)
+        for i in folders:
+            if i and not i.startswith(os.path.sep):
+                ffolder = os.path.join(OW, i)
+                if os.path.exists(ffolder):
+                    setattr(args, opt, i)
+                    break
+    if not args.packer_template:
+        args.packer_template = os.path.join(args.docker_folder, 'packer.json')
+    if not args.images_files:
+        args.images_files = [os.path.join(args.docker_folder, 'IMAGES.json')]
     return args, vars(args)
 
 
@@ -268,6 +306,9 @@ def main():
 
     if vargs['generate_images'] and not done:
         generate_images(images_files=vargs['images_files'],
+                        docker_folder=vargs['docker_folder'],
+                        ansible_folder=vargs['ansible_folder'],
+                        salt_folder=vargs['salt_folder'],
                         packer_template=vargs['packer_template'])
         done = True
 

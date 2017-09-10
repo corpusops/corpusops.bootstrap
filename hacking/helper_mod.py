@@ -32,6 +32,8 @@ TOP = D(W)
 RE_F = re.U | re.M
 BUILDER_TYPES = ['packer', 'dockerfile']
 DEFAULT_BUILDER_TYPE = 'packer'
+NAME_SANITIZER = re.compile('setups\.',
+                            flags=RE_F)
 IMG_PARSER = re.compile('('
                         '(?P<repo>[^/]+)'
                         '/)?'
@@ -181,6 +183,14 @@ def parse_docker_images(images, images_file='images.json'):
             except KeyError:
                 image_file = None
                 errors.append(('NO_IMAGE_FILE_ERROR', img))
+            #
+            name = img.get('name', None)
+            if not name:
+                name = NAME_SANITIZER.sub('', os.path.basename(OW))
+            img['name'] = name
+            if not img['name']:
+                errors.append(('NO_NAME', img))
+            #
             version = img.get('version', None)
             if not version:
                 version = '.'.join(img['file'].split('.')[:-1]).strip()
@@ -191,6 +201,7 @@ def parse_docker_images(images, images_file='images.json'):
                 os.stat(img['fimage_file'])
             except (OSError, IOError):
                 errors.append(('IMAGEFILE_DOES_NOT_EXIST', img))
+            #
             if builder_type in ['dockerfile']:
                 tag = None
                 try:
