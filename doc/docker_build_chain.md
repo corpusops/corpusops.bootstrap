@@ -90,7 +90,7 @@
      "images": [{
        "file": "Dockerfile", # file living inside docker/packer
        "tag": "mycorp/myimg", # tag to produce
-       "name": "1.0", # name part of the image,
+       "name": "myimg", # name part of the image,
                         default: top directory name
        "version": "1.0", # version of the image,
 
@@ -102,6 +102,10 @@
     }
 
     ```
+- Tip: eiter define :
+    - ``version+name`` (json filename is computed from version & tag)
+    - ``file`` (tag name is computed from directory, and version from file string parts)
+
 ## Sumup: Steps to create corpusops docker compliant images
 - Copy/adapt from another image (eg: [corpusops/elasticsearch](https://github.com/corpusops/setups.elasticsearch))
     - ``./ansible``

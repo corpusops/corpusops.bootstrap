@@ -166,23 +166,6 @@ def parse_docker_images(images, images_file='images.json'):
             except (ValueError, AssertionError,):
                 builder_type = None
                 errors.append(('INVALID_BUILDER_TYPE', img))
-            try:
-                try:
-                    image_file = img['file']
-                except KeyError:
-                    debug('no image file for {0}'.format(img))
-                    if builder_type in ['packer']:
-                        image_file = '{0}.json'.format(builder_type)
-                    elif builder_type in ['dockerfile']:
-                        image_file = builder_type.capitalize()
-                    else:
-                        raise
-                if builder_type and image_file:
-                    img['fimage_file'] = J(
-                        images_folder, builder_type, image_file)
-            except KeyError:
-                image_file = None
-                errors.append(('NO_IMAGE_FILE_ERROR', img))
             #
             name = img.get('name', None)
             if not name:
@@ -192,6 +175,32 @@ def parse_docker_images(images, images_file='images.json'):
                 errors.append(('NO_NAME', img))
             #
             version = img.get('version', None)
+            image_file = img.get('file', None)
+            if not image_file:
+                if builder_type in ['packer']:
+                    if version:
+                        formatter = '{0}-{1}.json'
+                    else:
+                        formatter = '{0}.json'
+                elif builder_type in ['dockerfile']:
+                    if version:
+                        formatter = 'Dockerfile.{0}-{1}'
+                    else:
+                        formatter = 'Dockerfile'
+                else:
+                    raise Exception(
+                        'no valid builder type for {0}'.format(img))
+                image_file = formatter.format(name, version)
+            img['file'] = image_file
+            if (
+                builder_type and image_file and not
+                image_file.startswith(os.path.sep)
+            ):
+                img['fimage_file'] = J(
+                    images_folder, builder_type, image_file)
+            if not image_file:
+                errors.append(('NO_IMAGE_FILE_ERROR', img))
+            #
             if not version:
                 version = '.'.join(img['file'].split('.')[:-1]).strip()
             img['version'] = version
