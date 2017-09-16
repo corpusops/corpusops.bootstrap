@@ -107,7 +107,7 @@ def generate_images(images_files,
             res = res.replace('__ANSIBLE_FOLDER', ansible_folder)
             res = res.replace('__SALT_FOLDER', salt_folder)
             res = res.replace('__DOCKER_FOLDER', docker_folder)
-            target = '{0}/packer/{1}.json'.format(docker_folder, v)
+            target = image['fimage_file']
             make_container(target)
             print('Writing {0}'.format(target))
             with open(target, 'w') as fic:
