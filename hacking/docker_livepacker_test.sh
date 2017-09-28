@@ -3,6 +3,20 @@
 # Launch a container like packer would have to debug builds
 #
 W=$(pwd)
+export LOGGER_NAME=packer_test
+sc=$(dirname $(readlink -f "$0"))/../bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. "$sc" || exit 1
+usage() {
+    NO_HEADER=y die '
+Wrapper to run a container similar to packer build
+to debug the build process
+
+ [DNAME=[mycontainer] \
+ '"$0"' [PACKER_FILE.json]
+ '
+}
+
 PACKER_FILE=${PACKER_FILE:-${1:-$(ls -1 .docker/packer/*.json|sort -rn|head -n 1)}}
 grep_packer_value() { grep '"'"$1"'"' ${2-$PACKER_FILE}|awk '{print $2}'|sed -re 's/^[^"]*"|"[^"]*$//g'; }
 vv() { echo "$@" >&2; "$@"; }
