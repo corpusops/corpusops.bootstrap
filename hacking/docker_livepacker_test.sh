@@ -32,7 +32,8 @@ SETUP_DIR=$W/local/setup
 DATA_DIR=$W/local/data
 if [ ! -e $SETUP_DIR ];then vv mkdir $SETUP_DIR;fi
 if [ ! -e $SETUP_DIR/reconfigure.yml ];then vv touch $SETUP_DIR/reconfigure.yml;fi
-DNAME=${DNAME:-${TAG_NAME}_live}
+DNAME_DEFAULT="$(echo "${AUTHOR}${TAG_NAME}${VERSION}_live"|sed -re "s/_|-|\.//g")"
+DNAME=${DNAME:-${DNAME_DEFAULT}}
 COPS_ROOT=${COPS_ROOT:-$W/local/corpusops.bootstrap}
 if [ -e $COPS_ROOT ];then
     COPS_ROOT=$(readlink -f $COPS_ROOT)
