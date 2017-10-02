@@ -12,6 +12,7 @@ usage() {
 Wrapper to run a container similar to packer build
 to debug the build process
 
+ [DOCKER_EXTRA_ARGS=] \
  [DNAME=[mycontainer] \
  '"$0"' [PACKER_FILE.json]
  '
@@ -34,6 +35,7 @@ if [ ! -e $SETUP_DIR ];then vv mkdir $SETUP_DIR;fi
 if [ ! -e $SETUP_DIR/reconfigure.yml ];then vv touch $SETUP_DIR/reconfigure.yml;fi
 DNAME_DEFAULT="$(echo "${AUTHOR}${TAG_NAME}${VERSION}_live"|sed -re "s/_|-|\.//g")"
 DNAME=${DNAME:-${DNAME_DEFAULT}}
+DOCKER_EXTRA_ARGS=${DOCKER_EXTRA_ARGS-}
 COPS_ROOT=${COPS_ROOT:-$W/local/corpusops.bootstrap}
 if [ -e $COPS_ROOT ];then
     COPS_ROOT=$(readlink -f $COPS_ROOT)
@@ -56,6 +58,7 @@ if vv docker run \
     -e ANSIBLE_PLAYBOOK=$ANSIBLE_PLAYBOOK \
     -e ANSIBLE_PLAY=$ANSIBLE_PLAY \
     -e ANSIBLE_FOLDER=$ANSIBLE_FOLDER \
+    $DOCKER_EXTRA_ARGS \
     -d -i -t --name  ${DNAME}\
     $IMAGE_BASE $IMAGE_EP;then
     echo "Well done, connect using docker exec -ti ${DNAME} bash"
