@@ -18,6 +18,8 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*$|"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( => {)?$|"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
+DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
+COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 
 
 has_command() {
