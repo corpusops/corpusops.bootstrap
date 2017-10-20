@@ -1,4 +1,0 @@
----
-- hosts: all,
-  tasks:
-  - shell: rsync -azv /tmp/vagrant-ansible/ /tmp/corpusops-ansible/

@@ -1,8 +1,16 @@
 # -*- mode: ruby -*-
-# --------------------- CONFIGURATION ZONE ----------------------------------
-# If you want to alter any configuration setting, put theses settings in a ./vagrant_config.yml file
+VAGRANTFILE_API_VERSION = "2"
+# -- CONFIGURATION ZONE --------
+# If you want to alter any configuration setting,
+# put theses settings in a ./vagrant_config.yml file
 # This file would contain a combinaison of those settings
 # -------------o<---------------
+## MACHINE_NUM
+# MACHINE_NUM: 2
+## Moar boxes
+# MACHINES: "1" # number of machines to spawn
+## PLAYBOOKS:
+#  you'd better to edit via vagrantfiles, see this one and ./Vagrantfile
 # CPUS: 1
 # MEMORY: 512
 # MAX_CPU_USAGE_PERCENT: 25
@@ -17,29 +25,60 @@
 # BOX: "corpusops-vagrant-ubuntu-1504-xenial64_2"
 ## You can set boxuri for non defaults or to override
 # BOX_URI: "http://foo/xenial64.img
-# ####
+## APT
 # APT_MIRROR: "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"
 # APT_MIRROR: "http://ubuntu-archive.mirrors.proxad.net/ubuntu/"
 ## alternate dns
 # DNS_SERVERS: "8.8.8.8"
-# MACHINES: "1" # number of machines to spawn
 ## INSTALL knobs
-# FORCE_COPS_INSTALL: 1
-# FORCE_COPS_SYNC: 1
-# SKIP_SYNC_INSTALL: 1
+# SKIP_MOTD: 1
+# SKIP_SYNC: 1
+# SKIP_INSTALL: 1
+# SKIP_INSTALL_SSHFS: 1
 # SKIP_ROOTSSHKEYS_SYNC: 1
-# SKIP_SENDBACKTOHOST: 1
+# SKIP_PLAY_PLAYBOOKS: 1
+# FORCE_MOTD: 1
+# FORCE_SYNC: 1
+# FORCE_INSTALL: 1
+# FORCE_INSTALL_SSHFS: 1
+# FORCE_ROOTSSHKEYS_SYNC: 1
+# FORCE_PLAY_PLAYBOOKS: 1
+## Per submachine configuration
 # MACHINES_CFG:
-#   2:
+#   2: # <- Machine num
 #     BOX_URI: "http://foo/m.box
 # -------------o<---------------
 require 'digest/md5'
 require 'etc'
 require 'json'
 require 'open3'
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
-VAGRANTFILE_API_VERSION = "2"
-# __FILE__ == ABSPATH to current Vagrantfile
+require 'pathname'
+
+
+class MotdPlugin < Vagrant.plugin("2")
+    name "motd"
+    config(self.name, :provisioner) do
+        class Config < Vagrant.plugin("2", :config)
+						attr_accessor :motd
+        end
+        Config
+    end
+    provisioner(self.name) do
+        class Do < Vagrant.plugin("2", :provisioner)
+            def provision
+                eprintf @config.motd
+            end
+        end
+        Do
+    end
+end
+
+FORWARDED_MACHINE_KEYS = [
+    'MEMORY', 'CPUS', 'MAX_CPU_USAGE_PERCENT', 'SERIAL',
+    'APT_MIRROR', 'APT_PROXY',
+    'BOX', 'BOX_URI', 'UNAME','OS_RELEASE',
+    'DNS_SERVERS', 'DOMAIN',
+    'HOST_MOUNTPOINT', 'PRIVATE_NETWORK']
 
 
 def eprintf(*args)
@@ -56,6 +95,14 @@ class Hash
     end
     self[key]
   end
+  def except(*keys)
+    dup.except!(*keys)
+  end
+  def except!(*keys)
+    keys.each { |key| delete(key) }
+    self
+  end
+
 end
 
 
@@ -87,6 +134,11 @@ def get_uuid(cfg, machine)
 end
 
 
+def deepcopy(item)
+    Marshal.load(Marshal.dump(item))
+end
+
+
 def machine_config(cfg, machine_num, item, default=nil)
     mscfg = cfg.fetch('MACHINES_CFG', {})
     mcfg = mscfg.setdefault(machine_num, {})
@@ -94,7 +146,7 @@ def machine_config(cfg, machine_num, item, default=nil)
         default = cfg.fetch(item, nil)
     end
     mcfg.setdefault(item, default)
-    mcfg[item] = Marshal.load(Marshal.dump(mcfg[item]))
+    mcfg[item] = deepcopy(mcfg[item])
 end
 
 
@@ -105,57 +157,122 @@ def get_hostname(cfg, machine_num)
 end
 
 
-def cops_inject_playbooks(cfg, playbooks)
+def cops_inject_playbooks(opts)
+    opts = opts.nil? {} || opts
+    cfg = opts[:cfg]
+    playbooks = opts[:playbooks]
+    machine_nums = opts.fetch(:machine_nums, opts[:machine_num])
+    if machine_nums.nil?
+      machine_nums = (cfg['MACHINE_NUM'].to_i..
+                      cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1)
+    else
+      iterable = false
+      [Array, Range].each do |type|
+        if machine_nums.is_a? type
+          iterable = true
+        end
+      end
+      if !iterable
+        machine_nums = [machine_nums]
+      end
+    end
     # install rancher server only on first box
-    first_box_playbooks = cfg['MACHINES_CFG'][cfg['MACHINE_NUM']]['PLAYBOOKS']
-    playbooks.each do |playbook|
-        #  Play the playbook before the MOTD
-        first_box_playbooks.insert(-2, playbook)
+    machine_nums.each do |mnum|
+      machine_playbooks = cfg['MACHINES_CFG'][mnum]['PLAYBOOKS']
+      playbooks.each do |playbook|
+          machine_playbooks.insert(-1, deepcopy(playbook))
+      end
     end
     return cfg
 end
 
 
-def ansible_setup(ansible, cfg, *args)
-    ansible.install = false
+def ansible_setup(ansible, cfg, machine_cfg, *args)
     ansible.verbose  = true
     ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
-    #ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
-    ansible.provisioning_path = cfg['HOST_MOUNTPOINT']
-    if ! args.nil?
-        args.each do |arg|
-            if ! arg.nil?
-                arg.each do |key, val|
-                    ansible.send("#{key}=", val)
-                end
+    # ansible.install = false
+    args.each do |arg|
+        if !arg.nil?
+            arg.setdefault('sudo', false)
+            arg.each do |key, val|
+                ansible.send("#{key}=", val)
             end
         end
     end
 end
 
 
+def cexec(cmd, message)
+    _, stdout, stderr, wait_thr = Open3.popen3(cmd)
+    while line = stdout.gets
+        eprintf(line)
+    end
+    while line = stderr.gets
+        eprintf(line)
+    end
+    if !wait_thr.value.success?
+        raise message
+    end
+    return stdout, stderr, wait_thr
+end
+
+
+def debug(message)
+    if ENV.fetch("COPS_DEBUG", false)
+        puts message
+    end
+end
+
+
+def cops_sync(cfg)
+    if cfg['SKIP__SYNC']
+        debug 'Skipping corpusops sync'
+        return cfg
+    end
+    if cfg['SKIP_SYNC'].nil?
+        cfg['SKIP_SYNC'] = true
+        ["#{cfg['COPS_ROOT']}/roles/corpusops.roles",
+         "#{cfg['COPS_ROOT']}/venv/src/ansible",
+         "#{cfg['COPS_ROOT']}/venv/bin/ansible"].each do |f|
+             if !File.exists?(f)
+                 cfg['SKIP_SYNC'] = false
+             end
+         end
+    end
+    if cfg['SKIP_SYNC']
+        debug 'Skipping corpusops sync'
+        return cfg
+    end
+    puts "Syncing corpusops.local to #{cfg['COPS_ROOT']}\n"
+    cexec("#{cfg["COPS_SYNCER"]}", "Syncing corpusops failed")
+    return cfg
+end
+
+
 def cops_install(cfg)
-    puts('cops_install not implemented')
-		#if !File.exists? "#{cfg['COPS_ROOT']}/venv/bin/ansible"
-    #    eprintf("Installing corpusops.local to #{cfg['COPS_ROOT']}")
-		#		cmd = "#{cfg["COPS_INSTALLER"]}"
-		#		rout, rerr = '', ''
-		#		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
- 		#				while line = stdout.gets
-    #            rout += line
-		#						puts line
-		#				end
-		#				while line = stderr.gets
-    #            rerr += line
-		#						puts line
-		#				end
-		#		end
-		#end
+    if cfg['SKIP__INSTALL']
+        debug 'Skipping corpusops install'
+        return cfg
+    end
+    if (File.exists? "#{cfg['COPS_ROOT']}/venv/bin/ansible" and
+        cfg['SKIP_INSTALL'].nil?)
+        cfg['SKIP_INSTALL'] = true
+    end
+    if cfg['SKIP_INSTALL']
+        debug 'Skipping corpusops install'
+        return cfg
+    end
+    puts "Installing corpusops.local to #{cfg['COPS_ROOT']}\n"
+    cexec("#{cfg["COPS_INSTALLER"]}",
+          "Installing corpusops.local failed")
+    cfg = cops_sync(cfg)
+    return cfg
 end
 
 
 # Check entries in the configuration zone for variables available.
 # --- Start Load optional config file ---------------
+
 def cops_init(opts)
     cwd = opts.fetch(:cwd, nil)
     cops_path = opts.fetch(:cops_path, nil)
@@ -173,21 +290,28 @@ def cops_init(opts)
     cfg['CWD'] = cwd
     cfg['SCWD'] = cfg['CWD'].gsub(/\//, '_').slice(1..-1)
     # Number of machines to spawn
-    cfg['COPS_URL'] = "https://github.com/corpusops/corpusops.bootstrap.git"
     cfg['COPS_BRANCH'] = "master"
-    cfg['COPS_INSTALLER'] = "#{cfg["COPS_ROOT"]}/bin/install.sh -s -C"
+    # see bellow for cfg['COPS_INSTALLER']
+    # see bellow for cfg['COPS_SYNCER']
     #
     cfg['COPS_ROOT'] = cops_path
     cfg['COPS_VAGRANT_DIR'] = File.join(cfg['COPS_ROOT'], 'hacking/vagrant')
+    cfg['COPS_REL_ROOT'] = Pathname.new(cfg['COPS_ROOT']).relative_path_from(
+        Pathname.new(cfg['CWD']))
+    cfg['COPS_REL_VAGRANT_DIR'] = Pathname.new(cfg['COPS_VAGRANT_DIR']).relative_path_from(
+        Pathname.new(cfg['CWD']))
     #
     cfg['UNAME'] = `uname`.strip
     #
-    cfg['FORCE_COPS_PLAY_PLAYBOOKS'] = ''
-    cfg['FORCE_COPS_SYNC'] = ''
-    cfg['FORCE_COPS_INSTALL'] = ''
-    cfg['SKIP_COPS_INSTALL'] = ''
-    cfg['SKIP_COPS_SYNC'] = ''
-    cfg['SKIP_COPS_PLAY_PLAYBOOKS'] = ''
+    cfg['SKIP_INSTALL'] = nil
+    cfg['DEBUG'] = !ENV.fetch("COPS_DEBUG", "").empty?
+    cfg['SKIP_CONFIGURE_NET'] = nil
+    cfg['SKIP_SYNC'] = nil
+    cfg['SKIP_PLAY_PLAYBOOKS'] = nil
+    cfg['SKIP_ROOTSSHKEYS_SYNC'] = nil
+    cfg['SKIP_INSTALL_SSHFS'] = nil
+    cfg['SKIP_CLEANUP'] = nil
+    cfg['SKIP_APT_CLEANUP'] = nil
     # IP managment
     # The box used a default NAT private IP and a HOST only if
     # defined automatically by vagrant and virtualbox
@@ -214,13 +338,9 @@ def cops_init(opts)
     # extra provision, value in dictionnary can be either a file or a hash containing ansible variables
     cfg['PLAYBOOKS'] = {
         "default" => [
-            # install docker
-            {"#{cfg['COPS_VAGRANT_DIR']}/playbooks/000_net" => {}},
-            {"#{cfg['COPS_VAGRANT_DIR']}/playbooks/100_sshkeys" => {}},
-            {"#{cfg['COPS_VAGRANT_DIR']}/playbooks/200_corpusops" => {}},
-            {"#{cfg['COPS_VAGRANT_DIR']}/playbooks/300_sshfs" => {}},
-            {"#{cfg['COPS_ROOT']}/roles/corpusops.roles/services_virt_docker/role.yml" => {}},
-            {"#{cfg['COPS_VAGRANT_DIR']}/playbooks/400_motd" => {}},
+            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/net.yml" => {}},
+            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/sync_rootsshkeys.yml" => {}},
+            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/install_sshfs.yml" => {}},
         ]
     }
 
@@ -261,10 +381,18 @@ def cops_init(opts)
     end
 
     # Computed variables
+    cfg.setdefault('COPS_REL_ROOT', cfg['COPS_ROOT'])
+    cfg.setdefault('COPS_REL_VAGRANT_DIR', cfg['COPS_VAGRANT_DIR'])
     cfg.setdefault('VM_HOST', "corpusops")
     cfg.setdefault('VM_HOSTNAME_PRE', "#{cfg['VM_HOST']}-")
     cfg.setdefault('VB_BASE_NAME_PRE', "#{cfg['VM_HOST']}")
     cfg.setdefault('VB_BASE_NAME_POST', "#{cfg['OS']} #{cfg['OS_RELEASE']}64")
+    cfg.setdefault(
+        "COPS_INSTALLER",
+        "#{cfg['COPS_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -S")
+    cfg.setdefault(
+        "COPS_SYNCER",
+        "#{cfg['COPS_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -s")
 
     # SHARED FOLDERS
     cfg.setdefault('mountpoints', {cfg['CWD'] => cfg['HOST_MOUNTPOINT']})
@@ -273,36 +401,23 @@ def cops_init(opts)
     # Generate each machine configuration mappings
     range_machines = cfg['MACHINE_NUM'].to_i..cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1
     range_machines.each do |machine_num|
+        cfg.each do |key, val|
+            if FORWARDED_MACHINE_KEYS.include? key
+                machine_config(cfg, machine_num, key)
+            elsif key.start_with? 'SKIP_'
+                machine_config(cfg, machine_num, key)
+            end
+        end
         machine_cfg = machines_cfg.setdefault(machine_num, {})
         hostname = get_hostname(cfg, machine_num)
-        machine_config(cfg, machine_num, 'MEMORY')
-        machine_config(cfg, machine_num, 'CPUS')
-        machine_config(cfg, machine_num, 'MAX_CPU_USAGE_PERCENT')
-        machine_config(cfg, machine_num, 'SERIAL')
-        machine_config(cfg, machine_num, 'APT_MIRROR')
-        machine_config(cfg, machine_num, 'APT_PROXY')
-        machine_config(cfg, machine_num, 'BOX')
-        machine_config(cfg, machine_num, 'BOX_URI')
-        machine_config(cfg, machine_num, 'COPS_ROOT')
-        machine_config(cfg, machine_num, 'COPS_URL')
-        machine_config(cfg, machine_num, 'DNS_SERVERS')
-        machine_config(cfg, machine_num, 'DOMAIN')
-        machine_config(cfg, machine_num, 'HOST_MOUNTPOINT')
         machine_config(cfg, machine_num, 'MACHINE_NUM', machine_num)
         machine_config(cfg, machine_num, 'MACHINES', cfg['MACHINES'])
-        machine_config(cfg, machine_num, 'OS_RELEASE')
         machine_config(cfg, machine_num, 'PLAYBOOKS',
-                       cfg['PLAYBOOKS'].fetch(machine_num, cfg['PLAYBOOKS']['default']))
-        machine_config(cfg, machine_num, 'PRIVATE_NETWORK')
-        machine_config(cfg, machine_num, 'UNAME')
-        machine_config(cfg, machine_num, 'FORCE_COPS_INSTALL')
-        machine_config(cfg, machine_num, 'FORCE_COPS_PLAY_PLAYBOOKS')
-        machine_config(cfg, machine_num, 'FORCE_COPS_SYNC')
-        machine_config(cfg, machine_num, 'SKIP_COPS_INSTALL')
-        machine_config(cfg, machine_num, 'SKIP_COPS_PLAY_PLAYBOOKS')
-        machine_config(cfg, machine_num, 'SKIP_COPS_SYNC')
-        machine_config(cfg, machine_num, 'SKIP_ROOTSSHKEYS_SYNC')
+                       cfg['PLAYBOOKS'].fetch(
+                         machine_num, cfg['PLAYBOOKS']['default']))
         machine_config(cfg, machine_num, 'FQDN', "#{hostname}.#{machine_cfg['DOMAIN']}")
+        machine_config(cfg, machine_num, 'HOSTNAME',
+                       "#{cfg['VB_BASE_NAME_PRE']}#{machine_num}")
         machine_config(cfg, machine_num, 'VB_NAME',
                        "#{cfg['VB_BASE_NAME_PRE']}" \
                        " #{machine_num}" \
@@ -313,7 +428,26 @@ def cops_init(opts)
         end
         machine_config(cfg, machine_num, 'SSH_USERNAME', ssh_username)
         machine_config(cfg, machine_num, 'PRIVATE_IP',
-                       "#{machine_cfg['PRIVATE_IP']}.#{machine_num+1}")
+                       "#{machine_cfg['PRIVATE_NETWORK']}.#{machine_num+1}")
+        skip = []
+        force = []
+        [machine_cfg, ENV].each do |mapping|
+          mapping.each do |k, v|
+            if k.start_with? 'FORCE_'
+              force.push(k)
+              skip.push("SKIP_"+k[6..-1])
+            end
+            if k.start_with? 'SKIP_'
+              force.push("FORCE_"+k[5..-1])
+              skip.push(k)
+            end
+          end
+        end
+        [skip, force].each do |col|
+          col.each do |k|
+            machine_cfg.setdefault(k, ENV.fetch(k, cfg.fetch(k, false)))
+          end
+        end
     end
     return cfg
 end
@@ -352,30 +486,55 @@ def cops_configure(cfg)
                 if File.exist?("#{cfg['CWD']}/.vagrant/machines/#{machine}/virtualbox/action_provision")
                     File.delete("#{cfg['CWD']}/.vagrant/machines/#{machine}/virtualbox/action_provision")
                 end
-                provision_scripts = [
-                    "if [ ! -d /root/vagrant ];then mkdir /root/vagrant;fi;",
-                    %{cat > /root/vagrant/provision_machines.json << EOF
-                    #{JSON.pretty_generate(cfg)}
-#EOF},
-                    %{cat > /root/vagrant/provision_settings.json << EOF
-                    #{JSON.pretty_generate(machine_cfg)}
-#EOF},]
+
+                #
+                copy_files = ['bin/cops_shell_common',
+                 'hacking/vagrant/playbooks/scripts/install_python.sh',
+                 'bin/cops_pkgmgr_install.sh']
+                #
+                provision_scripts = ["sudo bash $(pwd)/corpusops/install_python.sh"]
+                motd = ["Provision is finished:",
+                        "  Machine NUM: #{machine_cfg['MACHINE_NUM']}",
+                        "  Machine IP: #{machine_cfg['PRIVATE_IP']}'",
+                        "  Machine Private network: #{machine_cfg['PRIVATE_NETWORK']}",
+                        "  Machine hostname: #{machine_cfg['HOSTNAME']}",
+                        "  Machine domain: #{machine_cfg['DOMAIN']}",
+                        "",]
                 # provision shell script
-                provision_script = provision_scripts.join("\n")
-                sub.vm.provision :shell, :inline => provision_script
-                machine_cfg['PLAYBOOKS'].each do |playbooks|
+                copy_files.each do |f|
+                    sub.vm.provision "file",
+                        source: "#{cfg['COPS_ROOT']}/#{f}",
+                    destination: "~/corpusops/#{File.basename(f)}"
+                end
+                sub.vm.provision :shell, :inline => provision_scripts.join("\n")
+                playbooksdef = [
+                    {
+                        "#{cfg['COPS_VAGRANT_DIR']}/playbooks/vars_files.yml" => {
+                            "extra_vars" => {"provision_machines" => deepcopy(cfg),
+                                             "provision_settings" => deepcopy(machine_cfg)}
+                        }
+                    }
+                ]
+                if !machine_cfg['SKIP_PLAY_PLAYBOOKS']
+                    playbooksdef.push(*machine_cfg['PLAYBOOKS'])
+                end
+                playbooksdef.each do |playbooks|
                     playbooks.each do |playbook, variables|
                         sub.vm.provision "ansible" do |ansible|
                             ansible.playbook = playbook
-                            ansible_setup(ansible, machine_cfg, variables)
+                            ansible_setup(ansible, cfg, machine_cfg, variables)
                         end
                     end
+                end
+                if !machine_cfg['SKIP_MOTD']
+                    sub.vm.provision :motd, :motd => motd.join("\n")
                 end
             end
         end
     end
     return cfg
 end
+
 
 
 def cops_provider_configure(cfg)

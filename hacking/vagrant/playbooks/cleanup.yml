@@ -1,0 +1,21 @@
+- hosts: all
+  vars:
+    ansible_become: true
+    ansible_become_user: root
+  tasks:
+    - include_tasks: "./tasks/load_vars.yml"
+    - set_fact:
+        SKIP_CLEANUP: >-
+          ((not vbox_cops.get('SKIP_CLEANUP', False)) or
+            vbox_cops.get('FORCE_CLEANUP', False))
+    - shell: |
+        # rm this cron on vbox
+        rm -vf /etc/cron.daily/mlocate
+      changed_when: false
+      when: SKIP_CLEANUP
+    - shell: |
+        # rm this cron on vbox
+        rm -vf /var/cache/apt/archives/*deb
+        rm -rf  /var/lib/apt/lists/*
+      when: SKIP_CLEANUP
+      changed_when: false

@@ -11,6 +11,7 @@ cfg = cops_init(:cwd => ABSDIR, :cops_path => COPS_DIR)
 
 ## install corpusops flavored ansible on local box
 cfg = cops_install(cfg)
+cfg = cops_sync(cfg)
 
 # add here post pre modification like names, subnet, etc
 cfg = cops_configure(cfg)
@@ -22,4 +23,5 @@ cfg = cops_inject_playbooks(cfg, [
     # ADD HERE YOUR PLAYBOOKS
     # {"#{cfg['CWD']}/playbooks/xxx.yml" => {}},
 ])
+debug cfg.to_yaml
 # vim: set ft=ruby ts=2 et sts=2 tw=0 ai:
