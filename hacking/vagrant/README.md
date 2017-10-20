@@ -56,6 +56,15 @@ MACHINE_NUM: 2
       wrapper to execute corpusops ``ansible-playbook`` as root
 
 
+### Note about skipping/forcing playbooks
+- You can use ``[SKIP_|FORCE_]_var`` environment variables to skip/force most playbooks or   code parts, just look at Vagrantfile and playbook to find and use them.
+- The vagrantfile load inside machine CFG any ``SKIP/FORCE\\ env var
+- eg
+
+```sh
+FORCE_INSTALL_SSHFS=1 vagrant up # will force sshfs install even if already done
+```
+
 ### Bring this setup inside your app
 - Adapt/Arrange your workflow to clone [this repo](https://github.com/corpusops/corpusops.bootstrap.git) inside a subfolder of your project
 - Copy/Edit/adapt [Vagrantfile](./Vagrantfile) to point to corpusops Vagrantfile_commone.rb
