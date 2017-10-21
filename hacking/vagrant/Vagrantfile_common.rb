@@ -59,7 +59,7 @@ class MotdPlugin < Vagrant.plugin("2")
     name "motd"
     config(self.name, :provisioner) do
         class Config < Vagrant.plugin("2", :config)
-						attr_accessor :motd
+            attr_accessor :motd
         end
         Config
     end
