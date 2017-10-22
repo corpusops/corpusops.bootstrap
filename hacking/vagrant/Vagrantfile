@@ -13,15 +13,29 @@ cfg = cops_init(:cwd => ABSDIR, :cops_path => COPS_DIR)
 cfg = cops_install(cfg)
 cfg = cops_sync(cfg)
 
-# add here post pre modification like names, subnet, etc
-cfg = cops_configure(cfg)
-
 # add here post common modification like modifying played ansible playbooks
+# please use file variables to let users a way to call manually ansible
+# ansible_vars = {
+#     :extra_vars => "playbooks/variables/vbox.yml"
+# }
+
+# install docker everywhere (MTU)
+# cfg = cops_inject_playbooks \
+#     :cfg => cfg,
+#     :playbooks => [{"playbooks/vbox_install_docker.yml" => ansible_vars}]
 
 # install rancher server only on first box
-cfg = cops_inject_playbooks(cfg, [
-    # ADD HERE YOUR PLAYBOOKS
-    # {"#{cfg['CWD']}/playbooks/xxx.yml" => {}},
-])
+#cfg = cops_inject_playbooks \
+#    :cfg => cfg,
+#    :playbooks => [
+#        # install rancher server
+#        {"playbooks/vbox_server.yml" => ansible_vars},
+#        # base configure server & register the vbox itself as an agent
+#        {"playbooks/vbox_standalone.yml" => ansible_vars},
+#        # cleanup
+#        {"playbooks/vbox_rancher_cleanup.yml" => ansible_vars},
+#    ],
+#    :machine_num => cfg['MACHINE_NUM']
+#
 debug cfg.to_yaml
 # vim: set ft=ruby ts=2 et sts=2 tw=0 ai:
