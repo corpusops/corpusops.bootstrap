@@ -290,51 +290,51 @@ def cops_init(opts)
     cfg['CWD'] = cwd
     cfg['SCWD'] = cfg['CWD'].gsub(/\//, '_').slice(1..-1)
     # Number of machines to spawn
-    cfg['COPS_BRANCH'] = "master"
+    cfg.setdefault('COPS_BRANCH', "master")
     # see bellow for cfg['COPS_INSTALLER']
     # see bellow for cfg['COPS_SYNCER']
     #
-    cfg['COPS_ROOT'] = cops_path
+    cfg.setdefault('COPS_ROOT', cops_path)
     cfg['COPS_VAGRANT_DIR'] = File.join(cfg['COPS_ROOT'], 'hacking/vagrant')
     cfg['COPS_REL_ROOT'] = Pathname.new(cfg['COPS_ROOT']).relative_path_from(
         Pathname.new(cfg['CWD']))
     cfg['COPS_REL_VAGRANT_DIR'] = Pathname.new(cfg['COPS_VAGRANT_DIR']).relative_path_from(
         Pathname.new(cfg['CWD']))
     #
-    cfg['UNAME'] = `uname`.strip
+    cfg.setdefault('UNAME', `uname`.strip)
     #
-    cfg['SKIP_INSTALL'] = nil
-    cfg['DEBUG'] = !ENV.fetch("COPS_DEBUG", "").empty?
-    cfg['SKIP_CONFIGURE_NET'] = nil
-    cfg['SKIP_SYNC'] = nil
-    cfg['SKIP_PLAY_PLAYBOOKS'] = nil
-    cfg['SKIP_ROOTSSHKEYS_SYNC'] = nil
-    cfg['SKIP_INSTALL_SSHFS'] = nil
-    cfg['SKIP_CLEANUP'] = nil
-    cfg['SKIP_APT_CLEANUP'] = nil
+    cfg.setdefault('SKIP_INSTALL', nil)
+    cfg.setdefault('DEBUG', !ENV.fetch("COPS_DEBUG", "").empty?)
+    cfg.setdefault('SKIP_CONFIGURE_NET', nil)
+    cfg.setdefault('SKIP_SYNC', nil)
+    cfg.setdefault('SKIP_PLAY_PLAYBOOKS', nil)
+    cfg.setdefault('SKIP_ROOTSSHKEYS_SYNC', nil)
+    cfg.setdefault('SKIP_INSTALL_SSHFS', nil)
+    cfg.setdefault('SKIP_CLEANUP', nil)
+    cfg.setdefault('SKIP_APT_CLEANUP', nil)
     # IP managment
     # The box used a default NAT private IP and a HOST only if
     # defined automatically by vagrant and virtualbox
-    cfg['DNS_SERVERS'] = '8.8.8.8'
+    cfg.setdefault('DNS_SERVERS', '8.8.8.8')
     # Subnet
-    cfg["PRIVATE_NETWORK"] = "192.168.99"
+    cfg.setdefault("PRIVATE_NETWORK", "192.168.99")
     # Number of the first machine to provision
-    cfg['MACHINE_NUM'] = 1
+    cfg.setdefault('MACHINE_NUM', 1)
     # Number of machines to spawn
-    cfg['MACHINES'] = 1
+    cfg.setdefault('MACHINES', 1)
     # Per Machine resources quotas
-    cfg['DOMAIN'] = 'vbox.local'
-    cfg['MEMORY'] = 3096
-    cfg['CPUS'] = 2
-    cfg['MAX_CPU_USAGE_PERCENT'] = 50
-    cfg['AUTO_UPDATE_VBOXGUEST_ADD'] = true
+    cfg.setdefault('DOMAIN', 'vbox.local')
+    cfg.setdefault('MEMORY', 3096)
+    cfg.setdefault('CPUS', 2)
+    cfg.setdefault('MAX_CPU_USAGE_PERCENT', 50)
+    cfg.setdefault('AUTO_UPDATE_VBOXGUEST_ADD', true)
     # OS
-    cfg['OS'] = 'Ubuntu'
-    cfg['APT_MIRROR'] = 'http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/'
-    cfg['APT_PROXY'] = ''
+    cfg.setdefault('OS', 'Ubuntu')
+    cfg.setdefault('APT_MIRROR', 'http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/')
+    cfg.setdefault('APT_PROXY', '')
     # MAKINA STATES CONFIGURATION
-    cfg['SERIAL'] = ["disconnected"]
-    cfg['HOST_MOUNTPOINT'] = "/host"
+    cfg.setdefault('SERIAL', ["disconnected"])
+    cfg.setdefault('HOST_MOUNTPOINT', "/host")
     # extra provision, value in dictionnary can be either a file or a hash containing ansible variables
     cfg['PLAYBOOKS'] = {
         "default" => [
