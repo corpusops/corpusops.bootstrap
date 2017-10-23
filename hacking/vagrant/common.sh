@@ -1,155 +1,233 @@
 #!/usr/bin/env bash
+shopt -s extglob
 
-export LOGGER_NAME=cops_vagrant
-sc=bin/cops_shell_common
-[[ ! -e $sc ]] && echo "missing $sc" >&2
-. $sc || exit 1
+COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlink -f "$0")")}
+W=${W:-$(readlink -f "$COPS_VAGRANT_DIR/../..")}
 
-envf="/root/vagrant/provision_settings.sh"
-. "$envf" || die "not in vagrant, no $envf"
-
-FORCE_INSTALL=${FORCE_INSTALL:-}
-FORCE_SYNC=${FORCE_SYNC:-}
-ORIG=${ORIG:-/host}
-PREFIX=${PREFIX:-/srv/corpusops/corpusops.bootstrap}
-
-sync_ssh() {
-    if [[ -n "${SKIP_ROOTSSHKEYS_SYNC}" ]];then
-        log "Skip ssh keys sync to root user"
-        return 0
-    fi
-    log "Synchronising user authorized_keys to root"
-    if [ ! -e /root/.ssh ];then
-        mkdir /root/.ssh
-        chmod 700 /root/.ssh
-    fi
-    fics=""
-    users="ubuntu vagrant"
-    for u in ${users};do
-        for i in $(ls /home/${u}/.ssh/authorized_key* 2>/dev/null);do
-            fics="${fics} ${i}"
-        done
-    done
-    if [ "x${fics}" != "x" ];then
-        echo > /root/.ssh/authorized_keys
-        for i in ${fics};do
-            cat ${i} >> /root/.ssh/authorized_keys
-            echo >> /root/.ssh/authorized_keys
-        done
-    fi
-}
-
-install_sync_() {
-     if [[ -n $FORCE_INSTALL ]]; then
-        vv "$PREFIX/bin/install.sh" -C -S
-        die_in_error "install core"
-    else
-        log "Skip corpusops install"
-    fi
-    if [[ -n $FORCE_SYNC ]]; then
-        vv "$PREFIX/bin/install.sh" -C -s
-        die_in_error "sync"
-    else
-        log "Skip corpusops sync"
-    fi
-}
-
-save_back_to_host() {
-    if [[ -n "${SKIP_SENDBACKTOHOST}" ]];then
-        log "Skip send back to host"
-        return 0
-    fi
-    # to speed up if we "vagrant destroy", save the checkouted
-    # stuff onto the host even if we do not use it in the
-    # first place
-    cd $PREFIX || die "$PREFIX does not exists"
-    # HARMFUL !!!
-    #vv rsync -az "$PREFIX/" "$ORIG/" \
-    #    --exclude=hacking/vagrant \
-    #    --exclude=venv \
-    #    --exclude=roles \
-    #    --exclude=playbooks
-    #die_in_error "rsync core"
-    # for i in venv/src/ansible/ roles/ playbooks/;do
-    #     if [ ! -e "${ORIG}/${i}" ];then
-    #         mkdir -p "${ORIG}/${i}"
-    #     fi
-    #     vv rsync -az "$PREFIX/${i}" "$ORIG/${i}"
-    #     die_in_error "rsync back ${i}"
-    # done
-}
-
-install_corpusops_copy() {
-    if [[ -n "${SKIP_INSTALL}" ]];then
-        log "Skip install"
-        return 0
-    fi
-    if [ ! -e "$PREFIX" ];then
-        mkdir -pv "$PREFIX"
-    fi
-    cd "${PREFIX}"
-    FIRST=${FIRST:-}
-    if [ ! -e .git ];then
-        FIRST=y
-        FORCE_INSTALL=y
-        FORCE_SYNC=y
-        if [ -e "$ORIG/.git" ];then
-            vv rsync -az "$ORIG/" "$PREFIX/" \
-                --exclude=.vagrant \
-                --exclude=hacking/vagrant \
-                --exclude=venv \
-                --exclude=roles \
-                --exclude=playbooks
-            die_in_error "rsync core"
+sourcefile() {
+    for i in $@;do
+        . "$i"
+        if [[ $? != 0 ]];then
+            echo "$i sourcing failed"
+            exit 1
         fi
-    fi
-    if ! has_command git;then
-        NONINTERACTIVE=y vv ./bin/cops_pkgmgr_install.sh git
-        die_in_error "git install failed"
-    fi
-    if [ ! -e "$PREFIX/venv/src" ];then
-        mkdir -p "$PREFIX/venv/src"
-    fi
-    if [ ! -e "$PREFIX/venv/bin/ansible" ]  ||\
-        ! ( has_command virtualenv ) ;then
-        FORCE_INSTALL=1
-    fi
-    if      [ ! -e "$PREFIX/roles/corpusops.roles" ] \
-        ||  [ ! -e "$PREFIX/venv/src/ansible" ] \
-        ||  [ ! -e "$PREFIX/playbooks/corpusops" ] \
-        ||  [ ! -e "$PREFIX/venv/bin/ansible" ]; then
-        FORCE_SYNC=y
-    fi
-    if [[ -n ${FIRST} ]];then
-        git reset -- playbooks roles \
-            && git checkout -- playbooks roles
-        die_in_error "fix git failed"
-        for i in venv/src/ansible/ roles/ playbooks/;do
-            if [ -e "${ORIG}/${i}" ];then
-                vv rsync -az "$ORIG/${i}" "$PREFIX/${i}"
-                die_in_error "rsync ${i}"
-            fi
-        done
-    fi
-    install_sync_
-    save_back_to_host
+    done
 }
 
-install_corpusops() {
-    if [[ -n "${SKIP_INSTALL}" ]];then
-        log "Skip install"
-        return 0
+if [ -e /root/vagrant/provision_settings.sh ];then
+    sourcefile /root/vagrant/provision_settings.sh
+fi
+
+
+RED="\\e[0;31m"
+CYAN="\\e[0;36m"
+YELLOW="\\e[0;33m"
+NORMAL="\\e[0;0m"
+NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
+LOGGER_NAME=${LOGGER_NAME:-cops_vagrant}
+
+
+DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
+DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
+COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
+COPS_ROOT=${COPS_ROOT:-$W/local/corpusops.bootstrap}
+HOST_MOUNTPOINT=${COPS_HOST_MOUNTPOINT:-/host}
+HOST_COPS=${COPS_HOST_COPS:-$HOST_COPS/local/corpusops.bootstrap}
+VM_MOUNTPOINT=$W/local/mountpoint
+
+usage() {
+    die 128 "No usage found"
+}
+
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
     fi
-    if [ ! -e "$PREFIX/venv/bin/ansible" ]  ||\
-        ! ( has_command virtualenv ) ;then
-        FORCE_INSTALL=1
+}
+
+parse_cli() {
+    parse_cli_common "${@}"
+}
+
+has_command() {
+    ret=1
+    if which which >/dev/null 2>/dev/null;then
+      if which "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      fi
+    else
+      if command -v "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      else
+        if hash -r "${@}" >/dev/null 2>/dev/null;then
+            ret=0
+        fi
+      fi
     fi
-    if      [ ! -e "$PREFIX/roles/corpusops.roles" ] \
-        ||  [ ! -e "$PREFIX/venv/src/ansible" ] \
-        ||  [ ! -e "$PREFIX/playbooks/corpusops" ] \
-        ||  [ ! -e "$PREFIX/venv/bin/ansible" ]; then
-        FORCE_SYNC=y
+    return ${ret}
+}
+
+get_command() {
+    local p=
+    local cmd="${@}"
+    if which which >/dev/null 2>/dev/null;then
+        p=$(which "${cmd}" 2>/dev/null)
     fi
-    install_sync_
+    if [ "x${p}" = "x" ];then
+        p=$(export IFS=:;
+            echo "${PATH-}" | while read -ra pathea;do
+                for pathe in "${pathea[@]}";do
+                    pc="${pathe}/${cmd}";
+                    if [ -x "${pc}" ]; then
+                        p="${pc}"
+                    fi
+                done
+                if [ "x${p}" != "x" ]; then echo "${p}";break;fi
+            done )
+    fi
+    if [ "x${p}" != "x" ];then
+        echo "${p}"
+    fi
+}
+
+get_random_slug() {
+    len=${1:-32}
+    strings=${2:-'a-zA-Z0-9'}
+    echo "$(cat /dev/urandom \
+        | tr -dc "$strings" \
+        | fold -w ${len} \
+        | head -n 1)"
+}
+
+reset_colors() {
+    if [[ -n ${NO_COLOR} ]]; then
+        BLUE=""
+        YELLOW=""
+        RED=""
+        CYAN=""
+    fi
+}
+
+log_() {
+    reset_colors
+    logger_color=${1:-${RED}}
+    msg_color=${2:-${YELLOW}}
+    shift;shift;
+    logger_slug="${logger_color}[${LOGGER_NAME}]${NORMAL} "
+    if [[ -n ${NO_LOGGER_SLUG} ]];then
+        logger_slug=""
+    fi
+    printf "${logger_slug}${msg_color}$(echo "${@}")${NORMAL}\n" >&2;
+    printf "" >&2;  # flush
+}
+
+log() {
+    log_ "${RED}" "${CYAN}" "${@}"
+}
+
+warn() {
+    log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"
+}
+
+may_die() {
+    reset_colors
+    thetest=${1:-1}
+    rc=${2:-1}
+    shift
+    shift
+    if [ "x${thetest}" != "x0" ]; then
+        if [[ -z "${NO_HEADER-}" ]]; then
+            NO_LOGGER_SLUG=y log_ "" "${CYAN}" "Problem detected:"
+        fi
+        NO_LOGGER_SLUG=y log_ "${RED}" "${RED}" "$@"
+        exit $rc
+    fi
+}
+
+die() {
+    may_die 1 1 "${@}"
+}
+
+die_in_error_() {
+    ret=${1}
+    shift
+    msg="${@:-"$ERROR_MSG"}"
+    may_die "${ret}" "${ret}" "${msg}"
+}
+
+die_in_error() {
+    die_in_error_ "${?}" "${@}"
+}
+
+debug() {
+    if [[ -n "${DEBUG// }" ]];then
+        log_ "${YELLOW}" "${YELLOW}" "${@}"
+    fi
+}
+
+vvv() {
+    debug "${@}"
+    "${@}"
+}
+
+vv() {
+    log "${@}"
+    "${@}"
+}
+
+is_archlinux_like() {
+    echo $DISTRIB_ID | egrep -iq "archlinux"
+}
+
+is_debian_like() {
+    echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"
+}
+
+is_redhat_like() {
+    echo $DISTRIB_ID | egrep -iq "fedora|centos|redhat|red-hat"
+}
+
+get_git_changeset() {
+   ( cd "${1:-$(pwd)}" &&\
+     git log HEAD|head -n1|awk '{print $2}')
+}
+
+get_git_branch() {
+   ( cd "${1:-$(pwd)}" &&\
+     git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
+     git describe --exact-match HEAD 2> /dev/null || \
+     git rev-parse HEAD)
+}
+
+get_git_branchs() {
+   ( cd "${1:-$(pwd)}" &&\
+       git branch|sed -e "s/^\*\? \+//g")
+}
+
+version_lte() {
+    [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
+}
+
+version_lt() {
+    [ "$1" = "$2" ] && return 1 || version_lte $1 $2
+}
+
+version_gte() {
+    [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]
+}
+
+version_gt() {
+    [ "$1" = "$2" ] && return 1 || version_gte $1 $2
 }
 # vim:set et sts=4 ts=4 tw=80:
