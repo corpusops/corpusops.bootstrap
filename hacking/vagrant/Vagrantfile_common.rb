@@ -190,6 +190,7 @@ end
 def ansible_setup(ansible, cfg, machine_cfg, *args)
     ansible.verbose  = true
     ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
+    ansible.config_file = "#{cfg['COPS_VAGRANT_DIR']}/ansible.cfg"
     # ansible.install = false
     args.each do |arg|
         if !arg.nil?
@@ -499,6 +500,7 @@ def cops_configure(cfg)
                         "  Machine Private network: #{machine_cfg['PRIVATE_NETWORK']}",
                         "  Machine hostname: #{machine_cfg['HOSTNAME']}",
                         "  Machine domain: #{machine_cfg['DOMAIN']}",
+                        "  Ansible facts cache folder (remove if problem when provisioning): .vagrant/facts.d",
                         "",]
                 # provision shell script
                 copy_files.each do |f|
@@ -518,6 +520,13 @@ def cops_configure(cfg)
                 if !machine_cfg['SKIP_PLAY_PLAYBOOKS']
                     playbooksdef.push(*machine_cfg['PLAYBOOKS'])
                 end
+                # flush cache facts each time vagrant runs
+                sub.vm.provision "ansible" do |ansible|
+                  ansible.raw_arguments = '--flush-cache'
+                  ansible.playbook = "#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/setup.yml"
+                  ansible_setup(ansible, cfg, machine_cfg)
+                end
+                #
                 playbooksdef.each do |playbooks|
                     playbooks.each do |playbook, variables|
                         sub.vm.provision "ansible" do |ansible|
