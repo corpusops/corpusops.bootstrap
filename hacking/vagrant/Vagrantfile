@@ -7,16 +7,7 @@ COPS_DIR = File.join(ABSDIR, "local/corpusops.bootstrap")
 require "#{COPS_DIR}/hacking/vagrant/Vagrantfile_common.rb"
 
 # load config
-cfg = cops_init(:cwd => ABSDIR, :cops_path => COPS_DIR)
-
-## install corpusops flavored ansible on local box
-cfg = cops_install(cfg)
-cfg = cops_sync(cfg)
-
-# add here post pre modification like names, subnet, etc
-cfg = cops_configure(cfg)
-cfg = cops_provider_configure(cfg)
-
+cfg = cops_dance({:cwd => ABSDIR, :cops_path => COPS_DIR})
 
 # add here post common modification like modifying played ansible playbooks
 # please use file variables to let users a way to call manually ansible

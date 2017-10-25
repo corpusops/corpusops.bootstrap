@@ -555,4 +555,17 @@ def cops_provider_configure(cfg)
     end
     return cfg
 end
-# vim: set ft=ruby ts=2 et sts=2 tw=0 ai:
+
+
+def cops_dance(opts)
+    # load config
+    cfg = cops_init(opts)
+    # install corpusops on localhost (a pre-packaged ansible)
+    cfg = cops_install(cfg)
+    cfg = cops_sync(cfg)
+    # add here post pre modification like names, subnet, etc
+    cfg = cops_configure(cfg)
+    cfg = cops_provider_configure(cfg)
+    cfg
+end
+# vim: set ft=ruby ts=4 et sts=4 tw=0 ai:
