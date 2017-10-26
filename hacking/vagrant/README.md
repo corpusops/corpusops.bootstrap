@@ -10,14 +10,14 @@ vagrant plugins update
 ```
 
 
-## MACHINE_NUM is the only variable you need to setup on multiple corpusops setups
+## CLUSTER_NUM is the only variable you need to setup on multiple corpusops setups
 - default is 1
 - This control various settings and should be unique per VM & HOST as
   it controls the private IP network
 - When you want to configure change it, ``$EDITOR vagrant_config.yml``
 ```yaml
 ---
-MACHINE_NUM: 2
+CLUSTER_NUM: 2
 ```
 
 ## vagrant_config.yml settings file

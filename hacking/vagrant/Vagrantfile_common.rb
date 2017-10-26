@@ -5,8 +5,8 @@ VAGRANTFILE_API_VERSION = "2"
 # put theses settings in a ./vagrant_config.yml file
 # This file would contain a combinaison of those settings
 # -------------o<---------------
-## MACHINE_NUM
-# MACHINE_NUM: 2
+## CLUSTER_NUM
+# CLUSTER_NUM: 2
 ## Moar boxes
 # MACHINES: "1" # number of machines to spawn
 ## PLAYBOOKS:
@@ -31,12 +31,12 @@ VAGRANTFILE_API_VERSION = "2"
 ## alternate dns
 # DNS_SERVERS: "8.8.8.8"
 ## INSTALL knobs
-# SKIP_MOTD: 1
 # SKIP_SYNC: 1
 # SKIP_INSTALL: 1
 # SKIP_INSTALL_SSHFS: 1
 # SKIP_ROOTSSHKEYS_SYNC: 1
 # SKIP_PLAY_PLAYBOOKS: 1
+# SKIP_MOTD: 1
 # FORCE_MOTD: 1
 # FORCE_SYNC: 1
 # FORCE_INSTALL: 1
@@ -53,6 +53,14 @@ require 'etc'
 require 'json'
 require 'open3'
 require 'pathname'
+
+
+FORWARDED_MACHINE_KEYS = [
+    'MEMORY', 'CPUS', 'MAX_CPU_USAGE_PERCENT', 'SERIAL',
+    'APT_MIRROR', 'APT_PROXY',
+    'BOX', 'BOX_URI', 'UNAME','OS_RELEASE',
+    'DNS_SERVERS', 'DOMAIN',
+    'HOST_MOUNTPOINT', 'PRIVATE_NETWORK_PREF']
 
 
 class MotdPlugin < Vagrant.plugin("2")
@@ -72,13 +80,6 @@ class MotdPlugin < Vagrant.plugin("2")
         Do
     end
 end
-
-FORWARDED_MACHINE_KEYS = [
-    'MEMORY', 'CPUS', 'MAX_CPU_USAGE_PERCENT', 'SERIAL',
-    'APT_MIRROR', 'APT_PROXY',
-    'BOX', 'BOX_URI', 'UNAME','OS_RELEASE',
-    'DNS_SERVERS', 'DOMAIN',
-    'HOST_MOUNTPOINT', 'PRIVATE_NETWORK']
 
 
 def eprintf(*args)
@@ -150,21 +151,13 @@ def machine_config(cfg, machine_num, item, default=nil)
 end
 
 
-def get_hostname(cfg, machine_num)
-    machines_cfg = cfg['MACHINES_CFG']
-    machine_cfg = machines_cfg.setdefault(machine_num, {})
-    machine_cfg['VM_HOSTNAME'] = "#{cfg['VM_HOSTNAME_PRE']}#{machine_num}"
-end
-
-
 def cops_inject_playbooks(opts)
     opts = opts.nil? {} || opts
     cfg = opts[:cfg]
     playbooks = opts[:playbooks]
     machine_nums = opts.fetch(:machine_nums, opts[:machine_num])
     if machine_nums.nil?
-      machine_nums = (cfg['MACHINE_NUM'].to_i..
-                      cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1)
+      machine_nums = cfg['MACHINES_RANGE']
     else
       iterable = false
       [Array, Range].each do |type|
@@ -318,11 +311,16 @@ def cops_init(opts)
     # defined automatically by vagrant and virtualbox
     cfg.setdefault('DNS_SERVERS', '8.8.8.8')
     # Subnet
-    cfg.setdefault("PRIVATE_NETWORK", "192.168.99")
+    cfg.setdefault("PRIVATE_NETWORK_PREF", "192.168")
     # Number of the first machine to provision
-    cfg.setdefault('MACHINE_NUM', 1)
+    cfg.setdefault('CLUSTER_NUM', 1)
     # Number of machines to spawn
     cfg.setdefault('MACHINES', 1)
+    cfg.setdefault('MACHINE_NUM_START', 1)
+    cfg.setdefault(
+        'MACHINES_RANGE',
+        cfg['MACHINE_NUM_START'].to_i..
+        cfg['MACHINE_NUM_START'].to_i+cfg['MACHINES'].to_i-1)
     # Per Machine resources quotas
     cfg.setdefault('DOMAIN', 'vbox.local')
     cfg.setdefault('MEMORY', 3096)
@@ -384,10 +382,9 @@ def cops_init(opts)
     # Computed variables
     cfg.setdefault('COPS_REL_ROOT', cfg['COPS_ROOT'])
     cfg.setdefault('COPS_REL_VAGRANT_DIR', cfg['COPS_VAGRANT_DIR'])
-    cfg.setdefault('VM_HOST', "corpusops")
-    cfg.setdefault('VM_HOSTNAME_PRE', "#{cfg['VM_HOST']}-")
-    cfg.setdefault('VB_BASE_NAME_PRE', "#{cfg['VM_HOST']}")
-    cfg.setdefault('VB_BASE_NAME_POST', "#{cfg['OS']} #{cfg['OS_RELEASE']}64")
+    cfg.setdefault('HOSTNAME_PRE', "corpusops#{cfg['CLUSTER_NUM']}")
+    cfg.setdefault('VB_NAME_PRE', "#{cfg['HOSTNAME_PRE']}")
+    cfg.setdefault('VB_NAME_POST', "#{cfg['OS']} #{cfg['OS_RELEASE']}64")
     cfg.setdefault(
         "COPS_INSTALLER",
         "#{cfg['COPS_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -S")
@@ -397,11 +394,13 @@ def cops_init(opts)
 
     # SHARED FOLDERS
     cfg.setdefault('mountpoints', {cfg['CWD'] => cfg['HOST_MOUNTPOINT']})
+    cfg.setdefault('PRIVATE_IP_START', cfg['MACHINE_NUM_START'])
     # save back config to yaml (mainly for persiting corpusops)
     File.open("#{yaml_config}", 'w') {|f| f.write localcfg.to_yaml }
     # Generate each machine configuration mappings
-    range_machines = cfg['MACHINE_NUM'].to_i..cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1
-    range_machines.each do |machine_num|
+    private_ip = 0
+    cfg['MACHINES_RANGE'].each do |machine_num|
+        private_ip += 1
         cfg.each do |key, val|
             if FORWARDED_MACHINE_KEYS.include? key
                 machine_config(cfg, machine_num, key)
@@ -410,26 +409,28 @@ def cops_init(opts)
             end
         end
         machine_cfg = machines_cfg.setdefault(machine_num, {})
-        hostname = get_hostname(cfg, machine_num)
+        machine_config(cfg, machine_num, 'CLUSTER_NUM', cfg['CLUSTER_NUM'])
         machine_config(cfg, machine_num, 'MACHINE_NUM', machine_num)
-        machine_config(cfg, machine_num, 'MACHINES', cfg['MACHINES'])
         machine_config(cfg, machine_num, 'PLAYBOOKS',
                        cfg['PLAYBOOKS'].fetch(
                          machine_num, cfg['PLAYBOOKS']['default']))
-        machine_config(cfg, machine_num, 'FQDN', "#{hostname}.#{machine_cfg['DOMAIN']}")
-        machine_config(cfg, machine_num, 'HOSTNAME',
-                       "#{cfg['VB_BASE_NAME_PRE']}#{machine_num}")
+        machine_config(cfg, machine_num, 'HOSTNAME', "#{cfg['HOSTNAME_PRE']}-#{machine_num}")
+        machine_config(cfg, machine_num, 'FQDN', "#{machine_cfg['HOSTNAME']}.#{machine_cfg['DOMAIN']}")
         machine_config(cfg, machine_num, 'VB_NAME',
-                       "#{cfg['VB_BASE_NAME_PRE']}" \
+                       "#{cfg['VB_NAME_PRE']}" \
                        " #{machine_num}" \
-                       " #{cfg['VB_BASE_NAME_POST']}(#{cfg['SCWD']})")
+                       " #{cfg['VB_NAME_POST']}(#{cfg['SCWD']})")
         ssh_username = "vagrant"
         if ['xenial'].include? machine_cfg['OS_RELEASE']
             ssh_username = "ubuntu"
         end
         machine_config(cfg, machine_num, 'SSH_USERNAME', ssh_username)
+        machine_config(cfg, machine_num, 'PRIVATE_NETWORK',
+                       "#{machine_cfg['PRIVATE_NETWORK_PREF']}." \
+                       "#{machine_cfg['CLUSTER_NUM'].to_i+20}")
         machine_config(cfg, machine_num, 'PRIVATE_IP',
-                       "#{machine_cfg['PRIVATE_NETWORK']}.#{machine_num+1}")
+                      "#{machine_cfg['PRIVATE_NETWORK']}." \
+                      "#{cfg['PRIVATE_IP_START']+private_ip}")
         skip = []
         force = []
         [machine_cfg, ENV].each do |mapping|
@@ -468,11 +469,17 @@ def cops_configure(cfg)
         end
         # disable default /vagrant shared folder
         config.vm.synced_folder ".", "/vagrant", disabled: true
-        range_machines = cfg['MACHINE_NUM'].to_i..cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1
-        range_machines.each do |machine_num|
+        cfg['MACHINES_RANGE'].each do |machine_num|
             machine_cfg = machines_cfg.setdefault(machine_num, {})
-            machine = get_hostname(cfg, machine_num)
-            config.vm.define machine do |sub|
+            hostname = machine_cfg['HOSTNAME']
+            config.vm.define hostname do |sub|
+                config.vm.provider :virtualbox do |vb|
+                    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+                    vb.customize ["modifyvm", :id, "--memory", machine_cfg['MEMORY']]
+                    vb.customize ["modifyvm", :id, "--cpus", machine_cfg['CPUS']]
+                    vb.customize ["modifyvm", :id, "--cpuexecutioncap", machine_cfg['MAX_CPU_USAGE_PERCENT']]
+                    vb.customize ["modifyvm", :id, "--uartmode1"] + machine_cfg['SERIAL']
+                end
                 sub.ssh.username = machine_cfg['SSH_USERNAME']
                 sub.vm.box =     machine_cfg['BOX']
                 sub.vm.box_url = machine_cfg['BOX_URI']
@@ -481,13 +488,12 @@ def cops_configure(cfg)
                 sub.vm.hostname = nil
                 sub.vm.network "private_network", ip: machine_cfg['PRIVATE_IP']
                 sub.vm.provider "virtualbox" do |vb|
-                    vb.name = machine_cfg['COPS_VB_NAME']
+                    vb.name = machine_cfg['VB_NAME']
                 end
                 # vagrant 1.3 HACK: provision is now run only at first boot, we want to run it every time
-                if File.exist?("#{cfg['CWD']}/.vagrant/machines/#{machine}/virtualbox/action_provision")
-                    File.delete("#{cfg['CWD']}/.vagrant/machines/#{machine}/virtualbox/action_provision")
+                if File.exist?("#{cfg['CWD']}/.vagrant/machines/#{hostname}/virtualbox/action_provision")
+                    File.delete("#{cfg['CWD']}/.vagrant/machines/#{hostname}/virtualbox/action_provision")
                 end
-
                 #
                 copy_files = ['bin/cops_shell_common',
                  'hacking/vagrant/playbooks/scripts/install_python.sh',
@@ -495,12 +501,14 @@ def cops_configure(cfg)
                 #
                 provision_scripts = ["sudo bash $(pwd)/corpusops/install_python.sh"]
                 motd = ["Provision is finished:",
+                        "  Cluster NUM: #{machine_cfg['CLUSTER_NUM']}",
                         "  Machine NUM: #{machine_cfg['MACHINE_NUM']}",
                         "  Machine IP: #{machine_cfg['PRIVATE_IP']}'",
                         "  Machine Private network: #{machine_cfg['PRIVATE_NETWORK']}",
                         "  Machine hostname: #{machine_cfg['HOSTNAME']}",
                         "  Machine domain: #{machine_cfg['DOMAIN']}",
-                        "  Ansible facts cache folder (remove if problem when provisioning): .vagrant/facts.d",
+                        "  Ansible facts cache folder (remove if " \
+                          "problem when provisioning): .vagrant/facts.d",
                         "",]
                 # provision shell script
                 copy_files.each do |f|
@@ -545,27 +553,6 @@ def cops_configure(cfg)
 end
 
 
-
-def cops_provider_configure(cfg)
-    range_machines = cfg['MACHINE_NUM'].to_i..cfg['MACHINE_NUM'].to_i+cfg['MACHINES'].to_i-1
-    range_machines.each do |machine_num|
-        machine_cfg = cfg['MACHINES_CFG'].setdefault(machine_num, {})
-        machine = get_hostname(cfg, machine_num)
-        muid = get_uuid(cfg, machine)
-        Vagrant.configure("2") do |config|
-            config.vm.provider :virtualbox do |vb|
-                vb.customize ["modifyvm", muid, "--ioapic", "on"]
-                vb.customize ["modifyvm", muid, "--memory", machine_cfg['MEMORY']]
-                vb.customize ["modifyvm", muid, "--cpus", machine_cfg['CPUS']]
-                vb.customize ["modifyvm", muid, "--cpuexecutioncap", machine_cfg['MAX_CPU_USAGE_PERCENT']]
-                vb.customize ["modifyvm", muid, "--uartmode1"] + machine_cfg['SERIAL']
-            end
-        end
-    end
-    return cfg
-end
-
-
 def cops_dance(opts)
     # load config
     cfg = cops_init(opts)
@@ -574,7 +561,6 @@ def cops_dance(opts)
     cfg = cops_sync(cfg)
     # add here post pre modification like names, subnet, etc
     cfg = cops_configure(cfg)
-    cfg = cops_provider_configure(cfg)
     cfg
 end
 # vim: set ft=ruby ts=4 et sts=4 tw=0 ai:
