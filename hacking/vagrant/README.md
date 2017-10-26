@@ -53,7 +53,7 @@ CLUSTER_NUM: 2
 
 ### Note about skipping/forcing playbooks
 - You can use ``[SKIP_|FORCE_]_var`` environment variables to skip/force most playbooks or   code parts, just look at Vagrantfile and playbook to find and use them.
-- The vagrantfile load inside machine CFG any ``SKIP/FORCE\\ env var
+- The vagrantfile load inside machine CFG any ``SKIP/FORCE`` env var
 - eg
 
 ```sh
@@ -66,5 +66,11 @@ FORCE_INSTALL_SSHFS=1 vagrant up # will force sshfs install even if already done
 - Symlink [manage](./manage)
 - Tweak ansible setup (inject your custom playbooks if needed)
 - You are done for ``manage up``
-    - It will run the install of corpusops if not done
+- It will run the install of corpusops if not done
+
+
+## Vm examples
+- [vagrant](https://github.com/corpusops/setups.vagrant)
+- [rancher](https://github.com/corpusops/setups.rancher)
+
 

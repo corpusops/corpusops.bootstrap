@@ -33,7 +33,7 @@ COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 COPS_ROOT=${COPS_ROOT:-$W/local/corpusops.bootstrap}
 HOST_MOUNTPOINT=${COPS_HOST_MOUNTPOINT:-/host}
 HOST_COPS=${COPS_HOST_COPS:-$HOST_COPS/local/corpusops.bootstrap}
-VM_MOUNTPOINT=$W/local/mountpoint
+VMS_MOUNT_PATH=${VMS_MOUNT_PATH:-$W/local/mountpoint}
 
 usage() {
     die 128 "No usage found"
