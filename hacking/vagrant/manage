@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
-
-
+W=${W:-$(readlink -f $(dirname "$0"))}
 COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlink -f "$0")")}
 
-W=${W:-$COPS_VAGRANT_DIR/../..}
+
 . "$COPS_VAGRANT_DIR/common.sh" || exit 1
 cd "$W"
 
 actions="+(help"
-actions="${actions}|halt|stop|down"
+actions="${actions}|halt|stop|down|destroy"
 actions="${actions}|start|up|fire"
 actions="${actions}|ssh|sshgen"
 actions="${actions}|import|export"
 actions="${actions}|mount|umount"
+actions="${actions}|status"
 actions="${actions})"
-UNAME="${UNAME-$(uname)}"
-DEFAULT_SSHFS_ALLOW_OTHER="${SSHFS_ALLOW_OTHER-' allow_other'}"
-DEFAULT_SSHFS_OPTS="transform_symlinks,reconnect,BatchMode=yes,nonempty"
-DEFAULT_SSHFS_OSX_OPTS="defer_permissions,Compression=no"
-DEFAULT_SSHFS_OSX_OPTS="${DEFAULT_SSHFS_OSX_OPTS},noappledouble,no_readahead"
-DEFAULT_SSHFS_OSX_OPTS="${DEFAULT_SSHFS_OSX_OPTS},negative_vncache,auto_cache"
 
 
 do_help() {
@@ -28,9 +22,93 @@ do_help() {
 
 
 sanitize() {
-    echo $@  | sed -r\
+    echo $@  | sed \
         -e "s/[ :_éàèçù\*]//g" \
         -e "s/[ \/\\]/-/g"
+}
+
+
+status_() {
+    vagrant status 2> /dev/null
+}
+
+
+long_status() {
+    status_\
+        | grep -i "(virtualbox)"\
+        | grep -v grep\
+        | grep -v provider\
+        | grep -i virtualbox\
+        | sed -e "s/\([ ^\t]\)*[(].*//g"\
+        | sed -e "s/\([ \t]\)*$//g"\
+        | sed -e "s/^\([ \t]\)*//g" | while read hostline;do
+        if [ "x${@}" != "x" ];then
+            for h in ${@};do
+                host=$(echo ${hostline}|awk '{print $1}')
+                hstatus=$(echo ${hostline}|awk '{print $2}')
+                if [ "x${host}" = "x${h}" ];then echo "${h} ${hstatus}";fi
+            done
+        else
+            echo "${hostline}"
+        fi
+    done
+}
+
+
+is_running() {
+    local i=""
+    for i in $(default_to_all_hosts $@);do
+        if status $i | grep -vq running;then
+            return 1
+        fi
+    done
+    return 0
+}
+
+
+all_hosts() {
+    long_status $@ | awk '{print $1}'
+}
+
+
+first_host() {
+    if [ "x${FIRST_HOST}" = "x" ];then
+        FIRST_HOST=$(all_hosts| head -n 1)
+    fi
+    echo ${FIRST_HOST}
+}
+
+
+all_running_hosts() {
+    long_status $@ | grep running | awk '{print $1}'
+}
+
+
+first_running_host() {
+    all_running_hosts $@ | head -n 1
+}
+
+
+default_to_first_host() {
+    if [ "x${1}" = "x" ];then
+        echo $(first_host)
+    else
+        echo "${1}"
+    fi
+}
+
+
+default_to_all_hosts() {
+    if [ "x${1}" = "x" ];then
+        echo $(all_hosts)
+    else
+        echo "${1}"
+    fi
+}
+
+
+do_status() {
+    vagrant status "$@" 2>/dev/null
 }
 
 
@@ -46,79 +124,108 @@ cleanup_import_box() {
 
 
 do_ssh() {
-    do_sshgen
-    ssh -F .vagrant/cops-sshconfig vagrant "${@}"
+    host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
+    do_sshgen $host
+    ssh -F .vagrant/cops-sshconfig-$host vagrant "${@}"
 }
 
 
 do_sshgen() {
-    if [ ! -e .vagrant ];then mkdir .vagrant;fi
-    vagrant ssh-config | sed \
-        -e "s/User .*/User root/g" \
-        -e "s/Host .*/Host vagrant/g" > .vagrant/cops-sshconfig
-    if ! ( grep -q "Host vagrant" .vagrant/cops-sshconfig );then
-        echo "pb with vagrant-sshconfig" >&2
-        exit 1
-    fi
-}
-
-os_is() {
-    echo "$UNAME" | egrep -q $2
+     hosts=$@
+    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        if [ ! -e .vagrant ];then mkdir .vagrant;fi
+        COPS_DEBUG= vagrant ssh-config $h | sed \
+            -e "s/User .*/User root/g" \
+            -e "s/Host .*/Host vagrant/g" > .vagrant/cops-sshconfig-$h
+        if ! ( grep -q "Host vagrant" .vagrant/cops-sshconfig-$h );then
+            echo "pb with vagrant-sshconfig $h" >&2
+            exit 1
+        fi
+    done
 }
 
 
 do_mount() {
-    sshfs_opts="${SSHFS_OPTS:-${DEFAULT_SSHFS_OPTS}}"
-    if egrep -q "^user_allow_other" /etc/fuse.conf 2>/dev/null;then
-        sshfs_opts="$sshfs_opts ${SSHFS_ALLOW_OTHER:-${DEFAULT_SSHFS_ALLOW_OTHER}}"
-    fi
-    if os_is Darwin;then
-        sshfs_opts="$sshfs_opts ${SSHFS_OSX_OPTS:-${DEFAULT_SSHFS_OSX_OPTS}}"
-    fi
-    if [ ! -e "${VM_MOUNTPOINT}" ];then
-        mkdir -p "${VM_MOUNTPOINT}"
-    fi
-    if [ ! -e "${VM_MOUNTPOINT}/bin" ];then
-        do_sshgen \
-            && vv sshfs \
-            -F "$(pwd)/.vagrant/cops-sshconfig" \
-            $sshfs_opts \
-            vagrant:/ "${VM_MOUNTPOINT}"
-        die_in_error "Error while mounting"
-    else
-        log "VM is already mounted"
-    fi
+    hosts=$@
+    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
+        if [ ! -e "${VM_MOUNTPOINT}" ];then
+            mkdir -p "${VM_MOUNTPOINT}"
+        fi
+        if [ ! -e "${VM_MOUNTPOINT}/bin" ];then
+            do_sshgen $@\
+                && vv sshfs \
+                -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
+                vagrant:/ "${VM_MOUNTPOINT}"
+            die_in_error "Error while mounting $h"
+        else
+            log "VM is already mounted $h"
+        fi
+    done
 }
 
 
 do_umount() {
-    if [ -e "$VM_MOUNTPOINT/bin" ];then
-        vv fusermount -u "${VM_MOUNTPOINT}"
-        die_in_error "Error while umounting"
-    else
-        log "$PWD not mounted"
-    fi
+     hosts=$@
+    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
+        if [ -e "$VM_MOUNTPOINT/bin" ];then
+            vv fusermount -u "${VM_MOUNTPOINT}"
+            die_in_error "Error while umounting $h"
+        else
+            log "$PWD not mounted $h"
+        fi
+    done
 }
 
 
 do_up() {
-    vagrant up $@
-    die_in_error "Error while starting"
-    do_mount
-    die_in_error "Error while mounting"
+      hosts=$@
+     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        vagrant up $h
+        die_in_error "Error while starting $h"
+    done
+    for h in $hosts;do
+        do_mount $h
+        die_in_error "Error while mounting $h"
+    done
 }
 
 
 do_down() {
-    do_umount
-    die_in_error "Error while mounting"
-    vagrant halt -f
-    die_in_error "Error while stopping"
+      hosts=$@
+    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        do_umount $h
+        die_in_error "Error while mounting $h"
+    done
+    for h in $hosts;do
+        vagrant halt -f $h
+        die_in_error "Error while stopping $h"
+    done
+}
+
+
+do_destroy() {
+       hosts=$@
+    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    for h in $hosts;do
+        do_down $h
+        die_in_error "Error while downning $h"
+    done
+    for h in $hosts;do
+        vagrant destroy $h
+        die_in_error "Error while destroying $h"
+    done
 }
 
 
 do_import() {
-    BOX=${BOX:-${1}}
+    BOX=${BOX:-$(default_to_first_host)}
     shift
     if [ -z "${BOX}" ];then
         die "give a box file"
@@ -140,7 +247,6 @@ do_import() {
     fi
     dcfg=$(find ~/.vagrant*/"boxes/${boximportname}" \
         -name vagrant_config.yml 2>/dev/null | head -n1)
-    echo $dcfg
     if [[ -n "${dcfg}" ]] && [ -f "${dcfg}" ];then
         vv cp -f "${dcfg}" vagrant_config.yml
     else
@@ -151,26 +257,36 @@ do_import() {
 BOX: ${boximportname}
 BOX_URI: file://$(readlink -f ${BOX})
 EOF
-    vagrant up
-    die_in_error "vagrant import from $BOX failed"
-    # we cant as the ssh key is contained inside !
-    # cleanup_import_box
+    die_in_error "vagrant setup for import is done, you can now run $0 up --help"
 }
 
 
 do_export() {
-    BOX=${BOX:-${1}}
-    shift
+    BOX=${1:-$(default_to_first_host)}
+      hosts=$@
+    host=$2
+     if [[ -z $host ]];then
+         hosts=$(default_to_first_host)
+    else
+         hosts=$2
+    fi
+    shift;shift
     if [ -z "${BOX}" ];then
         die "give a box name"
     fi
-    if vagrant status | egrep -q running;then
-        die "Vagrant is running, poweroff VMs first with: vagrant halt -f"
-    fi
-    vv vagrant package --output "${BOX}.box" \
-        $([[ -f vagrant_config.yml ]] $@ && \
-                echo --include vagrant_config.yml ; )
-    die_in_error "vagrant export to $BOX failed"
+    for h in $hosts;do
+        if vagrant status $h | egrep -q running;then
+            die "Vagrant $h is running, poweroff VMs first with: vagrant halt -f"
+        fi
+        f="${BOX}.box"
+        if [ "x$h" != "x${BOX}" ];then
+            f="${BOX}-$h.box"
+        fi
+        vv vagrant package --output $f \
+            $([[ -f vagrant_config.yml ]] && \
+                    echo --include vagrant_config.yml $@ $h ; )
+        die_in_error "vagrant export to ${h}-$BOX failed"
+    done
 }
 
 
@@ -181,8 +297,9 @@ Wrapper to control vm
     '"$0 $actions "'
     - mount: mount the vm inside local/mountpoint
     - umount: umount the vm
-    - down: umount & stop vm
-    - up: start & mount vmzz
+    - down: umount & stop the vm
+    - destroy: umount, stop & destroy the vm
+    - up: start & mount vm
     - export: export vm to a file
     - import: import vm from a file
     - ssh: ssh into the vm
@@ -197,15 +314,15 @@ sshgen_usage() {
     NO_HEADER=y die '
 Generate .vagrant/cops-sshconfig: ssh client config file to access the vagrant vm
 
-    '"$0 $action"'
+    '"$0 $action"' [id]
 '
 }
 
 
 ssh_usage() {
     NO_HEADER=y die '
-SSH client wrapper (go as root inside the VM)
-
+SSH client wrapper (go as root inside the VM) (go to first host by default)
+[sshhost=]
     '"$0 $action"'
 '
 }
@@ -215,7 +332,7 @@ umount_usage() {
     NO_HEADER=y die '
 Umount a vagrant vm
 
-    '"$0 $action"'
+    '"$0 $action"' [id]
 '
 }
 
@@ -224,8 +341,17 @@ mount_usage() {
     NO_HEADER=y die '
 Mount a vagrant vm using sshfs to local/mountpoint
 
-    '"$0 $action"'
+    '"$0 $action"' [id]
 '
+}
+
+
+status_usage() {
+    NO_HEADER=y die '
+Status of vms
+
+    '"$0 $action"' [id]
+'"$(vagrant status --help)"
 }
 
 
@@ -233,8 +359,17 @@ down_usage() {
     NO_HEADER=y die '
 Umount and stop the vm
 
-    '"$0 $action"'
+    '"$0 $action"' [id]
 '"$(vagrant halt --help)"
+}
+
+
+destroy_usage() {
+    NO_HEADER=y die '
+Umount, stop, destroy the vm
+
+    '"$0 $action"' [id]
+'"$(vagrant destroy --help)"
 }
 
 
@@ -242,7 +377,7 @@ up_usage() {
     NO_HEADER=y die '
 Start and mount the vm
 
-    '"$0 $action"'
+    '"$0 $action"' [id]
 '"$(vagrant up --help)"
 
 }
@@ -252,7 +387,7 @@ export_usage() {
     NO_HEADER=y die '
 Export a vagrant vm
 
-    '"$0"' toto
+    '"$0"' toto [id]
 '"$(vagrant package --help|egrep -v -- '--(base|help|output)')"
 }
 
@@ -261,7 +396,8 @@ import_usage() {
     NO_HEADER=y die '
     [BOX=] \
 [NO_BOX_CLEANUP=] \
-Import a vagrant vm
+Import a vagrant vm inside vagrant catalog and
+setup vagrant_config.yml to point to it
 
     '"$0 $action"' toto.box
 '"$(vagrant box add --help|egrep -v -- '--(name|help)')"
