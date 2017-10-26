@@ -507,7 +507,7 @@ def cops_configure(cfg)
                 motd = ["Provision is finished:",
                         "  Cluster NUM: #{machine_cfg['CLUSTER_NUM']}",
                         "  Machine NUM: #{machine_cfg['MACHINE_NUM']}",
-                        "  Machine IP: #{machine_cfg['PRIVATE_IP']}'",
+                        "  Machine IP: #{machine_cfg['PRIVATE_IP']}",
                         "  Machine Private network: #{machine_cfg['PRIVATE_NETWORK']}",
                         "  Machine hostname: #{machine_cfg['HOSTNAME']}",
                         "  Machine domain: #{machine_cfg['DOMAIN']}",
