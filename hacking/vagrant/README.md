@@ -9,11 +9,14 @@ vagrant plugins install vagrant-share vagrant-vbguest
 vagrant plugins update
 ```
 
+## vagrant_config.yml
+- This file created in your top repository can override any default setting.
+- Thje vagrantfile is really dynamic, and most of the behavior won't need a modification in it, but just a knob in the ``vagrant_config.yml`` file.
 
-## CLUSTER_NUM is the only variable you need to setup on multiple corpusops setups
+### CLUSTER_NUM is the mostly the only variable you need to setup on multiple corpusops setups
 - default is 1
 - This control various settings and should be unique per VM & HOST as
-  it controls the private IP network
+  it controls the private network subnet (192.168.XXX).
 - When you want to configure change it, ``$EDITOR vagrant_config.yml``
 ```yaml
 ---
@@ -47,14 +50,6 @@ CLUSTER_NUM: 2
         - install corpusops
     - play ansible playbooks
     - execute the post provision script
-- Vagrant shell provision pre/post helpers that are executed before|after the ansible setp :
-    - [./provision_pre.sh](./provision_pre.sh):
-      used before ansible setup, early setup (install ansible through corpusops)
-    - [./provision_post.sh](./provision_post.sh):<br/>
-      post provision steps like cleaning the vm files
-    - [./sudo-ansible-playbook.sh](./sudo-ansible-playbook.sh):<br/>
-      wrapper to execute corpusops ``ansible-playbook`` as root
-
 
 ### Note about skipping/forcing playbooks
 - You can use ``[SKIP_|FORCE_]_var`` environment variables to skip/force most playbooks or   code parts, just look at Vagrantfile and playbook to find and use them.
@@ -67,9 +62,9 @@ FORCE_INSTALL_SSHFS=1 vagrant up # will force sshfs install even if already done
 
 ### Bring this setup inside your app
 - Adapt/Arrange your workflow to clone [this repo](https://github.com/corpusops/corpusops.bootstrap.git) inside a subfolder of your project
-- Copy/Edit/adapt [Vagrantfile](./Vagrantfile) to point to corpusops Vagrantfile_commone.rb
-- Tweak ansible setup (called ``PLAYBOOKS``.
+- Symlink or Copy/Edit/adapt this [Vagrantfile](./Vagrantfile) to point to corpusops Vagrantfile_commone.rb
 - Symlink [manage](./manage)
+- Tweak ansible setup (inject your custom playbooks if needed)
 - You are done for ``manage up``
     - It will run the install of corpusops if not done
 
