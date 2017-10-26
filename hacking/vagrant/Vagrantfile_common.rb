@@ -60,7 +60,8 @@ FORWARDED_MACHINE_KEYS = [
     'APT_MIRROR', 'APT_PROXY',
     'BOX', 'BOX_URI', 'UNAME','OS_RELEASE',
     'DNS_SERVERS', 'DOMAIN',
-    'HOST_MOUNTPOINT', 'PRIVATE_NETWORK_PREF']
+    'HOST_MOUNTPOINT',
+    'PRIVATE_NETWORK_PREF',]
 
 
 class MotdPlugin < Vagrant.plugin("2")
@@ -212,7 +213,7 @@ end
 
 
 def debug(message)
-    if ENV.fetch("COPS_DEBUG", false)
+    if !ENV.fetch("COPS_DEBUG", "").to_s.empty?
         puts message
     end
 end
@@ -291,9 +292,9 @@ def cops_init(opts)
     cfg.setdefault('COPS_ROOT', cops_path)
     cfg['COPS_VAGRANT_DIR'] = File.join(cfg['COPS_ROOT'], 'hacking/vagrant')
     cfg['COPS_REL_ROOT'] = Pathname.new(cfg['COPS_ROOT']).relative_path_from(
-        Pathname.new(cfg['CWD']))
+        Pathname.new(cfg['CWD'])).to_s
     cfg['COPS_REL_VAGRANT_DIR'] = Pathname.new(cfg['COPS_VAGRANT_DIR']).relative_path_from(
-        Pathname.new(cfg['CWD']))
+        Pathname.new(cfg['CWD'])).to_s
     #
     cfg.setdefault('UNAME', `uname`.strip)
     #
@@ -313,14 +314,14 @@ def cops_init(opts)
     # Subnet
     cfg.setdefault("PRIVATE_NETWORK_PREF", "192.168")
     # Number of the first machine to provision
-    cfg.setdefault('CLUSTER_NUM', 1)
+    cfg.setdefault('CLUSTER_NUM', 4)
     # Number of machines to spawn
     cfg.setdefault('MACHINES', 1)
     cfg.setdefault('MACHINE_NUM_START', 1)
     cfg.setdefault(
         'MACHINES_RANGE',
-        cfg['MACHINE_NUM_START'].to_i..
-        cfg['MACHINE_NUM_START'].to_i+cfg['MACHINES'].to_i-1)
+        (cfg['MACHINE_NUM_START'].to_i..
+         cfg['MACHINE_NUM_START'].to_i+cfg['MACHINES'].to_i-1).to_a)
     # Per Machine resources quotas
     cfg.setdefault('DOMAIN', 'vbox.local')
     cfg.setdefault('MEMORY', 3096)
@@ -425,9 +426,12 @@ def cops_init(opts)
             ssh_username = "ubuntu"
         end
         machine_config(cfg, machine_num, 'SSH_USERNAME', ssh_username)
+        machine_config(cfg, machine_num,
+                       'PRIVATE_NETWORK_NUM',
+                       "#{machine_cfg['CLUSTER_NUM'].to_i}")
         machine_config(cfg, machine_num, 'PRIVATE_NETWORK',
                        "#{machine_cfg['PRIVATE_NETWORK_PREF']}." \
-                       "#{machine_cfg['CLUSTER_NUM'].to_i+20}")
+                       "#{machine_cfg['PRIVATE_NETWORK_NUM']}")
         machine_config(cfg, machine_num, 'PRIVATE_IP',
                       "#{machine_cfg['PRIVATE_NETWORK']}." \
                       "#{cfg['PRIVATE_IP_START']+private_ip}")
