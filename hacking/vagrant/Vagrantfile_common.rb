@@ -186,7 +186,6 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
     if (ra.nil?) || (!ra.is_a? Array)
       ra = []
     end
-    puts ra
     # supereditor is used in some playbooks to allow some users outside
     # the vm to write in well known locations
     ra.push("-e \"cops_supereditors='#{Etc.getpwuid.uid}'\"")
@@ -410,10 +409,10 @@ def cops_init(opts)
     cfg.setdefault('VB_NAME_POST', "#{cfg['OS']} #{cfg['OS_RELEASE']}64")
     cfg.setdefault(
         "COPS_INSTALLER",
-        "#{cfg['COPS_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -S")
+        "#{cfg['COPS_REL_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -S")
     cfg.setdefault(
         "COPS_SYNCER",
-        "#{cfg['COPS_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -s")
+        "#{cfg['COPS_REL_ROOT']}/bin/install.sh -b #{cfg['COPS_BRANCH']} -C -s")
 
     # SHARED FOLDERS
     cfg.setdefault('mountpoints', {cfg['CWD'] => cfg['HOST_MOUNTPOINT']})
