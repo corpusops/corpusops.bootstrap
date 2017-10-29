@@ -1,7 +1,0 @@
----
-- hosts: all
-  vars:
-    ansible_become: true
-    ansible_become_user: root
-  tasks:
-    - setup: {}

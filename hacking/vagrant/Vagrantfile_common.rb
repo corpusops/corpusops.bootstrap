@@ -271,6 +271,7 @@ end
 def cops_init(opts)
     cwd = opts.fetch(:cwd, nil)
     cops_path = opts.fetch(:cops_path, nil)
+    cops_playbooks = opts.fetch(:cops_playbooks, nil)
     cfg = opts.fetch(:cfg, nil)
     if cfg.nil?
         cfg = Hash.new
@@ -282,6 +283,10 @@ def cops_init(opts)
         tf = File.absolute_path(__FILE__)
         cops_path = File.dirname(tf)
     end
+    if cops_playbooks.nil?
+        cops_playbooks = File.join(
+          cops_path, 'playbooks/corpusops')
+    end
     cfg['CWD'] = cwd
     cfg['SCWD'] = cfg['CWD'].gsub(/\//, '_').slice(1..-1)
     # Number of machines to spawn
@@ -290,8 +295,11 @@ def cops_init(opts)
     # see bellow for cfg['COPS_SYNCER']
     #
     cfg.setdefault('COPS_ROOT', cops_path)
+    cfg.setdefault('COPS_PLAYBOOKS', cops_playbooks)
     cfg['COPS_VAGRANT_DIR'] = File.join(cfg['COPS_ROOT'], 'hacking/vagrant')
     cfg['COPS_REL_ROOT'] = Pathname.new(cfg['COPS_ROOT']).relative_path_from(
+        Pathname.new(cfg['CWD'])).to_s
+    cfg['COPS_REL_PLAYBOOKS'] = Pathname.new(cfg['COPS_PLAYBOOKS']).relative_path_from(
         Pathname.new(cfg['CWD'])).to_s
     cfg['COPS_REL_VAGRANT_DIR'] = Pathname.new(cfg['COPS_VAGRANT_DIR']).relative_path_from(
         Pathname.new(cfg['CWD'])).to_s
@@ -338,9 +346,10 @@ def cops_init(opts)
     # extra provision, value in dictionnary can be either a file or a hash containing ansible variables
     cfg['PLAYBOOKS'] = {
         "default" => [
-            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/net.yml" => {}},
-            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/sync_rootsshkeys.yml" => {}},
-            {"#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/install_sshfs.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/net.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sync_rootsshkeys.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sshfs.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/cleanup.yml" => {}},
         ]
     }
 
@@ -500,7 +509,7 @@ def cops_configure(cfg)
                 end
                 #
                 copy_files = ['bin/cops_shell_common',
-                 'hacking/vagrant/playbooks/scripts/install_python.sh',
+                 'hacking/vagrant/install_python.sh',
                  'bin/cops_pkgmgr_install.sh']
                 #
                 provision_scripts = ["sudo bash $(pwd)/corpusops/install_python.sh"]
@@ -523,7 +532,7 @@ def cops_configure(cfg)
                 sub.vm.provision :shell, :inline => provision_scripts.join("\n")
                 playbooksdef = [
                     {
-                        "#{cfg['COPS_VAGRANT_DIR']}/playbooks/vars_files.yml" => {
+                        "#{cfg['COPS_PLAYBOOKS']}/provision/vagrant/vars_files.yml" => {
                             "extra_vars" => {"provision_machines" => deepcopy(cfg),
                                              "provision_settings" => deepcopy(machine_cfg)}
                         }
@@ -535,7 +544,7 @@ def cops_configure(cfg)
                 # flush cache facts each time vagrant runs
                 sub.vm.provision "ansible" do |ansible|
                   ansible.raw_arguments = '--flush-cache'
-                  ansible.playbook = "#{cfg['COPS_REL_VAGRANT_DIR']}/playbooks/setup.yml"
+                  ansible.playbook = "#{cfg['COPS_PLAYBOOKS']}/provision/vagrant/setup.yml"
                   ansible_setup(ansible, cfg, machine_cfg)
                 end
                 #
