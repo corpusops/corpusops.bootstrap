@@ -182,6 +182,14 @@ end
 
 
 def ansible_setup(ansible, cfg, machine_cfg, *args)
+    ra = ansible.raw_arguments
+    if (ra.nil?) || (!ra.is_a? Array)
+      ra = []
+    end
+    puts ra
+    ra.push("-e \"cops_path=#{cfg['COPS_ROOT']}\"")
+    ra.push("-e \"cops_playbooks=#{cfg['COPS_PLAYBOOKS']}\"")
+    ansible.raw_arguments = ra
     ansible.verbose  = true
     ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
     ansible.config_file = "#{cfg['COPS_VAGRANT_DIR']}/ansible.cfg"
@@ -546,7 +554,7 @@ def cops_configure(cfg)
                 end
                 # flush cache facts each time vagrant runs
                 sub.vm.provision "ansible" do |ansible|
-                  ansible.raw_arguments = '--flush-cache'
+                  ansible.raw_arguments = ['--flush-cache']
                   ansible.playbook = "#{cfg['COPS_PLAYBOOKS']}/provision/vagrant/setup.yml"
                   ansible_setup(ansible, cfg, machine_cfg)
                 end
