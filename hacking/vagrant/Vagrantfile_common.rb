@@ -347,6 +347,8 @@ def cops_init(opts)
     cfg['PLAYBOOKS'] = {
         "default" => [
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/net.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/locales.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/timezone.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sync_rootsshkeys.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sshfs.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/cleanup.yml" => {}},
