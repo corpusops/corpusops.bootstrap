@@ -130,6 +130,38 @@ do_ssh() {
 }
 
 
+get_cops_installer() {
+    for i in ./ ../bin ../../bin;do
+        installer="$i/cops_pkgmgr_install.sh"
+        if [ -e "$installer" ];then
+            echo $installer
+            break
+        fi
+    done
+}
+
+
+install_python() {
+    cd "$(dirname $0)"
+    if python -c "1" 2>/dev/null;then
+        [[ -n $DEBUG ]] && echo "Python already installed"
+        return 0
+    fi
+    installer=$(get_cops_installer)
+    if [[ -z $installer ]];then
+        echo "packages installer not found"
+        return 1
+    fi
+    installpy() { NONINTERACTIVE=y bash "$installer" python;  }
+    c="mint|debian|ubuntu|redhat|red-hat"
+    if cat /etc/*-release 2>/dev/null | egrep -qi "$c";then
+        installpy
+    else
+        echo "No method to check python install"
+    fi
+}
+
+
 do_sshgen() {
      hosts=$@
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
@@ -304,6 +336,7 @@ Wrapper to control vm
     - import: import vm from a file
     - ssh: ssh into the vm
     - sshgen: generate ssh client file .vagrant/cops-sshconfig
+    - install_python: install python
     - help [command]: specific command help
     - (any other arguments): proxy the arguments to vagrant
 '
@@ -382,6 +415,12 @@ Start and mount the vm
 
 }
 
+install_python_usage() {
+    NO_HEADER=y die '
+Install python
+
+    '"$0"''
+}
 
 export_usage() {
     NO_HEADER=y die '
@@ -412,7 +451,6 @@ Specific help
 '
 }
 
-
 parse_usage() {
     for a in $@;do
         case $a in
@@ -435,6 +473,7 @@ main() {
     case $action in
         halt|stop|down) do_down $@;;
         start|up|fire) do_up $@;;
+        install_python) install_python $@;;
         $actions) do_$action $@;;
         *) vagrant "$action" "$@";;
     esac
