@@ -509,10 +509,11 @@ def cops_configure(cfg)
                 end
                 #
                 copy_files = ['bin/cops_shell_common',
-                 'hacking/vagrant/install_python.sh',
-                 'bin/cops_pkgmgr_install.sh']
+                              'hacking/vagrant/manage',
+                              'hacking/vagrant/common.sh',
+                              'bin/cops_pkgmgr_install.sh']
                 #
-                provision_scripts = ["sudo bash $(pwd)/corpusops/install_python.sh"]
+                provision_scripts = ["sudo bash $(pwd)/corpusops/manage install_python"]
                 motd = ["Provision is finished:",
                         "  Cluster NUM: #{machine_cfg['CLUSTER_NUM']}",
                         "  Machine NUM: #{machine_cfg['MACHINE_NUM']}",
