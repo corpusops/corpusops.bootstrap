@@ -183,6 +183,10 @@ def parse_cli():
         default=os.environ.get('PACKER_TEMPLATE', ''),
         help='packer template (default: $docker_folder/packer.json)')
     parser.add_argument(
+        '--builder-args',
+        default=os.environ.get('BUILDER_ARGS', ''),
+        help='docker build/packer build CLI args')
+    parser.add_argument(
         '--image-name',
         nargs='*',
         default='default image name',
@@ -212,7 +216,7 @@ def parse_cli():
     return args, vars(args)
 
 
-def build_image(img, cwd=None, status=None, dry_run=False):
+def build_image(img, cwd=None, status=None, dry_run=False, builder_args=None):
     if status is None:
         status = copy.deepcopy(_STATUS)
     if cwd is None:
@@ -232,7 +236,7 @@ def build_image(img, cwd=None, status=None, dry_run=False):
             else:
                 ret = getattr(
                     _H, '{0}_build'.format(builder_type)
-                )(img)
+                )(img, builder_args=builder_args)
             if ret[0]:
                 s = 'success'
             else:
@@ -250,7 +254,8 @@ def build_image(img, cwd=None, status=None, dry_run=False):
 
 
 def build_images(images_files, skip_images=None,
-                 images=None, dry_run=False, status=None):
+                 images=None, dry_run=False, status=None,
+                 builder_args=None):
     if not images:
         images = []
     if not skip_images:
@@ -274,7 +279,7 @@ def build_images(images_files, skip_images=None,
                 status['skip'][k] = True
                 _status = (True, 'skip', True)
             else:
-                _status = build_image(img, cwd=cwd,
+                _status = build_image(img, cwd=cwd, builder_args=builder_args,
                                       dry_run=dry_run, status=status)
             if not _status[0]:
                 break
@@ -320,6 +325,7 @@ def main():
         status = build_images(vargs['images_files'], status=status,
                               images=vargs['images'],
                               skip_images=vargs['skip_images'],
+                              builder_args=vargs['builder_args'],
                               dry_run=vargs['dry_run'])
 
     rc = len(status['error']) > 0 and 1 or 0

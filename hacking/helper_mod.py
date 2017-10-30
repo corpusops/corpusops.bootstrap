@@ -253,12 +253,15 @@ def parse_images_file(images_file):
     return images, errors
 
 
-def _build(cmd, img, fmt=True):
+def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
     img = copy.deepcopy(img)
     img.setdefault('extra_args', '')
+    iargs = copy.deepcopy(img)
+    iargs.update(img)
+    iargs['builder_args'] = builder_args or ''
     if fmt:
-        cmd = cmd.format(**img)
-    img_file = img['fimage_file']
+        cmd = cmd.format(**iargs)
+    img_file = iargs['fimage_file']
     try:
         os.stat(img_file)
     except (OSError, IOError):
@@ -284,11 +287,13 @@ def _build(cmd, img, fmt=True):
 
 
 def packer_build(img, *a, **kw):
-    cmd = 'cd \'{working_dir}\' && packer build {extra_args} {fimage_file}'
-    return _build(cmd, img)
+    cmd = ('cd \'{working_dir}\' &&'
+           ' packer build {builder_args} {extra_args} {fimage_file}')
+    return _build(cmd, img, *a, **kw)
 
 
 def dockerfile_build(img, *a, **kw):
-    cmd = 'docker build {extra_args} -f {fimage_file} -t {tag} {working_dir}'
-    return _build(cmd, img)
+    cmd = ('docker build {builder_args} {extra_args}'
+           ' -f {fimage_file} -t {tag} {working_dir}')
+    return _build(cmd, img, *a, **kw)
 # vim:set et sts=4 ts=4 tw=80:
