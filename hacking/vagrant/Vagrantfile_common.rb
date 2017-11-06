@@ -211,7 +211,7 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
     # ansible.install = false
     args.each do |arg|
         if !arg.nil?
-            arg.setdefault('sudo', false)
+            arg.setdefault('become', false)
             arg.each do |key, val|
                 if ![:raw_arguments,
                      :raw_arguments_overrides].include? key
