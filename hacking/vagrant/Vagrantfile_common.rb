@@ -183,14 +183,27 @@ end
 
 def ansible_setup(ansible, cfg, machine_cfg, *args)
     ra = ansible.raw_arguments
+    use_defaults = true
     if (ra.nil?) || (!ra.is_a? Array)
       ra = []
     end
+    if args.is_a? Array and !args.empty?
+      if args[0][:raw_arguments_overrides].is_a? Array
+        ra = args[0][:raw_arguments_overrides]
+        use_defaults = false
+      end
+      if args[0][:raw_arguments].is_a? Array
+        ra.concat args[0][:raw_arguments]
+      end
+    end
     # supereditor is used in some playbooks to allow some users outside
     # the vm to write in well known locations
-    ra.push("-e \"cops_supereditors='#{Etc.getpwuid.uid}'\"")
-    ra.push("-e \"cops_path=#{cfg['COPS_ROOT']}\"")
-    ra.push("-e \"cops_playbooks=#{cfg['COPS_PLAYBOOKS']}\"")
+    if use_defaults
+      e = "cops_supereditors='#{Etc.getpwuid.uid}'"
+      e += " cops_path='#{cfg['COPS_ROOT']}'"
+      e += " cops_playbooks='#{cfg['COPS_PLAYBOOKS']}'"
+      ra.push("--extra-vars=\"#{e}\"")
+    end
     ansible.raw_arguments = ra
     ansible.verbose  = true
     ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
@@ -200,7 +213,10 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
         if !arg.nil?
             arg.setdefault('sudo', false)
             arg.each do |key, val|
-                ansible.send("#{key}=", val)
+                if ![:raw_arguments,
+                     :raw_arguments_overrides].include? key
+                  ansible.send("#{key}=", val)
+                end
             end
         end
     end
@@ -359,7 +375,7 @@ def cops_init(opts)
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/net.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/locales.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/timezone.yml" => {}},
-            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sync_rootsshkeys.yml" => {}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sync_sshkeys.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sshfs.yml" => {}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/cleanup.yml" => {}},
         ]
