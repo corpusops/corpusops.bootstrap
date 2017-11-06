@@ -5,8 +5,8 @@
 ## needed vagrant plugins
 - Run this command before any provisionning
 ```sh
-vagrant plugins install vagrant-share vagrant-vbguest
-vagrant plugins update
+vagrant plugin install vagrant-share vagrant-vbguest
+vagrant plugin update
 ```
 
 ## vagrant_config.yml
