@@ -198,10 +198,22 @@ do_mount() {
     done
 }
 
+set_hosts_args() {
+    hosts=""
+    cmd_args=""
+    if [[ -z $hosts ]];then hosts=$(default_to_first_host);fi
+    for i in $@;do
+        if echo $i |grep -v help| egrep -ivq -- "^-";then
+            hosts="$hosts $i"
+        else
+            cmd_args="$up_args $i"
+        fi
+    done
+}
+
 
 do_umount() {
-     hosts=$@
-    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    set_hosts_args $@
     for h in $hosts;do
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
         if [ -e "$VM_MOUNTPOINT/bin" ];then
@@ -215,10 +227,9 @@ do_umount() {
 
 
 do_up() {
-      hosts=$@
-     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    set_hosts_args $@
     for h in $hosts;do
-        vagrant up $h
+        vagrant up $h $cmd_args
         die_in_error "Error while starting $h"
     done
     for h in $hosts;do
@@ -229,28 +240,26 @@ do_up() {
 
 
 do_down() {
-      hosts=$@
-    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    set_hosts_args $@
     for h in $hosts;do
         do_umount $h
         die_in_error "Error while mounting $h"
     done
     for h in $hosts;do
-        vagrant halt -f $h
+        vagrant halt -f $h $cmd_args
         die_in_error "Error while stopping $h"
     done
 }
 
 
 do_destroy() {
-       hosts=$@
-    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    set_hosts_args $@
     for h in $hosts;do
         do_down $h
         die_in_error "Error while downning $h"
     done
     for h in $hosts;do
-        vagrant destroy $h
+        vagrant destroy $h $cmd_args
         die_in_error "Error while destroying $h"
     done
 }
@@ -295,9 +304,9 @@ EOF
 
 do_export() {
     BOX=${1:-$(default_to_first_host)}
-      hosts=$@
+    hosts=$@
     host=$2
-     if [[ -z $host ]];then
+    if [[ -z $host ]];then
          hosts=$(default_to_first_host)
     else
          hosts=$2
@@ -410,7 +419,7 @@ up_usage() {
     NO_HEADER=y die '
 Start and mount the vm
 
-    '"$0 $action"' [id]
+    '"$0 $action"' [id] [--no-provision]
 '"$(vagrant up --help)"
 
 }
