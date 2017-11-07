@@ -206,7 +206,7 @@ set_hosts_args() {
         if echo $i |grep -v help| egrep -ivq -- "^-";then
             hosts="$hosts $i"
         else
-            cmd_args="$up_args $i"
+            cmd_args="$cmd_args $i"
         fi
     done
 }
