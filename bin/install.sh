@@ -347,8 +347,15 @@ checkouter () {
 }
 
 upgrade_ansible() {
+    w="$(pwd)"
     upgrade_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        cd "${VENV_PATH}/src/ansible" &&\
+        git stash &&\
+        git pull &&\
         ensure_ansible_is_usable
+    ret=$?
+    cd "$w"
+    return $ret
 }
 
 checkout_code() {
@@ -449,8 +456,7 @@ synchronize_code() {
             if [ "x${QUIET}" = "x" ];then
                 bs_yellow_log "If you want to skip checkouts, next time, do export DO_SYNC_CODE=no"
             fi
-            checkout_code \
-                && ensure_ansible_is_usable
+            checkout_code && ensure_ansible_is_usable
         fi
     fi
 }
