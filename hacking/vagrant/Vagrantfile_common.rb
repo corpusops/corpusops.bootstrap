@@ -199,10 +199,11 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
     # supereditor is used in some playbooks to allow some users outside
     # the vm to write in well known locations
     if use_defaults
-      e = "cops_supereditors='#{Etc.getpwuid.uid}'"
-      e += " cops_path='#{cfg['COPS_ROOT']}'"
-      e += " cops_playbooks='#{cfg['COPS_PLAYBOOKS']}'"
-      ra.push("--extra-vars=\"#{e}\"")
+        e = "cops_supereditors='#{Etc.getpwuid.uid}'"
+        e += " cops_path='#{cfg['COPS_ROOT']}'"
+        e += " cops_playbooks='#{cfg['COPS_PLAYBOOKS']}'"
+        ra.push("--extra-var")
+        ra.push("#{e}")
     end
     ansible.raw_arguments = ra
     ansible.verbose  = true
