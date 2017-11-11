@@ -209,6 +209,9 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
     ansible.verbose  = true
     ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
     ansible.config_file = "#{cfg['COPS_VAGRANT_DIR']}/ansible.cfg"
+    if [nil, "auto"].include? ansible.compatibility_mode
+      ansible.compatibility_mode = '2.0'
+    end
     # ansible.install = false
     args.each do |arg|
         if !arg.nil?
