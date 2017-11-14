@@ -193,7 +193,7 @@ do_mount() {
                 vagrant:/ "${VM_MOUNTPOINT}"
             die_in_error "Error while mounting $h"
         else
-            log "VM is already mounted $h"
+            log "VM $h is already mounted: ${VM_MOUNTPOINT}"
         fi
     done
 }
