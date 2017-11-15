@@ -266,19 +266,13 @@ do_destroy() {
 
 
 do_import() {
-    BOX=${BOX:-$(default_to_first_host)}
+    BOX=${BOX:-${1}}
     shift
     if [ -z "${BOX}" ];then
         die "give a box file"
     fi
     if [ ! -e ${BOX} ];then
         die "provide a valid box file"
-    fi
-    if [ -e .vagrant ];then
-        if [ "x$(find .vagrant/ -type f)" != "x" ];then
-            log ".vagrant boxes exists, bailing out"
-            die "..."
-        fi
     fi
     boximportname=cops_$(sanitize $PWD)
     vv vagrant box add --force "${boximportname}" "${BOX}" $@
