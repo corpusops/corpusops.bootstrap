@@ -264,7 +264,7 @@ recap() {
 
 may_sudo() {
     if [ "$(whoami)" != "root" ];then
-        echo "sudo"
+        echo "sudo $([[ -z $DIRECT_SUDO ]] &&  echo "-HE")"
     fi
 }
 
@@ -286,6 +286,7 @@ install_prerequisites_() {
         fi
     fi
     debug "Ensuring system packages are installed: ${pkgs}"
+    SKIP_UPDATE=y\
     SKIP_UPGRADE=y\
         WANTED_EXTRA_PACKAGES="$(echo ${EXTRA_PACKAGES})" \
         WANTED_PACKAGES="$(echo ${BASE_PACKAGES})" \
@@ -461,7 +462,23 @@ synchronize_code() {
     fi
 }
 
+ensure_has_virtualenv() {
+    # handle specially the mess python-virtualenv/virtualenv on Ubuntu
+    if ! has_command virtualenv;then
+        if is_debian_like;then
+            SKIP_UPGRADE=y\
+                WANTED_PACKAGES="virtualenv python-virtualenv" \
+                vv $(may_sudo) "$W/bin/cops_pkgmgr_install.sh" 2>&1\
+                || die " [bs] Failed install virtualenv extra pkgs"
+        fi
+        if ! has_command virtualenv;then
+            die "virtualenv command not found !"
+        fi
+    fi
+}
+
 setup_virtualenv_() {
+    ensure_has_virtualenv
     ensure_last_virtualenv
     if [ "x${DO_SETUP_VIRTUALENV}" != "xy" ]; then
         bs_log "virtualenv setup skipped"
@@ -520,7 +537,8 @@ setup_virtualenv_() {
 
 setup_virtualenv() {
     ( deactivate >/dev/null 2>&1;\
-      set_lang C && setup_virtualenv_; )
+        set_lang C && setup_virtualenv_; )
+    die_in_error "virtualenv setup failed"
     ensure_ansible_is_usable
 }
 
