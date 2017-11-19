@@ -41,9 +41,7 @@ RUN bash -c 'step_rev=2;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;\
-    silent ./cops_container_cleanup.sh;\
-    silent ./cops_container_snapshot.sh;'
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;'
 
 # 2/ isolate virtualenv contruction
 COPY requirements/os_* \
@@ -56,9 +54,7 @@ RUN bash -c 'step_rev=2;set -e;\
     . venv/bin/activate;\
     :;\
     silent pip install -U pip;\
-    silent pip install -U -r requirements/python_requirements.txt;\
-    :;\
-    silent /bootstrap/cops_container_snapshot.sh;'
+    silent pip install -U -r requirements/python_requirements.txt;'
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
@@ -71,14 +67,8 @@ RUN bash -c 'step_rev=2;set -e;\
     DISTRIB_ID=$(. /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
     cd ${COPS_ROOT};\
     :;\
-    if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian";then\
-        silent apt-get remove -y --force-yes git;\
-        silent apt-get update -qq;\
-    fi;\
-    :;\
     silent bin/install.sh -C --skip-sync-code;\
     :;\
-    silent /bootstrap/cops_container_snapshot.sh;\
     rm -rf /bootstrap;'
 
 # 4/ Bring in all playbooks & roles
@@ -91,8 +81,7 @@ RUN bash -c 'step_rev=3;set -e;\
     : be sure every file is in place;\
     silent git reset --hard HEAD;\
     : DISABLED, use only local checkout;\
-    : bin/install.sh -C --only-sync-code;\
-    silent hacking/container_rootfs/sbin/cops_container_snapshot.sh;'
+    : bin/install.sh -C --only-sync-code;'
 
 # Now copy all rootfs helpers & make the container a good systemd / process
 # manager citizen
@@ -100,14 +89,14 @@ RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     silent $COPS_ROOT/hacking/sync_files ;\
     silent rsync -av $COPS_ROOT/hacking/container_rootfs/ /;\
-    silent /sbin/cops_container_activate_core_services.sh;\
-    silent /sbin/cops_container_cleanup.sh;\
-    silent /sbin/cops_container_snapshot.sh;'
+    silent /sbin/cops_container_activate_core_services.sh;'
 
-# pack any found git repo
+# pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    /sbin/cops_container_strip.sh'
+    /sbin/cops_container_strip.sh\
+    silent /sbin/cops_container_cleanup.sh;\
+    silent /sbin/cops_container_snapshot.sh;'
 
 # You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
 STOPSIGNAL SIGRTMIN+3
