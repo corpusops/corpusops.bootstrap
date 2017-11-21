@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-export W=$(pwd)
+export OW=$(pwd)
 cd "$(dirname "$(readlink -f ${0})")/.."
+export W=$(pwd)
 sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . $sc || exit 1
-cd "$W"
+cd "$OW"
 VERBOSE=${VERBOSE-1}
 if [[ -n $VERBOSE ]];then
     vv run_silent "${@}"
