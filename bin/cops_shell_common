@@ -185,6 +185,10 @@ silent_run() {
     ( silent_run_ "${@}" ; )
 }
 
+run_silent() {
+    SILENT=${SILENT-1} silent_run "${@}"
+}
+
 vvv() {
     debug "${@}"
     silent_run "${@}"
