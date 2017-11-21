@@ -124,9 +124,13 @@ test_role() {
         $(add_preprovision_slug $image))"
     local rret=$?
     tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
-    vv rewrite_role_file \
-        "${image}" "${role}" "${testscript}" "${tmptestscript}"\
-        > "${tmptestscript}"
+    if ! ( NO_SILENT=1 vv rewrite_role_file \
+        "${image}" "${role}" \
+        "${testscript}" "${tmptestscript}"\
+        > "${tmptestscript}"; );then
+        log "Rewrite dockerfile -> $tmptestscript failed"
+        return 3
+    fi
     chmod +x "${tmptestscript}"
     if [[ ${rret} == 0 ]]; then
         if ! ( echo "${image}" | egrep -q "\/system"; ); then
