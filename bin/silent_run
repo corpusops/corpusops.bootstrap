@@ -5,7 +5,12 @@ sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . $sc || exit 1
 cd "$W"
-run_silent "${@}"
+VERBOSE=${VERBOSE-1}
+if [[ -n $VERBOSE ]];then
+    vv run_silent "${@}"
+else
+    run_silent "${@}"
+fi
 ret=$?
 exit $?
-## vim:set et sts=5 ts=4 tw=0:
+# vim:set et sts=5 ts=4 tw=0:
