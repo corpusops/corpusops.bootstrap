@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+export W=$(pwd)
+cd "$(dirname "$(readlink -f ${0})")/.."
+sc=bin/cops_shell_common
+[[ ! -e $sc ]] && echo "missing $sc" >&2
+. $sc || exit 1
+cd "$W"
+run_silent "${@}"
+ret=$?
+exit $?
+## vim:set et sts=5 ts=4 tw=0:
