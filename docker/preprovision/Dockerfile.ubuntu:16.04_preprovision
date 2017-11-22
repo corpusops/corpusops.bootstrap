@@ -3,6 +3,8 @@
 
 FROM ubuntu:16.04
 ENV container docker
+ENV PYTHONUNBUFFERED=1
+ENV ANSIBLE_FORCE_COLOR=true
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ENV COPS_ROOT $COPS_ROOT
 ENV COPS_APPLY_ROLE "${COPS_ROOT}/bin/cops_apply_role -vvvv"

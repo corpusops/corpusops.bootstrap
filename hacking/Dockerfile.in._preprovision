@@ -4,6 +4,8 @@
 # __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
 FROM __IMAGE__
 ENV container docker
+ENV PYTHONUNBUFFERED=1
+ENV ANSIBLE_FORCE_COLOR=true
 ARG COPS_ROOT=__COPS_ROOT__
 ENV COPS_ROOT $COPS_ROOT
 ENV COPS_APPLY_ROLE "${COPS_ROOT}/bin/cops_apply_role -vvvv"
