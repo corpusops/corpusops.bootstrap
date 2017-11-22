@@ -21,7 +21,7 @@ against a set of docker \$IMAGES.
  [IMAGES=xxx] \
  [ROLES_TO_TEST=]\
  [NOT_IN_DOCKER=]
- [ROLE_DOCKERFILE_TEMPLATE=xxx]
+ [ROLE_TESTSCRIPT_TEMPLATE=xxx]
  [NOCOLOR=y] \
  [DEBUG=y] \
     '"$0" [role1] [role2]'
@@ -50,17 +50,6 @@ post_tests_cleanup() {
     fi
 }
 
-dockerfile_template() {
-    role=$1
-    t="${role}/Dockerfile.test"
-    if [ -e "$t" ];then
-        r="$t"
-    else
-        r="${ROLE_DOCKERFILE_TEMPLATE}"
-    fi
-    echo "$r"
-}
-
 testscript_template() {
     role=$1
     t="${role}/testcript"
@@ -72,128 +61,100 @@ testscript_template() {
     echo "$r"
 }
 
-rewrite_role_file() {
-    local cops_root=${COPS_ROOT}
-    local role_num=$((role_num+1))
-    local image="${1}"
-    local role="${2}"
-    local rolename="$(basename $role)"
-    local template="${3}"
-    local role_script="${4}"
-    local rolesd=$( basename "${roles_wd}" )
-    if [[ -n ${NOT_IN_DOCKER} ]]; then
-        cops_root=${W}
-    fi
-    rewrite_dockerfile "${template}" "${image}" "${cops_root}" |\
-        sed -r\
-        -e "s|__ROLE_SCRIPT__|${role_script}|g" \
-        -e "s|__ROLEPATH__|${role}|g" \
-        -e "s|__ROLENAME__|${rolename}|g"\
-        -e "s|__ROLE_NUM__|${role_num}|g"
-}
-
 test_role() {
+    local rret=0
     image="${1}"
-    role="${2}"
-    if echo "${role}" | egrep -vq '^/'; then
-        if test -d "${OW}/${role}"; then
-            role="${OW}/${role}"
-        elif test -d "${OW}/roles/${role}"; then
-            role="${OW}/roles/${role}"
-        elif test -d "${W}/roles/${role}"; then
-            role="${W}/roles/${role}"
+    while read role;do
+        if [[ -n $role ]];then
+            if echo "${role}" | egrep -vq '^/'; then
+                if test -d "${OW}/${role}"; then
+                    role="${OW}/${role}"
+                elif test -d "${OW}/roles/${role}"; then
+                    role="${OW}/roles/${role}"
+                elif test -d "${W}/roles/${role}"; then
+                    role="${W}/roles/${role}"
+                fi
+            fi
+            role=$(echo "${role}" | sed -e 's#/\+$##g')
+            roles="$(printf "$roles\n$role\n" | xargs -n1)"
+            if ! test -d ${role}; then
+                log "non existing role: ${role}"
+                return 1
+            fi
         fi
-    fi
-    if ! test -d ${role}; then
-        log "non existing role: ${role}"
-        return 1
-    else
-        role=$(echo "${role}" | sed -e 's#/\+$##g')
-    fi
-    rolename="$(basename ${role})"
-    dockerfile="$(dockerfile_template $role)"
+    done <<< "${ROLEPATHS-}"
     testscript="$(testscript_template $role)"
     tmpstr=$(get_random_slug 8)
-    tmpdockerfile=${role}/dockerfile.testtmp.${tmpstr}
-    tmptestscript=${role}/testscript.testtmp.${tmpstr}
-    raw_test_tag=$(basename ${tmpdockerfile}):copstest
-    raw_test_tag=${raw_test_tag//*dockerfile.testtmp./${rolename}}
-    test_tag=$(cleanup_docker_tag $raw_test_tag)
     docker_test_tag=copstest_${tmpstr}
     pimg="$(may_prepend_docker_user_to_image \
         $(add_preprovision_slug $image))"
-    local rret=$?
-    tmp_files="${tmp_files} ${tmpdockerfile} ${tmptestscript}"
-    if ! ( NO_SILENT=1 vv rewrite_role_file \
-        "${image}" "${role}" \
-        "${testscript}" "${tmptestscript}"\
-        > "${tmptestscript}"; );then
-        log "Rewrite dockerfile -> $tmptestscript failed"
-        return 3
-    fi
-    chmod +x "${tmptestscript}"
-    if [[ ${rret} == 0 ]]; then
-        if ! ( echo "${image}" | egrep -q "\/system"; ); then
-            if [[ "${COPS_DOCKER_TEST_MODE}" == "build" ]];then
-                vv rewrite_role_file \
-                    "${image}" "${role}" "${dockerfile}" "${tmptestscript}"\
-                    > "${tmpdockerfile}"
-                tmp_imgs="${tmp_imgs} ${test_tag}"
-                vv docker build -t ${test_tag} -f ${tmpdockerfile} ${role}
-                rret=${?}
-            else
-                tmp_dockers="${tmp_dockers} ${docker_test_tag}"
-                docker=$(get_command docker)
-                local cmd=${COPS_DOCKER_CMD:-${COPS_DOCKER_INIT_CMD}}
-                local args=
-                if echo $image | egrep "ubuntu$|ubuntu.*14.04";then
-                    args=${COPS_DOCKER_CMD:-${COPS_DOCKER_SHELL_CMD}}
-                    cmd=${COPS_DOCKER_SHELL}
-                fi
-                vv sudo "$docker" run -ti --privileged -d --name="$docker_test_tag" \
-                    -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
-                    -v "/var/lib/docker:/var/lib/docker" \
-                    -v "/var/run/docker:/var/run/docker" \
-                    -v "/var/run/docker.sock:/var/run/docker.sock" \
-                    -v "${COPS_ROOT}:${COPS_ROOT}.orig:ro" \
-                    -v "${role}:${role}.orig:ro" \
-                    "${image}" ${cmd} "${args}" > /dev/null
-                if [[ $? != 0 ]];then
-                    log "$image failed to spawn"
-                    return 1
-                else
-                    sleep 1
-                fi
-                vvv docker exec "$docker_test_tag" bash -c "printf ''"
-                if [[ $? != 0 ]];then
-                    log "${docker_test_tag}@${image} doest accept commands"
-                    return 1
-                fi
-                vvv docker exec \
-                    -e IMAGES="$IMAGES" \
-                    -e ROLEPATH="$role" \
-                    -e COPS_ROOT="$COPS_ROOT" \
-                    "$docker_test_tag" \
-                    bash -c "\
-                    for i in "'"'"\$ROLEPATH"'"'";do
-                        if [ ! -e "\${i}" ];then
-                            mkdir -p "'"'"\${i}"'"'"
-                        fi &&
-                        if [ -e "'"'"\${i}.orig"'"'" ];then
-                            rsync -a --delete \
-                               "'"'"\${i}.orig"'"'"/ "'"'"\${i}"'"'"/
-                        fi
-                    done &&
-                    ${tmptestscript}"
-                rret=${?}
-            fi
+    if ! ( echo "${image}" | egrep -q "\/system"; ); then
+        tmp_dockers="${tmp_dockers} ${docker_test_tag}"
+        docker=$(get_command docker)
+        local cmd=${COPS_DOCKER_CMD:-${COPS_DOCKER_INIT_CMD}}
+        local args=
+        if echo $image | egrep -q "ubuntu$|ubuntu.*14.04";then
+            args=${COPS_DOCKER_CMD:-${COPS_DOCKER_SHELL_CMD}}
+            cmd=${COPS_DOCKER_SHELL}
+        fi
+        vv sudo "$docker" run -ti --privileged -d --name="$docker_test_tag" \
+            -e PYTHONUNBUFFERED=${PYTHONUNBUFFERED-1} \
+            -e ANSIBLE_FORCE_COLOR=${ANSIBLE_FORCE_COLOR-true} \
+            -e COPS_ROOT="$COPS_ROOT" \
+            -e IMAGES="$IMAGES" \
+            -e COPS_TESTSCRIPT="$testscript" \
+            -e ROLEPATHS="$roles" \
+            -v "/sys/fs/cgroup:/sys/fs/cgroup:ro" \
+            -v "/var/lib/docker:/var/lib/docker" \
+            -v "/var/run/docker:/var/run/docker" \
+            -v "/var/run/docker.sock:/var/run/docker.sock" \
+            $(\
+                while read r;do
+                    echo "-v"
+                    echo "$r:$r.orig:ro"
+                done < <(printf "$roles\n$COPS_ROOT\n$testscript"|xargs -n1); ) \
+            "${image}" ${cmd} "${args}" > /dev/null
+        if [[ $? != 0 ]];then
+            log "$image failed to spawn"
+            return 1
         else
-            ( \
-                export ROLEPATH="$role";\
-                export COPS_ROOT="$COPS_ROOT";\
-                cd "${role}" && ${tmptestscript} )
+            sleep 1
+        fi
+        vvv docker exec "$docker_test_tag" bash -c "printf ''"
+        if [[ $? != 0 ]];then
+            log "${docker_test_tag}@${image} does not accept commands"
+            return 1
+        fi
+        # inject code in docker image (read/write)
+        vvv docker exec -t "$docker_test_tag" bash -c '
+            while read i;do
+                if [ -d "$i.orig" ] && [ ! -e "$i" ];then
+                    mkdir -p "$i"
+                fi && \
+                if [ -e "${i}.orig" ];then
+                    d="$i.orig"
+                    e="$i"
+                    if [ -d "$d" ];then
+                        d="${d}/"
+                        e="${e}/"
+                    fi
+                    rsync -a --delete "${d}" "${e}"
+                fi
+            done < <( printf "$ROLEPATHS\n$COPS_ROOT\n$COPS_TESTSCRIPT\n"|xargs -n1; )
+            '
+        rret=$?
+        if [[ $rret == 0 ]];then
+            vvv docker exec "$docker_test_tag" bash -c '
+                chmod +x $COPS_TESTSCRIPT && ${COPS_TESTSCRIPT}'
             rret=${?}
         fi
+    else
+        chmod +x "$testscript" &&\
+        ( \
+            export ROLEPATHS="$roles";\
+            export COPS_ROOT="$COPS_ROOT";\
+            cd "${role}" && ${testscript}; )
+        rret=${?}
     fi
     return ${rret}
 }
@@ -211,7 +172,7 @@ get_roles_to_test() {
             roles_to_tests="${roles_to_tests} ${UBUNTU_ROLES}"
         fi
     fi
-    echo "${roles_to_tests}" | xargs -n1 | sort -u
+    echo "${roles_to_tests}" | xargs -n1 | uniq
 }
 
 ret=0
@@ -220,34 +181,31 @@ if [[ -n $NOT_IN_DOCKER ]];then
 fi
 while read image_line;do
     for image in ${image_line};do
+        tdate=$(date '+%F %T')
         image=$(may_prepend_docker_user_to_image ${image})
-        roles_to_tests=$(get_roles_to_test ${image} $@)
-        log "Image: ${image}"
-        log "  Testing: ${roles_to_tests}"
-        # XXX We can make this parralel to speed up builds
-        for role in ${roles_to_tests};do
-            test_slug=${image}::${role}
-            ( do_trap post_tests_cleanup EXIT;
-              NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
-                 test_role ${image} ${role}; )
-            tret=$?
-            tdate=$(date '+%F %T')
-            if [[ ${tret} != 0 ]];then
-                ret=1
-                log "test failure (${tdate}): ${YELLOW}${test_slug}"
-                failed_roles="${failed_roles} ${test_slug}"
-            else
-                log "test success (${tdate}): ${YELLOW}${test_slug}"
-                success_roles="${success_roles} ${test_slug}"
-            fi
-        done
+        roles_to_test=$(get_roles_to_test ${image} $@)
+        sroles_to_test=$(echo ${roles_to_test})
+        test_slug="$image::'$sroles_to_test'"
+        log "Test (start:$tdate): $test_slug"
+        ( export ROLEPATHS=$roles_to_test;
+          do_trap post_tests_cleanup EXIT;
+          NO_OUTPUT=${NO_TESTS_OUTPUT-${TRAVIS-}} output_in_error \
+              test_role ${image}; )
+        tret=$?
+        log "Test (end:$tdate, rc:$tret): $test_slug"
+        if [[ ${tret} != 0 ]];then
+            ret=1
+            failed_roles="${failed_roles} ${test_slug}"
+        else
+            success_roles="${success_roles} ${test_slug}"
+        fi
     done
 done <<< ${IMAGES}
 if [[ -n ${success_roles} ]];then
-    log "success roles:${YELLOW}${success_roles}"
+    log "success roles suite:${YELLOW}${success_roles}"
 fi
 if [[ -n ${failed_roles} ]];then
-    log "failed roles:${YELLOW}${failed_roles}"
+    log "failed roles suite:${YELLOW}${failed_roles}"
 fi
 exit ${ret}
 # vim:set et sts=4 ts=4 tw=80:

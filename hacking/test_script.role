@@ -2,64 +2,123 @@
 if [[ -n ${DEBUG} ]];then
     set -x
 fi
+
+RED="\\e[0;31m"
+CYAN="\\e[0;36m"
+YELLOW="\\e[0;33m"
+NORMAL="\\e[0;0m"
+if [[ -n ${NOCOLORS-${NOCOLOR-}} ]];then
+    RED=""
+    CYAN=""
+    YELLOW=""
+    NORMAL=""
+fi
+log() { echo -e "$@">&2; }
+
+
 W=$(pwd)
-ROLEPATH=${ROLEPATH:-${1:-${W}}}
-ROLENAME=$(basename $ROLEPATH)
+ROLEPATH=${ROLEPATH}
+ROLEPATHS="
+${@}
+${ROLEPATHS}
+${ROLEPATH}
+"
 COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
-crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
-cd "${COPS_ROOT}"
-default_deps="corpusops.roles/localsettings_pkgmgr"
 COPS_DEPS_ROLES="${COPS_DEPS_ROLES-${default_deps}}"
-README="$ROLEPATH/README.md"
-if [ -e "${README}" ];then
-  for i in $(grep "cops roles dependencies:" "${README}" \
-                |sed -re "s/.*cops roles dependencies:\s*//g"\
-                |sed -re "s/(,| - )/ /g");do
-    COPS_DEPS_ROLES="${COPS_DEPS_ROLES} ${i}"
-  done
-fi
-for i in $COPS_DEPS_ROLES;do
-    if ! ( $crole "roles/${i}/role.yml" );then
-        echo "roles/${i}/role.yml failed"
-        exit 4
-    fi
-done
-ret=0
-# try to readd a link to mimic the namespace
-# when we have a rolepath without DOT (missing namespace)
-lnk=""
-if ( echo $ROLENAME | egrep -vq [.] ) && \
-    [ -e "${ROLEPATH}/meta/main.yml" ];then
-    NS=$( echo $(grep namespace: "${ROLEPATH}/meta/main.yml" \
-                 | awk -F: '{print $2}'))
-    lnk=${ROLEWD}/${NS}.${ROLENAME}
-    if [ ! -e "${lnk}" ] && [ "x${NS}" != "x" ];then
-        ln -fs "${ROLEPATH}" "${lnk}"
-    else
-        lnk=""
-    fi
-fi
-if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
-    export ANSIBLE_ROLES_PATH="${ROLEWD}"
-else
-    export ANSIBLE_ROLES_PATH="${ROLEWD}:${ANSIBLE_ROLES_PATH}"
-fi
-for test_role_file in test.yml role.yml;do
-    ftest_role_file="${ROLEPATH}/${test_role_file}"
-    if [ -e "${ftest_role_file}" ]; then
-        echo "Using ${ftest_role_file}" >&2
-        ${crole} "${ftest_role_file}"
-        ret=${?}
-        if [ "x${ret}" != "x0" ];then
-            echo "$ROLEPATH test failed"
-        else
-            echo "$ROLEPATH test success"
+default_deps="corpusops.roles/localsettings_pkgmgr"
+crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
+failed_roles=""
+success_roles=""
+
+install_dependencies() {
+    while read ROLEPATH;do
+        README="$ROLEPATH/README.md"
+        if [ -e "${README}" ];then
+            for i in $(grep "cops roles dependencies:" "${README}" \
+                | sed -re "s/.*cops roles dependencies:\s*//g"\
+                | sed -re "s/(,| - )/ /g");do
+                COPS_DEPS_ROLES="$(printf "${COPS_DEPS_ROLES}\n${i}")"
+            done
         fi
-        break
+    done < <(printf "$ROLEPATHS\n" | xargs -n1 | uniq)
+    COPS_DEPS_ROLES="$(printf "$COPS_DEPS_ROLES\n" | uniq | xargs -n1)"
+    while read i;do
+        if [[ -n $i ]];then
+            if  ! ( $crole "roles/${i}/role.yml" );then
+                echo "DEPENDENCIES: roles/${i}/role.yml failed"
+                exit 4
+            fi
+        fi
+    done <<< "$COPS_DEPS_ROLES"
+}
+
+
+test_role() {
+    tret=-1
+    ROLEPATH=$1
+    ROLENAME=$(basename $ROLEPATH)
+    tdate=$(date '+%F %T')
+    # try to readd a link to mimic the namespace
+    # when we have a rolepath without DOT (missing namespace)
+    lnk=""
+    log "test (start:$tdate): $ROLEPATH"
+    if ( echo $ROLENAME | egrep -vq [.] ) && \
+        [ -e "${ROLEPATH}/meta/main.yml" ];then
+        NS=$( echo $(grep namespace: "${ROLEPATH}/meta/main.yml" \
+                     | awk -F: '{print $2}'))
+        lnk=${ROLEWD}/${NS}.${ROLENAME}
+        if [ ! -e "${lnk}" ] && [[ -n "${NS}" ]];then
+            ln -fs "${ROLEPATH}" "${lnk}"
+        else
+            lnk=""
+        fi
     fi
-done
-if [ "x${lnk}" != "x" ] && [ -e "${lnk}" ];then
-    rm -f "${lnk}"
+    if [[ -z ${ANSIBLE_ROLES_PATH-} ]]; then
+        export ANSIBLE_ROLES_PATH="${ROLEWD}"
+    else
+        export ANSIBLE_ROLES_PATH="${ROLEWD}:${ANSIBLE_ROLES_PATH}"
+    fi
+    for test_role_file in test.yml role.yml;do
+        ftest_role_file="${ROLEPATH}/${test_role_file}"
+        if [ -e "${ftest_role_file}" ]; then
+            echo "Using ${ftest_role_file}" >&2
+            ${crole} "${ftest_role_file}"
+            tret=$?
+            break
+        fi
+    done
+    if [[ -n "${lnk}" ]] && [ -e "${lnk}" ];then
+        rm -f "${lnk}"
+    fi
+    tdate=$(date '+%F %T')
+    if [[ ${tret} != 0 ]];then
+        failed_roles="${failed_roles} ${ROLEPATH}"
+        log "test success(end:$tdate): $ROLEPATH"
+    else
+        success_roles="${success_roles} $ROLEPATH"
+        log "test success(end:$tdate): $ROLEPATH"
+    fi
+    return $tret
+}
+
+cd "${COPS_ROOT}"
+ret=0
+install_dependencies
+while read rolepath;do
+    if [[ -n "$rolepath" ]];then
+        test_role $rolepath
+        tret=$?
+        if [[ ${tret} != 0 ]] && [[ $ret -lt 1 ]];then
+            ret=$tret
+        fi
+    fi
+done <<< "$ROLEPATHS"
+if [[ -n ${success_roles} ]];then
+    log "success roles:${YELLOW}${success_roles}$NORMAL"
 fi
+if [[ -n ${failed_roles} ]];then
+    log "failed roles:${YELLOW}${failed_roles}$NORMAL"
+fi
+echo here $ret
 exit ${ret}
 # vim:set ft=sh et:
