@@ -54,7 +54,7 @@ install_dependencies() {
 
 
 test_role() {
-    tret=-1
+    tret=0
     ROLEPATH=$1
     ROLENAME=$(basename $ROLEPATH)
     tdate=$(date '+%F %T')
@@ -119,6 +119,5 @@ fi
 if [[ -n ${failed_roles} ]];then
     log "failed roles:${YELLOW}${failed_roles}$NORMAL"
 fi
-echo here $ret
 exit ${ret}
 # vim:set ft=sh et:
