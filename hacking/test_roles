@@ -21,6 +21,7 @@ against a set of docker \$IMAGES.
  [IMAGES=xxx] \
  [ROLES_TO_TEST=]\
  [NOT_IN_DOCKER=]
+ [SYNC_CORPUSOPS=y] \
  [ROLE_TESTSCRIPT_TEMPLATE=xxx]
  [NOCOLOR=y] \
  [DEBUG=y] \
@@ -108,11 +109,12 @@ test_role() {
             -v "/var/lib/docker:/var/lib/docker" \
             -v "/var/run/docker:/var/run/docker" \
             -v "/var/run/docker.sock:/var/run/docker.sock" \
+            -v "$W:$COPS_ROOT.orig" \
             $(\
                 while read r;do
                     echo "-v"
                     echo "$r:$r.orig:ro"
-                done < <(printf "$roles\n$COPS_ROOT\n$testscript"|xargs -n1); ) \
+                done < <(printf "$roles\n$testscript"|xargs -n1); ) \
             "${image}" ${cmd} "${args}" > /dev/null
         if [[ $? != 0 ]];then
             log "$image failed to spawn"
@@ -140,8 +142,14 @@ test_role() {
                     fi
                     rsync -a --delete "${d}" "${e}"
                 fi
-            done < <( printf "$ROLEPATHS\n$COPS_ROOT\n$COPS_TESTSCRIPT\n"|xargs -n1; )
-            '
+            done < <( printf "$ROLEPATHS\n$COPS_TESTSCRIPT\n"|xargs -n1; )'
+        if [[ $rret == 0 ]] && [[ -n "${SYNC_CORPUSOPS:-y}" ]];then
+            vvv docker exec -t "$docker_test_tag" bash -c '
+                if [ -e "${COPS_ROOT}.orig" ];then
+                    rsync -av --delete "${COPS_ROOT}.orig/" "${COPS_ROOT}/" \
+                        --exclude=venv/{bin,include,lib,local,man}
+                fi'
+        fi
         rret=$?
         if [[ $rret == 0 ]];then
             vvv docker exec "$docker_test_tag" bash -c '
