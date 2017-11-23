@@ -72,6 +72,7 @@ if [[ -n "${NO_NOT_IN_DOCKER_ROLES_TEST}" ]];then
 else
     ret=0
     if [[ -n $TRAVIS ]]; then NOT_IN_DOCKER_ROLES=;fi
+    nid_roles_to_test="${NID_ROLES_TO_TEST-}"
     nid_roles_to_test="$(get_short_roles_to_test \
         "$nid_roles_to_test" ${NOT_IN_DOCKER_ROLES})"
     if [[ -n "e$NOT_IN_DOCKER_ROLES" ]] && ! NOT_IN_DOCKER=1 vv \
