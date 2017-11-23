@@ -576,6 +576,13 @@ make_virtualenv() {
     fi
 }
 
+may_sudo() {
+    if [ "$(whoami)" != "root" ];then
+        echo "sudo $([[ -z $DIRECT_SUDO ]] &&  echo "-HE")"
+    fi
+}
+
+
 detect_os no_fail
 
 if echo "${0}" | egrep -q 'cops_shell_common$';then

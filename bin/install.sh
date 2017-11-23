@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
 
 LOGGER_NAME=cs
@@ -259,12 +259,6 @@ recap() {
     if [ "x${will_do_recap}" != "x" ]; then
         recap_
         travis_sys_info
-    fi
-}
-
-may_sudo() {
-    if [ "$(whoami)" != "root" ];then
-        echo "sudo $([[ -z $DIRECT_SUDO ]] &&  echo "-HE")"
     fi
 }
 

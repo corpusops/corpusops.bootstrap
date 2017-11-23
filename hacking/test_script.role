@@ -40,8 +40,8 @@ install_dependencies() {
                 COPS_DEPS_ROLES="$(printf "${COPS_DEPS_ROLES}\n${i}")"
             done
         fi
-    done < <(printf "$ROLEPATHS\n" | uniq | xargs -n1 )
-    COPS_DEPS_ROLES="$(printf "$COPS_DEPS_ROLES\n" | uniq | xargs -n1)"
+    done < <(printf "$ROLEPATHS\n" | xargs -n1 | awk '!seen[$0]++' )
+    COPS_DEPS_ROLES="$(printf "$COPS_DEPS_ROLES\n" | xargs -n1 | awk '!seen[$0]++')"
     while read i;do
         if [[ -n $i ]];then
             if  ! ( $crole "roles/${i}/role.yml" );then

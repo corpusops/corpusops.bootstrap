@@ -92,7 +92,7 @@ done < <(find \
             "${SYS_A}" \
             -mindepth 0 -maxdepth 0 -and \
             \( -type d -or -type l \) \
-            2>/dev/null | uniq )
+            2>/dev/null | awk '!seen[$0]++' )
 export ANSIBLE_SSH_CONTROL_PATH=${ANSIBLE_SSH_CONTROL_PATH:-"~/.assh_%%h.%%p-%%r"}
 export ANSIBLE_HOST_KEY_CHECKING${ANSIBLE_HOST_KEY_CHECKING:-"False"}
 export ANSIBLE_NOCOWS=${ANSIBLE_NOCOWS-1}
