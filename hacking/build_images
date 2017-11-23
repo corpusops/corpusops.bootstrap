@@ -7,6 +7,11 @@ sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
 
+slogger=log
+if [[ -n $TRAVIS ]];then
+    slogger=cronolog
+fi
+
 usage () {
     NO_HEADER=y die '
 Build any image from dockerfiles found either:
@@ -125,7 +130,7 @@ for docker_folder in ${DOCKER_FOLDERS};do
             fi
             ancestor=$(get_ancestor_from_dockerfile "${dockerfile}")
             if [[ -n ${ancestor} ]] && echo $failed | xargs -n1 | egrep -q "^${ancestor}$";then
-                log "$tag: Ancestor ${ancestor} failed building, skip"
+                $slogger "$tag: Ancestor ${ancestor} failed building, skip"
                 build=
             fi
             if [[ -z ${build} ]]; then
@@ -133,16 +138,16 @@ for docker_folder in ${DOCKER_FOLDERS};do
                 continue
             fi
             tag=${utag}
-            log "Building image: ${tag}"
+            $slogger "Building image: ${tag}"
             # XXX We can make this parralel to speed up builds
             NO_OUTPUT=${NO_BUILD_OUTPUT-${TRAVIS-}} output_in_error \
                 build_image "${tag}" "${dockerfile}" "${docker_folder}"
             if [[ ${?} != 0 ]];then
                 ret=4
-                log "build failure: ${YELLOW}${tag}"
+                $slogger "build failure: ${YELLOW}${tag}"
                 failed="$(echo "${failed} ${tag}" | xargs)"
             else
-                log "build success: ${YELLOW}${tag}"
+                $slogger "build success: ${YELLOW}${tag}"
                 success="$(echo "${success} ${tag}" | xargs)"
             fi
         done
@@ -150,10 +155,10 @@ for docker_folder in ${DOCKER_FOLDERS};do
 done
 
 if [[ -n ${success} ]]; then
-    log "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
+    $slogger "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
 fi
 if [[ -n ${failed} ]]; then
-    log "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
+    $slogger "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
 fi
 exit ${ret}
 # vim:set et sts=4 ts=4 tw=0:
