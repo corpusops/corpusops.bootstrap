@@ -24,8 +24,8 @@ ${ROLEPATHS}
 ${ROLEPATH}
 "
 COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
-COPS_DEPS_ROLES="${COPS_DEPS_ROLES-${default_deps}}"
 default_deps="corpusops.roles/localsettings_pkgmgr"
+COPS_DEPS_ROLES="${COPS_DEPS_ROLES-${default_deps}}"
 crole="${crole:-${COPS_ROOT}/bin/cops_apply_role -vvvv}"
 failed_roles=""
 success_roles=""
@@ -40,7 +40,7 @@ install_dependencies() {
                 COPS_DEPS_ROLES="$(printf "${COPS_DEPS_ROLES}\n${i}")"
             done
         fi
-    done < <(printf "$ROLEPATHS\n" | xargs -n1 | uniq)
+    done < <(printf "$ROLEPATHS\n" | uniq | xargs -n1 )
     COPS_DEPS_ROLES="$(printf "$COPS_DEPS_ROLES\n" | uniq | xargs -n1)"
     while read i;do
         if [[ -n $i ]];then
@@ -50,6 +50,11 @@ install_dependencies() {
             fi
         fi
     done <<< "$COPS_DEPS_ROLES"
+    tret=$?
+    if [[ $tret != 0 ]];then
+        echo "deps failed"
+        exit $tret
+    fi
 }
 
 
