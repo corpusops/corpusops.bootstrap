@@ -143,7 +143,7 @@ test_role() {
                     rsync -a --delete "${d}" "${e}"
                 fi
             done < <( printf "$ROLEPATHS\n$COPS_TESTSCRIPT\n"|xargs -n1; )'
-        if [[ $rret == 0 ]] && [[ -n "${SYNC_CORPUSOPS:-y}" ]];then
+        if [[ $rret == 0 ]] && [[ -n "${SYNC_CORPUSOPS-}" ]];then
             vvv docker exec -t "$docker_test_tag" bash -c '
                 if [ -e "${COPS_ROOT}.orig" ];then
                     rsync -av --delete "${COPS_ROOT}.orig/" "${COPS_ROOT}/" \
