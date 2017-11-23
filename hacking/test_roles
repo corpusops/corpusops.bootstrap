@@ -147,7 +147,8 @@ test_role() {
             vvv docker exec -t "$docker_test_tag" bash -c '
                 if [ -e "${COPS_ROOT}.orig" ];then
                     rsync -av --delete "${COPS_ROOT}.orig/" "${COPS_ROOT}/" \
-                        --exclude=venv/{bin,include,lib,local,man}
+                        --exclude=venv/{bin,include,lib,local,man} \
+                        --exclude=*pyc
                 fi'
         fi
         rret=$?
