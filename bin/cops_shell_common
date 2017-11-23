@@ -98,6 +98,10 @@ log() {
     log_ "${RED}" "${CYAN}" "${@}"
 }
 
+cronolog() {
+    log_ "${RED}" "${CYAN}" "($(get_chrono)) ${@}"
+}
+
 warn() {
     log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"
 }
