@@ -45,36 +45,20 @@ ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.ro
 
 # Those roles will be tested, to be sure a subset of our roles
 # still perform correctly before any release
+# and are not part of the base docker image provisionning
 BASE_ROLES="\
-corpusops.roles/actionhelper
-corpusops.roles/ansible_plugins
-corpusops.roles/debug
-corpusops.roles/humanlog
-corpusops.roles/include_jinja_vars
-corpusops.roles/service
-corpusops.roles/saltcall
-corpusops.roles/vars"
+"
 
 CONFIG_ROLES="\
-corpusops.roles/localsettings_pkgmgr_vars
-corpusops.roles/localsettings_pkgmgr
-corpusops.roles/localsettings_basepkgs_vars
 corpusops.roles/localsettings_basepkgs
-corpusops.roles/localsettings_locales_vars
 corpusops.roles/localsettings_locales
-corpusops.roles/localsettings_profile_vars
 corpusops.roles/localsettings_profile
-corpusops.roles/localsettings_ssh_vars
 corpusops.roles/localsettings_ssh
-corpusops.roles/localsettings_sudo_vars
 corpusops.roles/localsettings_sudo"
 
 NOT_IN_DOCKER_ROLES=""
 
 SERVICES_ROLES="\
-corpusops.roles/services_base_cron_vars
-corpusops.roles/services_base_cron
-corpusops.roles/services_base_sshd_vars
 corpusops.roles/services_base_sshd"
 
 DEBIAN_ROLES="\
@@ -188,6 +172,29 @@ rewrite_dockerfile() {
         -e "s|__IMAGE_PREPROVISION__|$(may_prepend_docker_user_to_image \
                 ${image_preprovision})|g" \
         "${template}"
+}
+
+get_roles_to_test() {
+    local roles_to_test="${@}"
+    echo "${roles_to_test}" | xargs -n1 | awk '!seen[$0]++'
+}
+
+get_roles_to_test_for_image() {
+    local image="${1:-ubuntu}"
+    shift
+    echo "$(get_roles_to_test "$@")"
+}
+
+get_short_roles_to_test() {
+    local roles_to_test=""
+    if [[ -n "$2" ]];then
+        roles_to_test="${1:-}"
+        shift
+    fi
+    for i in $@;do
+        roles_to_test="$roles_to_test $W/roles/$i"
+    done
+    echo "$(get_roles_to_test "$roles_to_test")"
 }
 
 set_docker_folder
