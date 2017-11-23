@@ -7,9 +7,9 @@ sc=hacking/build_env
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
 
-slogger=log
+LOGGER_FUNC=${LOGGER_FUNC:-log}
 if [[ -n $TRAVIS ]];then
-    slogger=cronolog
+    LOGGER_FUNC=cronolog
 fi
 
 usage () {
@@ -98,7 +98,7 @@ for docker_folder in ${DOCKER_FOLDERS};do
         dockerfiles="${dockerfiles} \
             $(get_dockerfiles_from_folder "${docker_folder}")"
     fi
-    dockerfiles="$(echo "${dockerfiles}"|xargs -n1|uniq)"
+    dockerfiles="$(echo "${dockerfiles}"|xargs -n1|awk '!seen[$0]++')"
     debug "Using dockerfiles: ${dockerfiles}"
     while read dockerfile_line;do
         for dockerfile in ${dockerfile_line};do
@@ -130,7 +130,7 @@ for docker_folder in ${DOCKER_FOLDERS};do
             fi
             ancestor=$(get_ancestor_from_dockerfile "${dockerfile}")
             if [[ -n ${ancestor} ]] && echo $failed | xargs -n1 | egrep -q "^${ancestor}$";then
-                $slogger "$tag: Ancestor ${ancestor} failed building, skip"
+                $LOGGER_FUNC "$tag: Ancestor ${ancestor} failed building, skip"
                 build=
             fi
             if [[ -z ${build} ]]; then
@@ -138,16 +138,16 @@ for docker_folder in ${DOCKER_FOLDERS};do
                 continue
             fi
             tag=${utag}
-            $slogger "Building image: ${tag}"
+            $LOGGER_FUNC "Building image: ${tag}"
             # XXX We can make this parralel to speed up builds
             NO_OUTPUT=${NO_BUILD_OUTPUT-${TRAVIS-}} output_in_error \
                 build_image "${tag}" "${dockerfile}" "${docker_folder}"
             if [[ ${?} != 0 ]];then
                 ret=4
-                $slogger "build failure: ${YELLOW}${tag}"
+                $LOGGER_FUNC "build failure: ${YELLOW}${tag}"
                 failed="$(echo "${failed} ${tag}" | xargs)"
             else
-                $slogger "build success: ${YELLOW}${tag}"
+                $LOGGER_FUNC "build success: ${YELLOW}${tag}"
                 success="$(echo "${success} ${tag}" | xargs)"
             fi
         done
@@ -155,10 +155,10 @@ for docker_folder in ${DOCKER_FOLDERS};do
 done
 
 if [[ -n ${success} ]]; then
-    $slogger "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
+    $LOGGER_FUNC "${YELLOW}images built:${NORMAL}  ${CYAN}${success}"
 fi
 if [[ -n ${failed} ]]; then
-    $slogger "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
+    $LOGGER_FUNC "${YELLOW}images errors:${NORMAL} ${CYAN}${failed}"
 fi
 exit ${ret}
 # vim:set et sts=4 ts=4 tw=0:

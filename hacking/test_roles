@@ -89,6 +89,7 @@ test_role() {
     docker_test_tag=copstest_${tmpstr}
     pimg="$(may_prepend_docker_user_to_image \
         $(add_preprovision_slug $image))"
+    if [[ -z "$roles" ]];then warn "no roles to test";return $rret;fi
     if ! ( echo "${image}" | egrep -q "\/system"; ); then
         tmp_dockers="${tmp_dockers} ${docker_test_tag}"
         docker=$(get_command docker)
@@ -161,27 +162,11 @@ test_role() {
         chmod +x "$testscript" &&\
         ( \
             export ROLEPATHS="$roles";\
-            export COPS_ROOT="$COPS_ROOT";\
-            cd "${role}" && ${testscript}; )
+            export COPS_ROOT="$W";\
+            cd "${role}" && $(may_sudo) ${testscript}; )
         rret=${?}
     fi
     return ${rret}
-}
-
-get_roles_to_test() {
-    image="${1:-ubuntu}"
-    shift
-    roles_to_tests=${@:-${ROLES_TO_TEST-}}
-    if [[ -z ${roles_to_tests} ]];then
-        roles_to_tests="${BASE_ROLES} ${CONFIG_ROLES} ${SERVICES_ROLES}"
-        if echo $image | egrep -iq "debian|ubuntu"; then
-            roles_to_tests="${roles_to_tests} ${DEBIAN_ROLES}"
-        fi
-        if echo $image | egrep -iq "ubuntu"; then
-            roles_to_tests="${roles_to_tests} ${UBUNTU_ROLES}"
-        fi
-    fi
-    echo "${roles_to_tests}" | xargs -n1 | uniq
 }
 
 ret=0
@@ -191,7 +176,8 @@ fi
 while read image_line;do
     for image in ${image_line};do
         image=$(may_prepend_docker_user_to_image ${image})
-        roles_to_test=$(get_roles_to_test ${image} $@)
+        roles_to_test=$(get_roles_to_test_for_image \
+            ${image} $@)
         sroles_to_test=$(echo ${roles_to_test})
         test_slug="$image::'$sroles_to_test'"
         log "Test (start:$(get_chrono)): $test_slug"
