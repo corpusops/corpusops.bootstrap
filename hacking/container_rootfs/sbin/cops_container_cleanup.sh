@@ -206,6 +206,7 @@ atop
 autovt@
 console-getty
 console-setup
+console-shell
 container-getty@
 control-alt-delete
 cryptdisks-enable
