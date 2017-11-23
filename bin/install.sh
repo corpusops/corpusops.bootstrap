@@ -345,8 +345,6 @@ upgrade_ansible() {
     w="$(pwd)"
     upgrade_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
         cd "${VENV_PATH}/src/ansible" &&\
-        git stash &&\
-        git pull &&\
         ensure_ansible_is_usable
     ret=$?
     cd "$w"
