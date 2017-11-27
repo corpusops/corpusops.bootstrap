@@ -359,10 +359,6 @@ def cops_init(opts)
     # Number of machines to spawn
     cfg.setdefault('MACHINES', 1)
     cfg.setdefault('MACHINE_NUM_START', 1)
-    cfg.setdefault(
-        'MACHINES_RANGE',
-        (cfg['MACHINE_NUM_START'].to_i..
-         cfg['MACHINE_NUM_START'].to_i+cfg['MACHINES'].to_i-1).to_a)
     # Per Machine resources quotas
     cfg.setdefault('DOMAIN', 'vbox.local')
     cfg.setdefault('MEMORY', 3096)
@@ -402,6 +398,11 @@ def cops_init(opts)
     cfg = cfg.merge(localcfg)
     # per machine overrides
     machines_cfg = cfg.setdefault('MACHINES_CFG', {})
+
+    cfg.setdefault(
+        'MACHINES_RANGE',
+        (cfg['MACHINE_NUM_START'].to_i..
+         cfg['MACHINE_NUM_START'].to_i+cfg['MACHINES'].to_i-1).to_a)
 
     # OS/BOX SELECTION
     case cfg['OS']
