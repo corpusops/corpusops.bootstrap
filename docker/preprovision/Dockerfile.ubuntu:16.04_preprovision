@@ -15,11 +15,12 @@ COPY requirements/os_* \
      hacking/container_rootfs/sbin/cops_container_snapshot.sh \
      hacking/container_rootfs/sbin/cops_container_strip.sh \
      hacking/container_rootfs/sbin/cops_container_cleanup.sh \
+     hacking/container_rootfs/sbin/cops_container_disable_networkifacesscripts.sh \
      bin/cops_shell_common \
      bin/cops_pkgmgr_install.sh \
      bin/cops_reset_passwords.sh \
      /bootstrap/
-RUN bash -c 'step_rev=2;\
+RUN bash -c 'step_rev=3;\
     :;\
     silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
     cd /bootstrap;\
@@ -40,7 +41,9 @@ RUN bash -c 'step_rev=2;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;'
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;\
+    :;\
+    silent ./cops_container_disable_networkifacesscripts.sh'
 
 # 2/ isolate virtualenv contruction
 COPY requirements/os_* \
@@ -94,6 +97,7 @@ RUN bash -c 'step_rev=3;set -e;\
 RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     /sbin/cops_container_strip.sh\
+    silent /sbin/cops_container_disable_networkifacesscripts.sh;\
     silent /sbin/cops_container_cleanup.sh;\
     silent /sbin/cops_container_snapshot.sh;'
 
