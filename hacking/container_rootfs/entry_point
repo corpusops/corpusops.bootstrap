@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -ex
+C=$(pwd)
 W=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 R=$W/hacking/container_rootfs
 IMG_DEBUG=${IMG_DEBUG-}
@@ -17,6 +18,7 @@ DEFAULT_SYSTEMD_ARGS="--system --show-status=$SYSTEMD_SHOWSTATUS"
 DEFAULT_SYSTEMD_ARGS="$DEFAULT_SYSTEMD_ARGS --log-target=$SYSTEMD_LOGTARGET"
 DEFAULT_SYSTEMD_ARGS="$DEFAULT_SYSTEMD_ARGS --log-level=$SYSTEMD_LOGLEVEL"
 SYSTEMD_ARGS="${SYSTEM_ARGS:-$DEFAULT_SYSTEMD_ARGS}"
+/sbin/cops_container_disable_networkifacesscripts.sh
 if [[ -n ${CORPUSOPS_IN_DEV-} ]];then
     if [ -e "${R}" ];then
         rsync -av $R/ /

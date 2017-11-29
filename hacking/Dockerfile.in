@@ -14,6 +14,7 @@ RUN bash -c 'step_rev=2;set -e;\
 # pack any found git repo
 RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    silent /sbin/cops_container_disable_networkifacesscripts.sh;\
     silent /sbin/cops_container_strip.sh'
 
 # You have to mount:
