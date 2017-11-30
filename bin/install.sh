@@ -1,4 +1,4 @@
- #!/usr/bin/env bash
+#!/usr/bin/env bash
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
 
 LOGGER_NAME=cs
