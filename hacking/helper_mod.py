@@ -253,6 +253,34 @@ def parse_images_file(images_file):
     return images, errors
 
 
+class CharsetError(Exception):
+    '''.'''
+    val = None
+
+
+def try_charsets(val, charsets=None):
+    if charsets is None:
+        charsets = ['utf-8', 'utf-16',
+                    'iso-8859-15  ', 'iso-8859-1',
+                    'cp1252', 'cp1253', 'cp1254', 'cp1255', 'cp1256']
+    charsets = charsets[:]
+    try:
+        if not isinstance(val, unicode):
+            return val
+        else:
+            while True:
+                charset = charsets.pop(0)
+                try:
+                    return val.encode(charset)
+                except UnicodeEncodeError:
+                    pass
+    except IndexError:
+        pass
+    exc = CharsetError(u'Cannot make msg from output (charset problem)')
+    exc.val = val
+    raise(exc)
+
+
 def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
     img = copy.deepcopy(img)
     img.setdefault('extra_args', '')
@@ -278,11 +306,24 @@ def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
             status = True
         else:
             status = False
-        msg = ('retcode: {0}\n'
-               'OUT: {1}\n'
-               'ERR: {2}\n'.format(ret[0],
-                                   ret[1][0],
-                                   ret[1][1]))
+        parts = [('retcode:', "{0}".format(ret[0])),
+                 ('OUT:', ret[1][0]),
+                 ('ERR:', ret[1][1])]
+        msg = ''
+        for label, val in parts:
+            try:
+                msg += '{0} '.format(label)
+                msg += try_charsets(val)
+                msg += '\n'
+            except (CharsetError,) as exc:
+                print(
+                    u'ERROR {0}: Cannot make msg from output '
+                    '(charset problem)'.format(label))
+                try:
+                    print(exc.val)
+                except Exception:
+                    # dont interrupt a whole build just for a failed print
+                    pass
     return status, msg
 
 
