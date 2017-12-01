@@ -18,7 +18,6 @@
         #- "{{prefix}}/roles/corpusops.actionhelper"
         #- "{{prefix}}/roles/corpusops.lsb_release"
         #- "{{prefix}}/roles/corpusops.saltcall"
-        #- "{{prefix}}/roles/corpusops.humanlog"
         #- "{{prefix}}/roles/corpusops.debug"
     # checkout
     - include: './checkouts_tasks.yml'
