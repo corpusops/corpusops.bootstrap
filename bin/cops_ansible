@@ -96,6 +96,8 @@ done < <(find \
 export ANSIBLE_SSH_CONTROL_PATH=${ANSIBLE_SSH_CONTROL_PATH:-"~/.assh_%%h.%%p-%%r"}
 export ANSIBLE_HOST_KEY_CHECKING${ANSIBLE_HOST_KEY_CHECKING:-"False"}
 export ANSIBLE_NOCOWS=${ANSIBLE_NOCOWS-1}
+DEFAULT_ANSIBLE_SQUASH_ACTIONS="apk,apt,dnf,homebrew,package,pacman,pkgng,yum,zypper"
+export ANSIBLE_SQUASH_ACTIONS=${ANSIBLE_SQUASH_ACTIONS-$DEFAULT_ANSIBLE_SQUASH_ACTIONS}
 
 if [[ -n ${ENV_DEBUG-} ]]; then
     env
