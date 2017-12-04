@@ -26,7 +26,7 @@ if [[ -n ${CORPUSOPS_IN_DEV-} ]];then
 fi
 if [ -e /sbin/init ] && \
     ( /sbin/init --version 2>&1 | grep -iq upstart; ) ;then
-    exec /sbin/upstart
+    exec /sbin/init
 else
     if [[ -n $IMG_DEBUG ]];then
         exec strace -f /lib/systemd/systemd $SYSTEMD_ARGS
