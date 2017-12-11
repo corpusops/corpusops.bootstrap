@@ -160,6 +160,10 @@ def parse_docker_images(images, images_file='images.json'):
                 builder_type = img['builder_type']
             except KeyError:
                 builder_type = DEFAULT_BUILDER_TYPE
+
+            builder_type = {'docker': 'dockerfile'}.get(
+                builder_type, builder_type)
+            img['builder_type'] = builder_type
             try:
                 if builder_type:
                     assert builder_type in BUILDER_TYPES
@@ -193,7 +197,8 @@ def parse_docker_images(images, images_file='images.json'):
                 image_file = formatter.format(name, version)
             img['file'] = image_file
             if (
-                builder_type and image_file and not
+                builder_type in ['packer'] and
+                image_file and not
                 image_file.startswith(os.path.sep)
             ):
                 img['fimage_file'] = J(
@@ -201,11 +206,6 @@ def parse_docker_images(images, images_file='images.json'):
             if not image_file:
                 errors.append(('NO_IMAGE_FILE_ERROR', img))
             #
-            if not version:
-                version = '.'.join(img['file'].split('.')[:-1]).strip()
-            img['version'] = version
-            if not img['version']:
-                errors.append(('NO_VERSION', img))
             #
             if builder_type in ['dockerfile']:
                 tag = None
@@ -219,15 +219,36 @@ def parse_docker_images(images, images_file='images.json'):
                 else:
                     img_parts = img_info.groupdict()
                 img['img_parts'] = img_parts
+                new_name = img_parts.get('image', None)
+                new_tag = img_parts.get('tag', None)
+                if new_tag:
+                    img['version'] = version = new_tag
+                if new_name:
+                    img['name'] = name = new_name
+            if not version:
+                version = '.'.join(img['file'].split('.')[:-1]).strip()
+            img['version'] = version
+            if not img['version']:
+                errors.append(('NO_VERSION', img))
             try:
                 working_dir = img['working_dir']
             except KeyError:
                 working_dir = J(images_folder, '..')
             img['working_dir'] = A(working_dir)
+            if (
+                builder_type in ['dockerfile'] and
+                image_file and not
+                image_file.startswith(os.path.sep)
+            ):
+                img['fimage_file'] = J(
+                    img['working_dir'], image_file)
             if not os.path.isdir(img['working_dir']):
                 errors.append(
                     ('working dir {0} is not a dir'.format(img['working_dir']),
                      img))
+            extra_args = img.setdefault('extra_args', '')
+            if '{' in extra_args and '}' in extra_args:
+                img['extra_args'] = extra_args.format(**img)
             if not errors:
                 parsed_images.append(img)
             else:
@@ -283,7 +304,6 @@ def try_charsets(val, charsets=None):
 
 def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
     img = copy.deepcopy(img)
-    img.setdefault('extra_args', '')
     iargs = copy.deepcopy(img)
     iargs.update(img)
     iargs['builder_args'] = builder_args or ''
@@ -293,6 +313,7 @@ def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
     try:
         os.stat(img_file)
     except (OSError, IOError):
+        status = False
         msg = ('retcode: {0}\n'
                'OUT: {1}\n'
                'ERR: {2}\n'.format(
