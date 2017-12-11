@@ -70,6 +70,21 @@ def print_status(status, quiet=False):
                     _print(data, level=2)
 
 
+def image_index(img):
+    if img['builder_type'] == 'dockerfile':
+        k = '{0}__{1}'.format(img['builder_type'], img['tag'])
+    else:
+        k = '{0}__{1}'.format(img['builder_type'], img['file'])
+    return k
+
+
+def index_images(imagesdata):
+    ret = OrderedDict()
+    for img in imagesdata['images']:
+        ret[image_index(img)] = img
+    return ret
+
+
 def get_versions(versions_file):
     versions = None
     if not os.path.exists(versions_file):
@@ -225,8 +240,7 @@ def build_image(img, cwd=None, status=None, dry_run=False, builder_args=None):
         cwd = os.getcwd()
     builder_type = img['builder_type']
     working_dir = img.get('working_dir', None)
-    image_file = img['file']
-    k = "{0}__{1}".format(builder_type, image_file)
+    k = image_index(img)
     if not working_dir:
         working_dir = cwd
     try:
@@ -254,16 +268,6 @@ def build_image(img, cwd=None, status=None, dry_run=False, builder_args=None):
             os.chdir(cwd)
     return _status
 
-
-def index_images(imagesdata):
-    ret = OrderedDict()
-    for img in imagesdata['images']:
-        if img['builder_type'] == 'dockerfile':
-            k = '{0}__{1}'.format(img['builder_type'], img['tag'])
-        else:
-            k = '{0}__{1}'.format(img['builder_type'], img['file'])
-        ret[k] = img
-    return ret
 
 def build_images(images_files, skip_images=None,
                  images=None, dry_run=False, status=None,
