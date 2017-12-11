@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import six
 import os
 import sys
 import argparse
@@ -11,6 +12,7 @@ import json
 import logging
 import copy
 import traceback
+from collections import OrderedDict
 
 W = os.path.abspath(os.path.relpath(os.path.dirname((__file__))))
 N = os.path.basename(__file__)
@@ -253,6 +255,16 @@ def build_image(img, cwd=None, status=None, dry_run=False, builder_args=None):
     return _status
 
 
+def index_images(imagesdata):
+    ret = OrderedDict()
+    for img in imagesdata['images']:
+        if img['builder_type'] == 'dockerfile':
+            k = '{0}__{1}'.format(img['builder_type'], img['tag'])
+        else:
+            k = '{0}__{1}'.format(img['builder_type'], img['file'])
+        ret[k] = img
+    return ret
+
 def build_images(images_files, skip_images=None,
                  images=None, dry_run=False, status=None,
                  builder_args=None):
@@ -268,8 +280,7 @@ def build_images(images_files, skip_images=None,
         if errors:
             status['error']['parsing'] = errors
             break
-        for img in imagesdata['images']:
-            k = '{0}__{1}'.format(img['builder_type'], img['file'])
+        for k, img in six.iteritems(index_images(imagesdata)):
             skip = False
             if images and k not in images:
                 skip = True
@@ -296,8 +307,7 @@ def do_list(images_files, status=None):
         if errors:
             status['error']['parsing'] = errors
             break
-        for img in imagesdata['images']:
-            k = '{0}__{1}'.format(img['builder_type'], img['file'])
+        for k, img in six.iteritems(index_images(imagesdata)):
             status['message'][k] = '{0} --images={1}'.format(N, k)
     return status
 

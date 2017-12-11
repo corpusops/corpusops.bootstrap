@@ -102,6 +102,18 @@
     }
 
     ```
+- Eg for docker
+    ```
+    {
+      "images": [
+        {
+          "tag": "corpusops/docker-matrix:v0.25.1",
+          "builder_type": "docker",
+          "extra_args": "--build-arg BV_SYN={img_parts[tag]}" <- wiill be formatresolved
+        }
+      ]
+    }
+    ```
 - Tip: eiter define :
     - ``version+name`` (json filename is computed from version & tag)
     - ``file`` (tag name is computed from directory, and version from file string parts)

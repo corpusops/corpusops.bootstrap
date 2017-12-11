@@ -13,10 +13,10 @@ Release images to docker
  [FORCE_NO_RELEASE=] \
  [FORCE_RELEASE=] \
  [DOCKER_REGISTY=xxx] \
- [DOCKER_PASSWORD=xxx] \
  [DOCKER_RELEASER=xxx] \
- [DOCKER_USER=xxx] \
+ [DOCKER_PASSWORD=xxx] \
  [RELEASABLE_BRANCHES=xxx] \
+ [DOCKER_USER=xxx] \
  [NOCOLOR=y] \
  [DEBUG=y] \
     '"$0"' WORKING_DIR <image> <image1>
@@ -24,7 +24,6 @@ Release images to docker
 }
 
 parse_cli() {
-    [[ -z $DOCKER_USER ]] && die "no DOCKER_USER"
     [[ -z $DOCKER_RELEASER ]] && die "no DOCKER_RELEASER"
     [[ -z $DOCKER_PASSWORD ]] && die "no DOCKER_PASSWORD"
 
@@ -54,7 +53,11 @@ parse_cli() {
     for img in ${R_IMAGES};do
         fimg=${img}
         if echo ${fimg} | grep -vq /;then
-            fimg=${DOCKER_USER}/${img}
+            if [[ -z $DOCKER_USER ]];then
+                die "no DOCKER_USER for $fimg"
+            else
+                fimg=${DOCKER_USER}/${img}
+            fi
         fi
         tagid=$(get_image "${fimg}")
         if [ "x${tagid}" != "x" ]; then
