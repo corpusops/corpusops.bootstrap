@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import time
 import copy
 import sys
 import traceback
@@ -302,7 +303,31 @@ def try_charsets(val, charsets=None):
     raise(exc)
 
 
-def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
+PACKER_RETRY_CHECK = re.compile(
+    ("/tmp/script[^.]+.sh: not found.*"
+     "Build 'docker' errored: "
+     "Script exited with non-zero exit status: 127"),
+    flags=re.M | re.U | re.S)
+
+
+def _build(cmd,
+           img,
+           fmt=True,
+           builder_args=None,
+           build_retries=None,
+           build_retry_check=None,
+           build_retry_delay=None,
+           *a, **kw):
+    if build_retry_delay is None:
+        build_retry_delay = 1
+    if build_retry_check is None:
+        if img['builder_type'] == 'packer':
+            build_retry_check = PACKER_RETRY_CHECK
+    if build_retries is None:
+        if img['builder_type'] == 'packer':
+            build_retries = 10
+        else:
+            build_retries = 1
     img = copy.deepcopy(img)
     iargs = copy.deepcopy(img)
     iargs.update(img)
@@ -322,33 +347,50 @@ def _build(cmd, img, fmt=True, builder_args=None, *a, **kw):
                    'IMAGEFILE_DOES_NOT_EXIST: {0}'.format(
                        img_file)))
     else:
-        ret = shellexec(cmd)
-        if ret[0] == 0:
-            status = True
-        else:
-            status = False
-        parts = [('retcode:', "{0}".format(ret[0])),
-                 ('OUT:', ret[1][0]),
-                 ('ERR:', ret[1][1])]
-        msg = ''
-        for label, val in parts:
-            try:
-                msg += '{0} '.format(label)
-                msg += try_charsets(val)
-                msg += '\n'
-            except (CharsetError,) as exc:
-                print(
-                    u'ERROR {0}: Cannot make msg from output '
-                    '(charset problem)'.format(label))
+        for i in range(build_retries):
+            if i > 0:
+                log(msg)
+                log('Retry: {0}'.format(i))
+            ret = shellexec(cmd)
+            if ret[0] == 0:
+                status = True
+            else:
+                status = False
+            parts = [('retcode:', "{0}".format(ret[0])),
+                     ('OUT:', ret[1][0]),
+                     ('ERR:', ret[1][1])]
+            msg = ''
+            for label, val in parts:
                 try:
-                    print(exc.val)
-                except Exception:
-                    # dont interrupt a whole build just for a failed print
-                    pass
+                    msg += '{0} '.format(label)
+                    msg += try_charsets(val)
+                    msg += '\n'
+                except (CharsetError,) as exc:
+                    print(
+                        u'ERROR {0}: Cannot make msg from output '
+                        '(charset problem)'.format(label))
+                    try:
+                        print(exc.val)
+                    except Exception:
+                        # dont interrupt a whole build just for a failed print
+                        pass
+            if status:
+                break
+            else:
+                if build_retry_check:
+                    out_match = build_retry_check.search(ret[1][0])
+                    err_match = build_retry_check.search(ret[1][1])
+                    if (out_match or err_match):
+                        time.sleep(build_retry_delay)
+                    else:
+                        break
+                else:
+                    break
     return status, msg
 
 
 def packer_build(img, *a, **kw):
+    kw.setdefault('build_retries', 10)
     cmd = ('cd \'{working_dir}\' &&'
            ' packer build {builder_args} {extra_args} {fimage_file}')
     return _build(cmd, img, *a, **kw)
