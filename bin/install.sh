@@ -31,14 +31,6 @@ ensure_last_virtualenv() {
     fi
 }
 
-ensure_last_python_requirement() {
-    local i=
-    for i in $@;do
-         log "Installing last version of $i"
-         pip install -U $copt "${PIP_CACHE}" $i
-     done
-}
-
 test_online() {
     ping -W 10 -c 1 8.8.8.8 1>/dev/null 2>/dev/null
     if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ]; then
