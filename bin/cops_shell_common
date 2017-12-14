@@ -592,6 +592,8 @@ make_virtualenv() {
 
 ensure_last_python_requirement() {
     local i=
+    local copt=
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
     if pip --help | grep -q download-cache; then
         copt="--download-cache"
     else
