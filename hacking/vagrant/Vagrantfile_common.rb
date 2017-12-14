@@ -377,6 +377,8 @@ def cops_init(opts)
         "default" => [
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/net.yml" => {
                 :raw_arguments => ["--flush-cache"]}},
+            {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/pkgmgr.yml" => {
+                :raw_arguments => ["--flush-cache"]}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/locales.yml" => {
                 :raw_arguments => ["--flush-cache"]}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/timezone.yml" => {
