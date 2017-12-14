@@ -590,6 +590,19 @@ make_virtualenv() {
     fi
 }
 
+ensure_last_python_requirement() {
+    local i=
+    if pip --help | grep -q download-cache; then
+        copt="--download-cache"
+    else
+        copt="--cache-dir"
+    fi
+    for i in $@;do
+        log "Installing last version of $i"
+        pip install -U $copt "${PIP_CACHE}" $i
+    done
+}
+
 may_sudo() {
     if [ "$(whoami)" != "root" ];then
         echo "sudo $([[ -z $DIRECT_SUDO ]] &&  echo "-HE")"
