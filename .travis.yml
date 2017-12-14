@@ -12,6 +12,7 @@ python: "2.7"
 before_install:
   - sudo apt-get update -qq
 install:
+  - deactivate
   - |
     echo "TRAVIS_ENV_VARS:" >&2
     env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
