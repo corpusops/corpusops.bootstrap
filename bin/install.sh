@@ -31,6 +31,13 @@ ensure_last_virtualenv() {
     fi
 }
 
+ensure_has_six() {
+    if ! ( python -m six >/dev/null 2>&1; );then
+        log "Installing last version of six"
+        pip install -U $copt "${PIP_CACHE}" six
+    fi
+}
+
 test_online() {
     ping -W 10 -c 1 8.8.8.8 1>/dev/null 2>/dev/null
     if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ]; then
@@ -196,6 +203,7 @@ check_py_modules() {
     # test if salt binaries are there & working
     bin="${VENV_PATH}/bin/python"
     "${bin}" << EOF
+import six
 import corpusops
 import ansible
 import dns
@@ -504,6 +512,7 @@ setup_virtualenv_() {
         else
             copt="--cache-dir"
         fi
+        ensure_has_six
         pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
         pip install -U $copt "${PIP_CACHE}" --no-deps -e .
