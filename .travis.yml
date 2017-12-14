@@ -32,6 +32,7 @@ install:
   - sudo service docker stop
   - sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
 script:
+  - deactivate
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
         CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
