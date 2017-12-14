@@ -513,7 +513,7 @@ setup_virtualenv_() {
         else
             copt="--cache-dir"
         fi
-        ensure_last_python_requirement pip six
+        ensure_last_python_requirement pip setuptools six
         pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
         pip install -U $copt "${PIP_CACHE}" --no-deps -e .
