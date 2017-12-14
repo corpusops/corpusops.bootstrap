@@ -31,11 +31,12 @@ ensure_last_virtualenv() {
     fi
 }
 
-ensure_has_six() {
-    if ! ( python -m six >/dev/null 2>&1; );then
-        log "Installing last version of six"
-        pip install -U $copt "${PIP_CACHE}" six
-    fi
+ensure_last_python_requirement() {
+    local i=
+    for i in $@;do
+         log "Installing last version of $i"
+         pip install -U $copt "${PIP_CACHE}" $i
+     done
 }
 
 test_online() {
@@ -512,7 +513,7 @@ setup_virtualenv_() {
         else
             copt="--cache-dir"
         fi
-        ensure_has_six
+        ensure_last_python_requirement pip six
         pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
         pip install -U $copt "${PIP_CACHE}" --no-deps -e .
