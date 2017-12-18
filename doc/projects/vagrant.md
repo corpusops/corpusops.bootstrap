@@ -2,8 +2,8 @@
 - Common setup is in [hacking/vagrant](https://github.com/corpusops/corpusops.bootstrap/tree/master/hacking/vagrant)
 
 ## Install Vagrant for corpusops
-- We provide disposable dev environments provisined
-  via the corpusops project [corpusops](https://github.com/corpusops/corpusops.bootstrap.git)
+- We provide disposable dev environments provisioned
+  via the corpusops framework [corpusops](https://github.com/corpusops/corpusops.bootstrap.git)
 - First thing you need is to clone recursivly your project
   code inside a dedicated folder which will host the vm.
 
@@ -15,7 +15,7 @@
     1. If you already have ``corpusops.bootstrap``, or if you want to get one
        that you 'll share in the future with other projects,
        clone it somewhere and syhmlink it in this subfolder: ``./local/corpusops.bootstrap``.
-        1. Installez-le (si vous n'en avez pas encore)
+        1. Install (do this step only once per project)
 
             ```sh
             export cops=$HOME/common_corpusops/
@@ -70,7 +70,7 @@ Now you have TWO options:
     - Make a new VM with a slightly longer build/provisioning time
     - OR use a prebacked VM for your project only and only if it exists
 
-### Avec la VM préconstruite
+### With the prebacked VM
 
 If someone does have already build a VM for this project,
 you should start from there and it will save you precious minutes.
@@ -104,13 +104,13 @@ to extract the IP of the VM, copy/paste the IP in you /etc/hosts, par exemple:
 echo "192.168.XX.X corpusopsXX-X.vbox.local <project>.vbox.local" | sudo tee -a /etc/hosts
 ```
 
-Then  [access vm website http://<project>.vbox.local/](http://<project>.vbox.local/)
+Then  [access vm website](http://<project>.vbox.local/)
 
 To go in the vm (SSH), eg for drupal to use console ou drush, it's `vm_manage ssh`.
 
 To edit code, there is a sshfs share, documented below.
 
-Look at the **FAQ** chapter or go up to the **FromScratch** Section.
+Look at the **FAQ** chapter or go up to the **From scratch** Section.
 
 
 ### From scratch
