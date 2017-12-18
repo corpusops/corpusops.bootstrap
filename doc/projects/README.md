@@ -11,5 +11,5 @@
     - [dbsmartbackup](https://github.com/corpusops/setups.elasticsearch)
     - [more generally](https://github.com/corpusops?utf8=✓&q=setups.)
 - topics
-    - [Deploying on environments]((./deploy/from_localhost.md)
-    - [Deploying on vagrant]((./deploy/vagrant.md)
+    - [Deploying on environments](./deploy.md)
+    - [Deploying on vagrant](./vagrant.md)
