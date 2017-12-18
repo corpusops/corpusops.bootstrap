@@ -26,7 +26,7 @@ do_unset() {
     unset SECRET_VAULT_PREFIX
     unset SECRET_VAULTS
 }
-vaultpwfiles() {
+set_vaultpwfiles() {
     vaultpwfiles=''
     debug "SECRET_VAULTS: $SECRET_VAULTS"
     for SECRET_VAULT in $SECRET_VAULTS;do
