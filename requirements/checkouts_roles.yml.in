@@ -6,19 +6,20 @@
       - repo: '__CORPUSOPS_ORGA_URL__/roles.git'
         dest: '{{prefix}}/roles/corpusops.roles'
   tasks:
-    # cleanup old roles
-    - file:
-        dest: "{{item}}"
-        state: absent
-      with_items:
-        - "{{prefix}}/roles/corpusops.filter_plugins"
-        #- "{{prefix}}/roles/corpusops.ansible_plugins"
-        #- "{{prefix}}/roles/corpusops.include_jinja_vars"
-        #- "{{prefix}}/roles/corpusops.service"
-        #- "{{prefix}}/roles/corpusops.actionhelper"
-        #- "{{prefix}}/roles/corpusops.lsb_release"
-        #- "{{prefix}}/roles/corpusops.saltcall"
-        #- "{{prefix}}/roles/corpusops.debug"
+    # cleanup old roles (we should not have now envs with them,
+    # disabling
+    # - file:
+    #    dest: "{{item}}"
+    #    state: absent
+    #  with_items:
+    #    - "{{prefix}}/roles/corpusops.filter_plugins"
+    #    #- "{{prefix}}/roles/corpusops.ansible_plugins"
+    #    #- "{{prefix}}/roles/corpusops.include_jinja_vars"
+    #    #- "{{prefix}}/roles/corpusops.service"
+    #    #- "{{prefix}}/roles/corpusops.actionhelper"
+    #    #- "{{prefix}}/roles/corpusops.lsb_release"
+    #    #- "{{prefix}}/roles/corpusops.saltcall"
+    #    #- "{{prefix}}/roles/corpusops.debug"
     # checkout
     - include: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
