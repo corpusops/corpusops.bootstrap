@@ -42,7 +42,7 @@ if [[ -z "${NO_SILENT-}" ]];then
       $PLAYBOOK \
       ${PLAYBOOK_POST_ARGS-} \
       ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-      ${@-}
+      "${@-}"
 else
   log
   $AP $vaultpwfiles $A_INVENTORY \
@@ -50,5 +50,5 @@ else
       ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
       $PLAYBOOK \
       ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-      ${@-}
+      "${@-}"
 fi
