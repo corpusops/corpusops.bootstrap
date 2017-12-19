@@ -8,23 +8,33 @@
 $EDITOR .ansible/scripts/ansible_deploy_env.local
 ```
 
-- launch env script
+- Export variables
 ```sh
-# Export variables
+# project repo
+export A_GIT_URL=https://gitlab.foo.net/foo/bar
+export A_GIT_PROJECT=$(basename $A_GIT_URL)
+export A_GIT_NAMESPACE=$(basename $(dirname($A_GIT_URL))
+# local working directory
+export COPS_CWD=$HOME/$A_GIT_NAMESPACE/$A_GIT_PROJECT
+# deploy enviroment
 export A_ENV_NAME="staging"
 # local working directory
 export COPS_CWD=$HOME/projects/myproject
-export A_GIT_URL=https://gitlab/your/project
-# Setup root dir
-if [ ! -e "$COPS_CWD" ];then  mkdir "$COPS_CWD";fi
+# corpusops real place, you can change this to a more sensible place
+export COPS_ROOT=$HOME/corpusops.bootstrap
+# After first install (next step)
+if [ ! -e "$COPS_CWD" ];then mkdir "$COPS_CWD";fi
+# non interactive mode
+export NONINTERACTIVE=1
 ```
 
 ## Prepare localhost for deployment
 ##  Clone project
 - Attention folder must be empty for cloning directly inside it.
 ```sh
-cd $COPS_CWD
-git clone --recursive $A_GIT_URL $COPS_CWD
+git clone --recursive "$A_GIT_URL" "$COPS_CWD"
+# if branch is not master
+# git checkout -b $A_ENV_NAME
 ```
 
 # Install & keep corpusops.bootstrap up to date
@@ -35,22 +45,20 @@ git clone --recursive $A_GIT_URL $COPS_CWD
 # With a working install of corpusops inside corig_root
 # ln -s $corig_root local/corpusops.bootstrap
 cd $COPS_CWD
+mkdir $COPS_ROOT local
+ln -s $COPS_ROOT local/corpusops.bootstrap
 .ansible/scripts/download_corpusops.sh
 .ansible/scripts/setup_corpusops.sh
+. .ansible/scripts/ansible_deploy_env
 ```
 
 # Setup environment ssh key, vault, & inventory
-## non interactive mode
-```sh
-export NONINTERACTIVE=1
-```
-
-
 ## create env ssh key
 - To generate a ssh keypair:
 ```sh
 cd $COPS_CWD/local
 ssh-keygen -t rsa -b 2048 -N '' -f <env_name>
+ls <env_name>*
 ```
 
 ## Create or update env vault
@@ -78,26 +86,31 @@ $EDITOR .ansible/vaults/${A_ENV_NAME}.clear.yml
 ## Run a deployment for a host
 
 ### Setup ansible
-#### Generate core vars
-```sh
-.ansible/scripts/setup_core_variables.sh
-```
-#### Generate boilerplate all at once
 - Alternativly you can launch this one command to
-    - Generate core vars
-    - Setup vault password files
-    - Refresh corpusops
-    - think that you can also setup the ``CORPUSOPS_VAULT_PASSWORD_<env>`` var in your CI secret variables in a CI/CD env.
+    - Generate core vars: ``..ansible/scripts/setup_core_variables.sh``
+    - Setup vault password files: ``.ansible/scripts/setup_vaults.sh``
+      - think that you can also setup the
+        ``CORPUSOPS_VAULT_PASSWORD_<env>`` var
+        in your CI secret variables in a CI/CD env.
+    - Refresh corpusops: ``.ansible/scripts/setup_corpusops.sh``
 ```sh
 export A_ENV_NAME=staging
-eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
+# Replace here SUPER_SECRET_PASSWORD by the vault password
+# Note the leading " " not to have the password in bash history
+ eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
 .ansible/scripts/setup_ansible.sh"
-```
 
-## Generate SSH deploy key locally
-```sh
-export A_ENV_NAME=staging
+# Generate SSH deploy key locally
 .ansible/scripts/call_ansible.sh .ansible/playbooks/deploy_key_setup.yml
+
+# Install python (the sole and only ansible requirementà on remote boxes
+.ansible/scripts/call_ansible.sh local/corpusops.bootstrap/playbooks/corpusops/base.yml -vv
+
+# OPT: git, vim
+.ansible/scripts/call_ansible.sh --become \
+    local/corpusops.bootstrap/roles/corpusops.roles/localsettings_git/role.yml \
+    local/corpusops.bootstrap/roles/corpusops.roles/localsettings_vim/role.yml \
+    local/corpusops.bootstrap/roles/corpusops.roles/localsettings_editor/role.yml
 ```
 
 ## Launch the deployment
@@ -110,3 +123,8 @@ export A_ENV_NAME=staging
 .ansible/scripts/call_ansible.sh .ansible/playbooks/haproxy.yml
 .ansible/scripts/call_ansible.sh .ansible/playbooks/db_backup.yml
 ```
+
+
+
+
+
