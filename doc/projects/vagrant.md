@@ -256,8 +256,8 @@ local/mountpoint/corpusopsXX-X/srv/projects/<project>/project
 - Password
 ```sh
 ./vm_manage ssh \
-'for i in /etc/*secrets/cops_zope_admin_password;\
-do printf "$(basename $i): "$(cat $i)\\n;done'|awk '!a[$0]++'|sort -nk2
+'for i in /etc/*secrets/*zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'\
+|awk '!a[$0]++'|sort -nk2
 ```
 
 ## Update your provision code
