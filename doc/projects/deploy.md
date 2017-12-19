@@ -61,10 +61,11 @@ ssh-keygen -t rsa -b 2048 -N '' -f <env_name>
 ls <env_name>*
 ```
 
-## Create or update env vault
+## Create or update env vault & inventory
 The env vault contains the ssh key to deploy on environments, replace the ssh settings (pub & private by the content of the key files generated previously)
 
 Inspire from:
+- ``.ansible/inventory_staging``
 - ``.ansible/vaults/staging.yml``
 - ``.ansible/vaults/staging.clear.yml``
 - Create/edit vault
