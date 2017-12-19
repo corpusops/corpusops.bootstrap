@@ -65,8 +65,8 @@ ls <env_name>*
 The env vault contains the ssh key to deploy on environments, replace the ssh settings (pub & private by the content of the key files generated previously)
 
 Inspire from:
-- [.ansible/vaults/staging.yml](../.ansible/vaults/staging.yml)
-- [.ansible/vaults/staging.clear.yml](../.ansible/vaults/staging.clear.yml)
+- ``.ansible/vaults/staging.yml``
+- ``.ansible/vaults/staging.clear.yml``
 - Create/edit vault
 ```sh
 cd $COPS_CWD
