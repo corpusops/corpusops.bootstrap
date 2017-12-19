@@ -350,4 +350,4 @@ done
     ```
 - See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
 - See "**cops_supereditors**, this indicate that from outside the VM, with your
-  favourite editor, you should be able to edite files from **supereditor_paths** (the code is in those paths by default)
+  favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
