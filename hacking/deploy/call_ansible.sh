@@ -34,21 +34,40 @@ else
     fi
 fi
 debug "vaultpwfiles: $vaultpwfiles"
+debug "launching: $launchlog"
 if [[ -z "${NO_SILENT-}" ]];then
-  $LOCAL_COPS_ROOT/bin/silent_run \
-      $AP $vaultpwfiles $A_INVENTORY \
-      ${A_CUSTOM_ARGS-} \
-      ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-      $PLAYBOOK \
-      ${PLAYBOOK_POST_ARGS-} \
-      ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-      "${@-}"
+    if [[ -n "${@}" ]];then
+        LOCAL_COPS_ROOT/bin/silent_run \
+            $AP $vaultpwfiles $A_INVENTORY \
+            ${A_CUSTOM_ARGS-} \
+            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
+            $PLAYBOOK \
+            ${PLAYBOOK_POST_ARGS-} \
+            ${PLAYBOOK_POST_CUSTOM_ARGS-} \
+            "${@}"
+    else
+        $LOCAL_COPS_ROOT/bin/silent_run \
+            $AP $vaultpwfiles $A_INVENTORY \
+            ${A_CUSTOM_ARGS-} \
+            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
+            $PLAYBOOK \
+            ${PLAYBOOK_POST_ARGS-} \
+            ${PLAYBOOK_POST_CUSTOM_ARGS-}
+    fi
 else
-  log
-  $AP $vaultpwfiles $A_INVENTORY \
-      ${A_CUSTOM_ARGS-} \
-      ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-      $PLAYBOOK \
-      ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-      "${@-}"
+    if [[ -n "${@}" ]];then
+        $AP $vaultpwfiles $A_INVENTORY \
+            ${A_CUSTOM_ARGS-} \
+            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
+            $PLAYBOOK \
+            ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
+            "${@}"
+    else
+        $AP $vaultpwfiles $A_INVENTORY \
+            ${A_CUSTOM_ARGS-} \
+            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
+            $PLAYBOOK \
+            ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
+            "${@}"
+    fi
 fi
