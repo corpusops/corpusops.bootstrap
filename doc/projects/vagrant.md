@@ -335,7 +335,7 @@ done
 
 ## Launch ansible commands, & deploy step by step; only_steps
 - Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
-- You should then use a combination of a playbook,n  ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
+- You should then use a combination of a playbook, ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
 - Eg, to redo php-fpm, sync local code from localdir to inside the vm and
   reinstall the app (do a manual drush sql-drop befopre):
 
