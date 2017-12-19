@@ -141,66 +141,8 @@ We edit the vm conf file
 - In case of failure, check first that vagrant & virtualbox are up to date
 - You can clone/adapt this repo to deal with details of your local cluster.
 
-# Access the VM websites
-- Add a line in your `/etc/hosts`, which depends of the VM IP Address:
-
-    ```sh
-    # ./vm_manage ssh ip addr |grep 192.168|awk '{print $2}'|sed -re "s|/.*||g"
-    192.168.xx.x
-    ```
-
-- $EDITOR /etc/hosts
-
-    ```raw
-    192.168.xx.x corpusopsXX-X.vbox.local www.<project>.vbox.local <project>.vbox.local
-    ```
-
-Si vous cherchez les noms supportés par cette VM n'hésitez pas à regarder le `/etc/hosts` de la VM elle-même, elle contient ces noms,
-juste que vous là c'est pas `127.0.0.1` que vous voulez taper mais bien l'IP de la VM depuis votre host.
-
-## DRUPAL: Go inside the site
-- Time is up for going inside the vm and issue the following drush command
-
-    ```sh
-    vm_manage ssh
-    root@corpusopsXX-X: cd /srv/projects/*/project
-    root@corpusopsXX-X: sbin/drush uli
-    http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
-    ```
 
 You should have then a one-time-login available.
-
-# Edit the code in the right PLACE, in or out the VM
-- Rules are simples
-    - Code tied to deployment is **mostly out** of the VM (ansible, vagrant files)
-    - Code of the APP is **inside the VM** and synchronnised the first time (for non prebacked VM only)
-- To facilitate the access of the files inside the VM, (to use your favorite EDITOR, we integrated a **sshfs** share.
-  This one allow you to mount a VM folder inside your box local filesystem (`local/mountpoint/<nom vm>`) :
-
-- Once the vm started (up), you should view it's filesystem under this folder
-
-    ```sh
-    ls -d local/mountpoint/corpusops*-*/
-    ls -alh local/mountpoint/corpusops*-*/
-    ```
-
-- You can restart the sshfs mount with:
-
-    ```sh
-    ./vm_manage mount
-    (...)
-    [cops_vagrant] sshfs -F .vagrant/cops-sshconfig-corpusopsXX-X vagrant:/ local/mountpoint/corpusopsXX-X
-    ```
-- Wire your IDE/EDITOR here, eg to reach ``/srv/projects/*/project/``,
-  you should wire your editor here ``local/mountpoint/corpusopsXX-X/srv/projects/*/project/``.
-- When we issue `vm_manage down` that filesystem is unlinked,
-  **it is recommanded to close the editor prior stopping vm**
-- **Attention**: on your filesystem, you also have a copy of the project which is still present after VM shutdown.
-  You can and should often do a `git pull`,
-  or `git submodule update --recursive` from there,
-  as the deployment script use that one clone.
-  To be clear: inside the vm there is another clone, a copy of the code,
-  which is distinct from the one you clone outside of the VM even if it looks like the same.
 
 # FAQ
 
@@ -236,31 +178,38 @@ vm_manage mount
 vm_manage ssh
 ```
 
-## Where do i link my EDITOR (IDE)
-- Inside the **sshfs share**, **ATTENTION**,
-  not on the code directly inside **$COPS_CWD** on your localhost.
-- localhost code only use is for deploying inside the VM,
+## Where do i link my EDITOR (IDE) & where to edit the code, in or out the VM ?
+- Rules are simples
+    - Code tied to deployment is **mostly out** of the VM (ansible, vagrant files)
+    - Code of the APP is **inside the VM** or via the **SSHFS** share and
+      synchronnised **the first time only** unless forced (for non prebacked VM only)
+- To facilitate the access of the files inside the VM, (to use your favorite EDITOR,
+  we integrated a **sshfs** share.
+  This one allow you to mount a VM folder inside your box local filesystem (`local/mountpoint/<vm>`) :
+- In other words, localhost code only use is for deploying inside the VM,
   to edit app code, edit directly inside the vm VIA THE **SSHFS** share.
 
-```sh
-local/mountpoint/corpusopsXX-X/srv/projects/<project>/project
-```
+    ```sh
+    ls -d local/mountpoint/corpusops*-*/
+    ls -alh local/mountpoint/corpusops*-*/
+    ```
 
-## Browsing the app installed inside the VM
-- cf *Access the VM websites* (upper)(for`/etc/hosts`).
-- Website awaits requests on  http://<project>.vbox.local/](http://<project>.vbox.local/)
+- Once the vm started (up), you should view it's filesystem under this folder,
+  you should certainly wire your IDE/EDITOR here
 
+    ```sh
+    local/mountpoint/corpusopsXX-X/srv/projects/<project>/project
+    ```
 
-## ZOPE: get the web admin password
-- Login is generally: admin
-- Password
-```sh
-./vm_manage ssh \
-'for i in /etc/*secrets/*zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'\
-|awk '!a[$0]++'|sort -nk2
-```
+- You can restart the sshfs mount with:
 
-## Update your provision code
+    ```sh
+    ./vm_manage mount
+    (...)
+    [cops_vagrant] sshfs -F .vagrant/cops-sshconfig-corpusopsXX-X vagrant:/ local/mountpoint/corpusopsXX-X
+    ```
+
+## Update your provision (deploy) code
 
 ```sh
 cd $COPS_CWD
@@ -274,7 +223,7 @@ git submodule update --recursive
 
 After you just have to launch VM without `--no-provision`, and take a very BIG coffee/tea.
 
-### Update your app code (manips git)
+## Update your app code (manips git)
 ```sh
 cd $COPS_CWD
 ./vm_manage mount
@@ -283,6 +232,37 @@ git pull --rebase
 ```
 
 - Then, if DRUPAL, look the step *Update your website dabase*.
+
+
+## Symlink your project code folders
+Not bad:
+
+```sh
+cd $COPS_CWD
+for i in $(ls -d local/mountpoint/corpusops*-*);do
+for j in $(ls -d $i/srv/projects/*);do
+ln -s $j project-$i-$(basename $j)
+done
+done
+```
+
+## Access the VM websites
+- Add a line in your `/etc/hosts`, which depends of the VM IP Address:
+
+    ```sh
+    # ./vm_manage ssh ip addr |grep 192.168|awk '{print $2}'|sed -re "s|/.*||g"
+    192.168.xx.x
+    ```
+
+- $EDITOR /etc/hosts
+
+    ```raw
+    192.168.xx.x corpusopsXX-X.vbox.local www.<project>.vbox.local <project>.vbox.local
+    ```
+
+If you have searching for the name supported by this VM, never hesitate to look its `/etc/hosts`.
+It should most of the times contain the names, remember that it's then not `127.0.0.1` but the VM IP (``192.168.xx.xx``).
+
 
 ### DRUPAL: Update your website dabase
 After code update, you should also do this step
@@ -309,17 +289,24 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
  [success] Cache rebuild complete.
 ```
 
-## Symlink your project code folders
-Not bad:
+## DRUPAL: Go inside the site
+- Time is up for going inside the vm and issue the following drush command
 
+    ```sh
+    vm_manage ssh
+    root@corpusopsXX-X: cd /srv/projects/*/project
+    root@corpusopsXX-X: sbin/drush uli
+    http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
+    ``` 
+
+## ZOPE: get the web admin password
+- Login is generally: admin
+- Password
 ```sh
-cd $COPS_CWD
-for i in $(ls -d local/mountpoint/corpusops*-*);do
-for j in $(ls -d $i/srv/projects/*);do
-ln -s $j project-$i-$(basename $j)
-done
-done
-```
+./vm_manage ssh \
+'for i in /etc/*secrets/*zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'\
+|awk '!a[$0]++'|sort -nk2
+```    
 
 ## Launch ansible commands, & deploy step by step
 - When we do `vm_manage up`, we can see long ``ansible`` command lines, you can copy/paste them and adapt to replay deploy parts, it will work.
