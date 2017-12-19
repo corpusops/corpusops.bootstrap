@@ -320,9 +320,13 @@ done
 ```
 
 ## Launch ansible commands, & deploy step by step
-- Quand on fait le vagrant up (`vm_manage up`) on peut voir de longues lignes de commande ansible. Il suffit de les recopier/adapter pour les lancer depuis le dossier projet de la vm.
+- When we do `vm_manage up`, we can see long ``ansible`` command lines, you can copy/paste them and adapt to replay deploy parts, it will work.
+- You should in any case execute ansible from the top folder
+ of the project from outside the VM (directly from localhost)
 - vagrant should run once for the inventory file to be
   available
+- Instead of copy pasting what's vagrant generate, you can
+  also use our ansible wrappers, which are simpler:
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
@@ -332,6 +336,9 @@ done
      -e cops_supereditors="$(id -u)" \
      local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
+- See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
+- See "**cops_supereditors**, this indicate that from outside the VM, with your
+  favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
 
 ## Launch ansible commands, & deploy step by step; only_steps
 - Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
@@ -349,6 +356,4 @@ done
      --skip-tags play_db \
      -e "only_steps=True cops_drupal_s_fpm=true"
     ```
-- See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
-- See "**cops_supereditors**, this indicate that from outside the VM, with your
-  favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
+
