@@ -66,7 +66,7 @@
     $EDITOR vagrant_config.yml
     ```
 
-Now you have TWO options:
+- Now you have TWO options:
     - Make a new VM with a slightly longer build/provisioning time
     - OR use a prebacked VM for your project only and only if it exists
 
