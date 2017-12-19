@@ -71,7 +71,7 @@ Inspire from:
 - Create/edit vault
 ```sh
 cd $COPS_CWD
-eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
+:; eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
     .ansible/scripts/setup_vaults.sh"
 # crypted vars (password, keys)
 .ansible/scripts/edit_vault.sh
@@ -98,7 +98,7 @@ $EDITOR .ansible/vaults/${A_ENV_NAME}.clear.yml
 export A_ENV_NAME=staging
 # Replace here SUPER_SECRET_PASSWORD by the vault password
 # Note the leading " " not to have the password in bash history
- eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
+:; eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
 .ansible/scripts/setup_ansible.sh"
 
 # Generate SSH deploy key locally
