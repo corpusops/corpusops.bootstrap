@@ -37,7 +37,7 @@ debug "vaultpwfiles: $vaultpwfiles"
 debug "launching: $launchlog"
 if [[ -z "${NO_SILENT-}" ]];then
     if [[ -n "${@}" ]];then
-        LOCAL_COPS_ROOT/bin/silent_run \
+        $LOCAL_COPS_ROOT/bin/silent_run \
             $AP $vaultpwfiles $A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
