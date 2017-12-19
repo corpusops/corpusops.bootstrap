@@ -308,7 +308,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 |awk '!a[$0]++'|sort -nk2
 ```    
 
-## Launch ansible commands, & deploy step by step
+## Launch ansible commands by hand
 - When we do `vm_manage up`, we can see long ``ansible`` command lines, you can copy/paste them and adapt to replay deploy parts, it will work.
 - You should in any case execute ansible from the top folder
  of the project from outside the VM (directly from localhost)
@@ -329,9 +329,10 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 - See "**cops_supereditors**, this indicate that from outside the VM, with your
   favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
 
-## Launch ansible commands, & deploy step by step; only_steps
+## Launch ansible commands, & deploy step by step: ``only_steps``
 - Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
-- You should then use a combination of a playbook, ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
+- You should then use a combination of a playbook, ``only_steps=true`` for your to select which
+  deployment steps to execute and not to relaunch the whole thing.
 - Eg, to redo php-fpm, sync local code from localdir to inside the vm and
   reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
 
