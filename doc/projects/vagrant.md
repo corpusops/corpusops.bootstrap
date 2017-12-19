@@ -104,7 +104,7 @@ to extract the IP of the VM, copy/paste the IP in you /etc/hosts, par exemple:
 echo "192.168.XX.X corpusopsXX-X.vbox.local <project>.vbox.local" | sudo tee -a /etc/hosts
 ```
 
-Then  [access vm website](http://<project>.vbox.local/)
+Then access vm website on: ``http://<project>.vbox.local``
 
 To go in the vm (SSH), eg for drupal to use console ou drush, it's `vm_manage ssh`.
 
