@@ -71,6 +71,7 @@ Inspire from:
 - Create/edit vault
 ```sh
 cd $COPS_CWD
+# Note the leading " " not to have the password in bash history
 :; eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
     .ansible/scripts/setup_vaults.sh"
 # crypted vars (password, keys)
