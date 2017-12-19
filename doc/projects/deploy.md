@@ -45,7 +45,7 @@ git clone --recursive "$A_GIT_URL" "$COPS_CWD"
 # With a working install of corpusops inside corig_root
 # ln -s $corig_root local/corpusops.bootstrap
 cd $COPS_CWD
-mkdir $COPS_ROOT local
+mkdir -p $COPS_ROOT local
 ln -s $COPS_ROOT local/corpusops.bootstrap
 .ansible/scripts/download_corpusops.sh
 .ansible/scripts/setup_corpusops.sh
