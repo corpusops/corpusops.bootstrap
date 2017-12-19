@@ -343,7 +343,7 @@ done
   favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
 
 ## Launch ansible commands, & deploy step by step; only_steps
-- Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
+- Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
 - Eg, to redo php-fpm, sync local code from localdir to inside the vm and
   reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
