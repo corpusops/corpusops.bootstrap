@@ -250,6 +250,14 @@ local/mountpoint/corpusopsXX-X/srv/projects/<project>/project
 - cf *Access the VM websites* (upper)(for`/etc/hosts`).
 - Website awaits requests on  http://<project>.vbox.local/](http://<project>.vbox.local/)
 
+
+## ZOPE: get the web admin password
+- Login is generally: admin
+- Password
+```sh
+./vm_manage ssh 'for i in /etc/*secrets/cops_zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'|awk '!a[$0]++'|sort -nk2
+```
+
 ## Update your provision code
 
 ```sh
@@ -311,44 +319,36 @@ done
 done
 ```
 
-## Lancer les commandes ansibles de provision manuellement
+## Launch ansible commands, & deploy step by step
 - Quand on fait le vagrant up (`vm_manage up`) on peut voir de longues lignes de commande ansible. Il suffit de les recopier/adapter pour les lancer depuis le dossier projet de la vm.
 - vagrant doit déjà avoir tourné au moins une fois pour que l'inventaire ansible soit déjà généré.
 
     ```sh
-    PYTHONUNBUFFERED=1 ANSIBLE_FORCE_COLOR=true \
-    ANSIBLE_CONFIG="$(pwd)/local/corpusops.bootstrap/hacking/vagrant/ansible.cfg" \
-    ANSIBLE_HOST_KEY_CHECKING=false \
-    ANSIBLE_SSH_ARGS='-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes -o ControlMaster=auto -o ControlPersist=60s' \
-     local/corpusops.bootstrap/bin/ansible-playbook \
-      --connection=ssh --timeout=30 --limit="corpusopsXX-X" \
-      --inventory-file=$(pwd)/.vagrant/provisioners/ansible/inventory \
-      -e@.ansible/vaults/default.yml -e@.ansible/vaults/vagrant.yml -e@.ansible/vaults/app.yml \
-      -extra-vars="cops_supereditors='1000' cops_path='$(pwd)/local/corpusops.bootstrap'" \
-      --extra-vars="cops_playbooks='$(pwd)/local/corpusops.bootstrap/playbooks/corpusops'" \
-      .ansible/playbooks/site*vag*l \
-      -e cops_cwd=$(pwd)
+    .ansible/scripts/setup_core_variables.sh
+    .ansible/scripts/call_ansible.sh -v\
+     --inventory-file=.vagrant/provisioners/ansible/inventory \
+     -e@local/corevars.yml  -e@.ansible/vaults/vagrant.yml \
+     -e cops_supereditors="$(id -u)" \
+     local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
 
-## Lancer les commandes ansibles de provision manuellement, en pas à pas
-- Regardez [la liste des étapes dans le fichier app_steps.yml](.ansible/playbooks/tasks/app_steps.yml)
-- Vous pouvez dès lors utiliser une combinaison de ces étapes avec ``only_steps=true`` qui va permettre de ne pas tous les lancer. Dans cet exemple par exemple on refait php-fpm, le push du code local dans la VM et on réinstalle le site (faites un dursh sql-drop avant):
-
+## Launch ansible commands, & deploy step by step; only_steps
+- Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
+- You should then use a combination of a playbook,n  ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
+- Eg, to redo php-fpm, sync local code from localdir to inside the vm and
+  reinstall thewebsite (do a manual drush sql-drop befopre):
 
     ```sh
-    PYTHONUNBUFFERED=1 ANSIBLE_FORCE_COLOR=true \
-    ANSIBLE_CONFIG="$(pwd)/local/corpusops.bootstrap/hacking/vagrant/ansible.cfg" \
-    ANSIBLE_HOST_KEY_CHECKING=false \
-    ANSIBLE_SSH_ARGS='-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes -o ControlMaster=auto -o ControlPersist=60s' \
-     local/corpusops.bootstrap/bin/ansible-playbook \
-      --connection=ssh --timeout=30 --limit="corpusopsXX-X" \
-      --inventory-file=$(pwd)/.vagrant/provisioners/ansible/inventory \
-      -e@.ansible/vaults/default.yml -e@.ansible/vaults/vagrant.yml -e@.ansible/vaults/app.yml \
-      -extra-vars="cops_supereditors='1000' cops_path='$(pwd)/local/corpusops.bootstrap'" \
-      --extra-vars="cops_playbooks='$(pwd)/local/corpusops.bootstrap/playbooks/corpusops'" \
-      .ansible/playbooks/site*vag*l \
-      -e cops_cwd=$(pwd) --skip-tags play_db \
-      -e "only_steps=True cops_drupal_s_fpm=true"
+    .ansible/scripts/setup_core_variables.sh
+    .ansible/scripts/call_ansible.sh -v\
+     --inventory-file=.vagrant/provisioners/ansible/inventory \
+     -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml  \
+     -e cops_supereditors="$(id -u)" \
+     .ansible/playbooks/site*vag*l \
+     --skip-tags play_db \
+     -e "only_steps=True cops_drupal_s_fpm=true"
     ```
-- Les 3 dernières lignes sont les plus importantes, elles indiquent le dosser et les étapes et les étapes à effectuer
-- Un autre ligne importante, les lignes de **fichiers vault** (variables) permettent de choisir les variables liées à votre environnement
+- See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
+- See "**cops_supereditors**, this indicate that from outside the VM, with your
+  use, you should be able to edite files from **supereditor_paths** (the code
+  is in those paths by default)
