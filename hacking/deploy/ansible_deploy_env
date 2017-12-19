@@ -20,6 +20,7 @@ do_unset() {
     unset A_INVENTORY_FILE
     unset COPS_CWD
     unset COPS_ROOT
+    unset LOCAL_COPS_ROOT
     unset NO_SILENT
     unset PLAYBOOK_PRE_ARGS
     unset PLAYBOOK_PRE_CUSTOM_ARGS
@@ -87,15 +88,16 @@ export VAULT_PASSWORD_VARIABLES_PREFIX=${VAULT_PASSWORD_VARIABLES_PREFIX:-CORPUS
 export CORPUSOPS_URL="${CORPUSOPS_URL:-https://github.com/corpusops/corpusops.bootstrap}"
 export CORPUSOPS_INSTALL_ARGS=${CORPUSOPS_INSTALL_ARGS:-"-C -S"}
 export CORPUSOPS_UPDATE_ARGS=${CORPUSOPS_UPDATE_ARGS:-"-C -s"}
-export COPS_ROOT="${cops_path:-$COPS_CWD/local/corpusops.bootstrap}"
+export COPS_ROOT="${cops_root:-/srv/corpusops/corpusops.bootstrap}"
+export LOCAL_COPS_ROOT="${cops_path:-$COPS_CWD/local/corpusops.bootstrap}"
 export COREVARS_VAULT="${CORE_VAULT:-"${COPS_CWD}/local/corevars.yml"}"
-export COPS_PLAYBOOKS="${COPS_PLAYBOOKS:-${cops_playbooks:-"${COPS_ROOT}/playbooks/corpusops"}}"
-export AP=${AP:-"$COPS_ROOT/bin/ansible-playbook"}
+export COPS_PLAYBOOKS="${COPS_PLAYBOOKS:-${cops_playbooks:-"${LOCAL_COPS_ROOT}/playbooks/corpusops"}}"
+export AP=${AP:-"$LOCAL_COPS_ROOT/bin/ansible-playbook"}
 DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
 export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
 A_INVENTORY_FILE_SUF=""
 if [ -d $A_INVENTORY_FILE ];then
-    A_INVENTORY_FILE_SUF=/
+LOCAL_COPS_ROOTA_INVENTORY_FILE_SUF=/
 fi
 DEFAULT_A_INVENTORY="-i ${A_INVENTORY_FILE}${A_INVENTORY_FILE_SUF}"
 export A_INVENTORY="${A_INVENTORY-${DEFAULT_A_INVENTORY}}"
@@ -104,4 +106,4 @@ export SECRET_VAULT_PREFIX="${SECRET_VAULT_PREFIX-${DEFAULT_SECRET_VAULT_PREFIX}
 export PLAYBOOK_PRE_ARGS="${PLAYBOOK_PRE_ARGS-$DEFAULT_PLAYBOOK_PRE_ARGS}"
 export PLAYBOOK_PRE_CUSTOM_ARGS="${PLAYBOOK_PRE_CUSTOM_ARGS-$DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS}"
 export NO_SILENT=${NO_SILENT-1}
-export PATH=$COPS_ROOT/bin:$COPS_ROOT/venv/bin:$PATH
+export PATH=$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH
