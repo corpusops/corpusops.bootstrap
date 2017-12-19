@@ -36,4 +36,4 @@ if [[ -z ${SKIP_CORPUSOPS_CHECKOUT-} ]] && [ ! -e "$LOCAL_COPS_ROOT/.git" ];then
     fi
 else
         log "corpusops.bootstrap already there in $LOCAL_COPS_ROOT"
-fi 
+fi
