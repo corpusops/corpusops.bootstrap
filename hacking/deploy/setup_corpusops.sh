@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 set -e
-export COPS_CWD="${COPS_CWD:-$(pwd)}"
-export COPS_ROOT="${COPS_ROOT:-$COPS_CWD/local/corpusops.bootstrap}"
-export CORPUSOPS_URL="${CORPUSOPS_URL:-https://github.com/corpusops/corpusops.bootstrap.git}"
 if [ -e .ansible/scripts/ansible_deploy_env ];then
     . .ansible/scripts/ansible_deploy_env
 fi
-sr=$COPS_ROOT/bin/silent_run
-installer=$COPS_ROOT/bin/install.sh
+sr=$LOCAL_COPS_ROOT/bin/silent_run
+installer=$LOCAL_COPS_ROOT/bin/install.sh
 if [[ -n ${SKIP_CORPUSOPS_SETUP-} ]];then
     log "-> Skip corpusops setup"
     exit 0
@@ -16,7 +13,7 @@ corpusopsinstall() {
     "$sr" "$installer" $@
 }
 # Run install only
-if [[ -z "${SKIP_CORPUSOPS_INSTALL-}" ]] && [ ! -e $COPS_ROOT/venv/bin/ansible ];then
+if [[ -z "${SKIP_CORPUSOPS_INSTALL-}" ]] && [ ! -e $LOCAL_COPS_ROOT/venv/bin/ansible ];then
     log "Install a local copy of corpusops"
     if ! corpusopsinstall $CORPUSOPS_INSTALL_ARGS;then
         log "Install error"

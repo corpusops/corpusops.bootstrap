@@ -35,7 +35,7 @@ else
 fi
 debug "vaultpwfiles: $vaultpwfiles"
 if [[ -z "${NO_SILENT-}" ]];then
-  $COPS_ROOT/bin/silent_run \
+  $LOCAL_COPS_ROOT/bin/silent_run \
       $AP $vaultpwfiles $A_INVENTORY \
       ${A_CUSTOM_ARGS-} \
       ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
