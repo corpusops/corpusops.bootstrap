@@ -35,10 +35,16 @@ else
 fi
 debug "vaultpwfiles: $vaultpwfiles"
 debug "launching: $launchlog"
+# Do not set inventory if redefined in $@
+_A_INVENTORY=$A_INVENTORY
+if echo $@ | egrep -iq -- "(( -i )|(--(inventory-file|inventory)(=| )))";then
+    debug "Inventory CLI switch detected, removing default one"
+    _A_INVENTORY=
+fi
 if [[ -z "${NO_SILENT-}" ]];then
     if [[ -n "${@}" ]];then
         $LOCAL_COPS_ROOT/bin/silent_run \
-            $AP $vaultpwfiles $A_INVENTORY \
+            $AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
@@ -47,7 +53,7 @@ if [[ -z "${NO_SILENT-}" ]];then
             "${@}"
     else
         $LOCAL_COPS_ROOT/bin/silent_run \
-            $AP $vaultpwfiles $A_INVENTORY \
+            $AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
@@ -56,14 +62,14 @@ if [[ -z "${NO_SILENT-}" ]];then
     fi
 else
     if [[ -n "${@}" ]];then
-        $AP $vaultpwfiles $A_INVENTORY \
+        $AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
             ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
             "${@}"
     else
-        $AP $vaultpwfiles $A_INVENTORY \
+        $AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \

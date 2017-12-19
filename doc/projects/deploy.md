@@ -123,8 +123,3 @@ export A_ENV_NAME=staging
 .ansible/scripts/call_ansible.sh .ansible/playbooks/haproxy.yml
 .ansible/scripts/call_ansible.sh .ansible/playbooks/db_backup.yml
 ```
-
-
-
-
-
