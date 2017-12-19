@@ -321,7 +321,8 @@ done
 
 ## Launch ansible commands, & deploy step by step
 - Quand on fait le vagrant up (`vm_manage up`) on peut voir de longues lignes de commande ansible. Il suffit de les recopier/adapter pour les lancer depuis le dossier projet de la vm.
-- vagrant doit déjà avoir tourné au moins une fois pour que l'inventaire ansible soit déjà généré.
+- vagrant should run once for the inventory file to be
+  available
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
@@ -336,7 +337,7 @@ done
 - Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
 - You should then use a combination of a playbook,n  ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
 - Eg, to redo php-fpm, sync local code from localdir to inside the vm and
-  reinstall thewebsite (do a manual drush sql-drop befopre):
+  reinstall the app (do a manual drush sql-drop befopre):
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
