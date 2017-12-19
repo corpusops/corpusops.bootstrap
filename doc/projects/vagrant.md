@@ -330,9 +330,9 @@ done
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
-    .ansible/scripts/call_ansible.sh -v\
+    .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
-     -e@local/corevars.yml  -e@.ansible/vaults/vagrant.yml \
+     -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml \
      -e cops_supereditors="$(id -u)" \
      local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
@@ -348,7 +348,7 @@ done
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
-    .ansible/scripts/call_ansible.sh -v\
+    .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
      -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml  \
      -e cops_supereditors="$(id -u)" \
