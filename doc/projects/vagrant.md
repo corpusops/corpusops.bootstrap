@@ -346,7 +346,7 @@ done
 - Look your [App steps](.ansible/playbooks/tasks/app_steps.yml)
 - You should then use a combination of a playbook, ``only_steps=true`` for your to select which deployment steps to execute and not to relaunch the whoething.
 - Eg, to redo php-fpm, sync local code from localdir to inside the vm and
-  reinstall the app (do a manual drush sql-drop befopre):
+  reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
 
     ```sh
     .ansible/scripts/setup_core_variables.sh
