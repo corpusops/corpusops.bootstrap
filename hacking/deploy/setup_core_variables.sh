@@ -13,7 +13,7 @@ fi
 
 cat > $COREVARS_VAULT << EOF
 ---
-cops_path: "$COPS_ROOT"
+cops_path: "$LOCAL_COPS_ROOT"
 cops_cwd: "$COPS_CWD"
 cops_playbooks: "$COPS_PLAYBOOKS"
 EOF
