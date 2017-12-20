@@ -175,7 +175,7 @@ Long, huh ?
 CONTROL+C
 ```
 
-## I§ shut down provision, how i put on back the sshfs link ?
+## I shut down the provision procedure, how do I put back the sshfs link ?
 You should have called `--no-provision`, But, after, all, after <Control-c>
 
 ```sh
