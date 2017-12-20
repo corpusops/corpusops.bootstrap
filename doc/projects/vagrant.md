@@ -4,7 +4,7 @@
 ## Setup variables
 
 - Core variables
-  ```
+  ```sh
   export A_GIT_URL="git@gitlab.makina-corpus.net:foo/bar.git"
   export COPS_CWD="$HOME/devel/<your project>"  # where you want to checkout the code
   # If you know that a vm is avaiable for download (rsync) (See the project's README)
