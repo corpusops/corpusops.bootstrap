@@ -1,5 +1,4 @@
 # Vagrant based setup for corpusops based projects
-- Common setup is in [hacking/vagrant](https://github.com/corpusops/corpusops.bootstrap/tree/master/hacking/vagrant)
 
 ## Setup variables
 
@@ -155,6 +154,10 @@ We edit the vm conf file
 You should have then a one-time-login available.
 
 # FAQ
+
+## Where is the common vagrant code that the Vagrantfile points to
+- Common setup use by the vm is in [hacking/vagrant](https://github.com/corpusops/corpusops.bootstrap/tree/master/hacking/vagrant),
+   in case you are curious
 
 ## Stop VM
 
