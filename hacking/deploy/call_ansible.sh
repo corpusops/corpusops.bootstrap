@@ -40,11 +40,15 @@ _A_INVENTORY=$A_INVENTORY
 if echo $@ | egrep -iq -- "(( -i )|(--(inventory-file|inventory)(=| )))";then
     debug "Inventory CLI switch detected, removing default one"
     _A_INVENTORY=
+# Let a way to fallback on ansible binary
+_AP=$AP
+if [[ -n "$CALL_ANSIBLE_USE_ANSIBLE" ]];then
+    _AP=$ANSIBLE_BIN
 fi
 if [[ -z "${NO_SILENT-}" ]];then
     if [[ -n "${@}" ]];then
         $LOCAL_COPS_ROOT/bin/silent_run \
-            $AP $vaultpwfiles $_A_INVENTORY \
+            $_AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
@@ -53,7 +57,7 @@ if [[ -z "${NO_SILENT-}" ]];then
             "${@}"
     else
         $LOCAL_COPS_ROOT/bin/silent_run \
-            $AP $vaultpwfiles $_A_INVENTORY \
+            $_AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
@@ -62,14 +66,14 @@ if [[ -z "${NO_SILENT-}" ]];then
     fi
 else
     if [[ -n "${@}" ]];then
-        $AP $vaultpwfiles $_A_INVENTORY \
+        $_AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \
             ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
             "${@}"
     else
-        $AP $vaultpwfiles $_A_INVENTORY \
+        $_AP $vaultpwfiles $_A_INVENTORY \
             ${A_CUSTOM_ARGS-} \
             ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
             $PLAYBOOK \

@@ -1,31 +1,50 @@
 #!/usr/bin/env bash
+die_() {
+    rc=${1:-1}
+    shift
+    if [[ -n $@ ]];then
+        log $@
+    fi
+    exit $rc
+}
+die() { die_ 256 $@; }
 ensure_ansible_env() {
     if [[ -z "$A_ENV_NAME" ]];then
-        log "Set ansible environment to use: \$A_ENV_NAME"
-        exit 1
+        die "Set ansible environment to use: \$A_ENV_NAME !"
     fi
 }
 log() { echo "$@" >&2; }
 vv() { log "($COPS_CWD) $@";"$@"; }
 debug() { if [[ -n "${ADEBUG-}" ]];then log "$@";fi }
 do_unset() {
-    unset CORPUSOPS_URL
-    unset CORPUSOPS_INSTALL_ARGS
-    unset VAULT_PASSWORD_VARIABLES_PREFIX
-    unset CORPUSOPS_UPDATE_ARGS
-    unset A_GIT_PROJECT
-    unset A_GIT_SERVER
-    unset A_GIT_URL
-    unset A_INVENTORY
-    unset A_INVENTORY_FILE
-    unset COPS_CWD
-    unset COPS_ROOT
-    unset LOCAL_COPS_ROOT
-    unset NO_SILENT
-    unset PLAYBOOK_PRE_ARGS
-    unset PLAYBOOK_PRE_CUSTOM_ARGS
-    unset SECRET_VAULT_PREFIX
-    unset SECRET_VAULTS
+    # those are not considered to be unset once define
+    if [[ -z "${REUSE_ENV:-1}" ]];then
+        debug "-> Clearing env"
+        unset AP
+        unset ANSIBLE_BIN
+        unset A_ENV_NAME
+        unset A_GIT_NAMESPACE
+        unset A_GIT_PROJECT
+        unset A_GIT_SERVER
+        unset A_GIT_URL
+        unset A_INVENTORY
+        unset CORPUSOPS_URL
+        unset NONINTERACTIVE
+        unset REUSE_ENV
+        unset SECRET_VAULTS
+        unset A_VAULT_NAME
+        unset COPS_CWD
+        unset VAULT_PASSWORD_VARIABLES_PREFIX
+        unset LOCAL_COPS_ROOT
+        unset COPS_ROOT
+        unset CORPUSOPS_INSTALL_ARGS
+        unset CORPUSOPS_UPDATE_ARGS
+        unset NO_SILENT
+        unset A_INVENTORY_FILE
+        unset PLAYBOOK_PRE_ARGS
+        unset PLAYBOOK_PRE_CUSTOM_ARGS
+        unset SECRET_VAULT_PREFIX
+    fi
 }
 set_vaultpwfiles() {
     vaultpwfiles=''
@@ -47,10 +66,7 @@ set_vaultpwfiles() {
 }
 REUSE_ENV=${REUSE_ENV-}
 debug "REUSE_ENV: $REUSE_ENV"
-if [[ -z "$REUSE_ENV" ]];then
-    debug "-> Clearing env"
-    do_unset
-fi
+do_unset
 if [ -f .ansible/scripts/ansible_deploy_env.local ];then
     . .ansible/scripts/ansible_deploy_env.local
 fi
@@ -93,6 +109,7 @@ export LOCAL_COPS_ROOT="${cops_path:-$COPS_CWD/local/corpusops.bootstrap}"
 export COREVARS_VAULT="${CORE_VAULT:-"${COPS_CWD}/local/corevars.yml"}"
 export COPS_PLAYBOOKS="${COPS_PLAYBOOKS:-${cops_playbooks:-"${LOCAL_COPS_ROOT}/playbooks/corpusops"}}"
 export AP=${AP:-"$LOCAL_COPS_ROOT/bin/ansible-playbook"}
+export ANSIBLE_BIN=${ANSIBLE_BIN:-"$LOCAL_COPS_ROOT/bin/ansible"}
 DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
 export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
 A_INVENTORY_FILE_SUF=""
