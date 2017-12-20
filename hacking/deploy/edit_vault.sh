@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 if [ -e .ansible/scripts/ansible_deploy_env ];then
     . .ansible/scripts/ansible_deploy_env
 fi
