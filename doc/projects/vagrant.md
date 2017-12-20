@@ -1,6 +1,16 @@
 # Vagrant based setup for corpusops based projects
 - Common setup is in [hacking/vagrant](https://github.com/corpusops/corpusops.bootstrap/tree/master/hacking/vagrant)
 
+## Setup variables
+
+- Core variables
+  ```
+  export A_GIT_URL="git@gitlab.makina-corpus.net:foo/bar.git"
+  export COPS_CWD="$HOME/devel/<your project>"  # where you want to checkout the code
+  # If you know that a vm is avaiable for download (rsync) (See the project's README)
+  export FTP_URL=<tri>@ftp.x-x.net:/srv/projects/*/data/*/nobackup/vm_bar/*-*box
+  ```
+
 ## Install Vagrant for corpusops
 - We provide disposable dev environments provisioned
   via the corpusops framework [corpusops](https://github.com/corpusops/corpusops.bootstrap.git)
