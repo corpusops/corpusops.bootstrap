@@ -39,7 +39,7 @@ export NONINTERACTIVE=1
 ```
 
 
-
+.ansible/scripts/call_ansible.sh -vvv .ansible/playbooks/haproxy.yml
 ## Prepare for deployment
 
 ### Get the code
@@ -247,6 +247,7 @@ export A_ENV_NAME=staging
 	```
 
 ### Update the cluster
+- Example
 - Rerun: [Install procedure / Configure loadbalancers](#install_haproxy)
 - Rerun: [Install procedure / Configure backends](#install_app)
 
