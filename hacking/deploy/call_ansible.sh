@@ -40,6 +40,7 @@ _A_INVENTORY=$A_INVENTORY
 if echo $@ | egrep -iq -- "(( -i )|(--(inventory-file|inventory)(=| )))";then
     debug "Inventory CLI switch detected, removing default one"
     _A_INVENTORY=
+fi
 # Let a way to fallback on ansible binary
 _AP=$AP
 if [[ -n "$CALL_ANSIBLE_USE_ANSIBLE" ]];then
