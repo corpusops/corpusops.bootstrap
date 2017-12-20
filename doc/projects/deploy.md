@@ -60,8 +60,6 @@ export NONINTERACTIVE=1
 	mkdir $COPS_ROOT local
 	ln -s $COPS_ROOT local/corpusops.bootstrap
 	.ansible/scripts/download_corpusops.sh
-	# Replace here SUPER_SECRET_PASSWORD by the vault password
-	# Note the leading " " not to have the password in bash history
 	.ansible/scripts/setup_ansible.sh
 	```
 
