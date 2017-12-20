@@ -241,7 +241,7 @@ export A_ENV_NAME=staging
 - Be sure to be on the right branch & env
 
 	```sh
-	# one of: staging/clientstaging/production
+	# certainly one of: staging/production
 	cd $COPS_CWD
 	export A_ENV_NAME=<env>
 	git checkout $A_ENV_NAME
