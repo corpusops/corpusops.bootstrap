@@ -1,6 +1,6 @@
 # helpers for docker images lifecyle managment with corpusops
 
-## bin/build.py: Helper to construct images from a running container
+## bin/build.py: Helper to construct images either from a running container or a dockerfile
 
 ### requirements
 - docker > 1.11
@@ -120,30 +120,30 @@
 
 ## Sumup: Steps to create corpusops docker compliant images
 - Copy/adapt from another image (eg: [corpusops/elasticsearch](https://github.com/corpusops/setups.elasticsearch))
-    - ``./ansible``
-    - ``./docker``
-    - ``./bin/env.sh``
+    - ``./.ansible``
+    - ``./.docker``
+    - ``./bin/env.sh`` (OPT)
     - ``./bin/build.sh``
-- Delete ``docker/packer``
-- Maybe adapt ``bin/buid.sh``
-- Maybe adapt ``docker/provision.sh``
-- Feed ``ansible/``
-- Edit/adapt ``docker/packer.json``
+- Delete ``./.docker/packer``
+- Maybe adapt ``./bin/buid.sh``
+- Maybe adapt ``./.docker/provision.sh``
+- Feed ``.ansible/``
+- Edit/adapt ``./.docker/packer.json``
     - take care that the ``__VERSION__`` placeholder is used correcly
     - edit the inline shell script to adapt the generated ``ansible_params.yml``
       ansible variable file accordingly to your provision playbooks & roles.
-- Create & feed ``docker/IMAGES.json``
-- Generate packer files with ``bin/build.sh --generate-images``
-- Launch until success ``bin/build.sh`` which launch **docker_build_chain**.
+- Create & feed ``./.docker/IMAGES.json``
+- Generate packer files with ``./bin/build.sh --generate-images``
+- Launch until success ``./bin/build.sh`` which launch **docker_build_chain**.
 - Verify after build:
-    - generated: ``docker/packer/*.json``
+    - generated: ``./docker/packer/*.json``
     - produced docker images
 
 - We provide an helper script to tests image that launch an image the way packer would have
   and let you connect in the container for you to debug build procedure.
 ```
 cd /myimage
-# (call $cops/hacking/docker_livepacker_test.sh)
+# ( thin wrapper to $COPS_ROOT/hacking/docker_livepacker_test.sh)
 bin/run_livepacker_test.sh .docker/packer/<MY_IMAGE>.json
 
 ```
