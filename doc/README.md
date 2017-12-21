@@ -1,7 +1,7 @@
 # corpusops doc
 
 # Use corpusops, & ecosystems
-- [Projects deployment topic](./projects)
+- [Projects deployment & installation](./projects)
 - [docker images](./docker.md)
     
 # Corpusops internals & development topics
