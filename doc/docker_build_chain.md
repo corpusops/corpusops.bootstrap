@@ -38,7 +38,7 @@
       MANIFEST json file a a well known file structure:
 
         ```
-        docker/
+        ./.docker/
             IMAGES.json # <- meta info about images (build order and arguments)
             builder1_type/
                 builder1_file.input
