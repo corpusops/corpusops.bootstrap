@@ -221,7 +221,7 @@ export A_ENV_NAME=staging
 
 ## <a name="update"></a>Update procedure
 
-### Get the code
+### Update the code
 - Be sure to be on the right branch & env
 
 
@@ -232,6 +232,7 @@ export A_ENV_NAME=staging
 	git fetch --all
 	git reset --hard <COMMIT>
 	# eg: staging/clientstaging/production
+	git submodule init
 	git submodule update --recursive
 	```
 
