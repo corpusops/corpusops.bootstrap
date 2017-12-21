@@ -1,6 +1,7 @@
-# corpusops based projects documentation
+# Corpusops based projects documentation
 
-- topics
+# Deploying projects
+- Deploy methods
     - [Deploying on environments](./deploy.md)
     - [Deploying on vagrant](./vagrant.md)
 
