@@ -12,7 +12,8 @@
 ### overview
 
 - Problem with dockerfiles is that we can't control
-  how a build container is run, nor privileged mode or volumes nor sec options.
+  how a build container is run,
+  nor privileged mode or volumes nor security options.
 
 - This can be problematic where you use systemd based images
  and want to have systemd at provision time.
