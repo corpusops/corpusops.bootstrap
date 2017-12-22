@@ -47,13 +47,6 @@
     cd $COPS_CWD
     ./.ansible/scripts/setup_corpusops.sh
     ```
-
-- Be sure that all of your git submodules are checked out
-
-    ```sh
-    cd $COPS_CWD
-    git submodule init
-    git submodule update --recursive
     ```
 - Setup the base ansible stuff
 
