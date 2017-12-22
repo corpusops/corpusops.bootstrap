@@ -330,7 +330,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
     ```sh
     .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
-     -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml \
+     -e@.ansible/vaults/vagrant.yml \
      -e cops_supereditors="$(id -u)" \
      local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
@@ -348,7 +348,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
     ```sh
     .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
-     -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml  \
+     -e@.ansible/vaults/vagrant.yml  \
      -e cops_supereditors="$(id -u)" \
      .ansible/playbooks/site*vag*l \
      --skip-tags play_db \
