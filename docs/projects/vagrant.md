@@ -18,6 +18,8 @@
 
     ```sh
     git clone --recursive $GIT_URL $COPS_CWD
+    git submodule init
+    git submodule update --recursive
     ```
 
 - From there you get two options
@@ -27,33 +29,30 @@
         1. Install (do this step only once per project)
 
             ```sh
-            export cops=$HOME/common_corpusops/
-            mkdir $COPS_CWD
+            # export COPS_ROOT=$HOME/common_corpusops/ ;  # default: ~/corpusops/corpusops.bootstrap
             cd $COPS_CWD
-            if [ ! -e local ];then mkdir local;fi
-            if [ ! -e local/corpusops.bootstrap ];then ln -s local/corpusops.bootstrap $cops;fi
-            mkdir -p "$cops"
             ./.ansible/scripts/download_corpusops.sh
-            ./.ansible/scripts/setup_corpusops.sh
             ```
 
     2. Or if you just want to have a local copy of ``corpusops.bootstrap``, just issue
 
         ```sh
+        export SKIP_COPS_FROM_SYSTEM=1
         ./.ansible/scripts/download_corpusops.sh
-        ./.ansible/scripts/setup_corpusops.sh
         ```
 
 - Be sure that your ``corpusops.bootstrap`` copy is up to date
   and operational, specially if reusing it from other projects.
 
     ```sh
+    cd $COPS_CWD
     ./.ansible/scripts/setup_corpusops.sh
     ```
 
 - Be sure that all of your git submodules are checked out
 
     ```sh
+    cd $COPS_CWD
     git submodule init
     git submodule update --recursive
     ```
