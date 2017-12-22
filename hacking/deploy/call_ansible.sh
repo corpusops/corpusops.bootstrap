@@ -1,84 +1,37 @@
 #!/usr/bin/env bash
 set -e
-if [ -e .ansible/scripts/ansible_deploy_env ];then
-    . .ansible/scripts/ansible_deploy_env
+
+COPS_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
+    . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
-PLAYBOOK=${PLAYBOOK-}
-if [[ -z $PLAYBOOK ]] && [[ -z $@ ]];then
-    log "Either set \$PLAYBOOK var or give arguments to $0"
-    exit 0
+
+if [[ -z "$PLAYBOOK" ]] && [[ -z "$@" ]];then
+    die "Either set \$PLAYBOOK var or give arguments to $0"
 fi
-set_vaultpwfiles
-log "-> In $COPS_CWD"
-launchlog="$AP $vaultpwfiles $A_INVENTORY \
-      ${A_CUSTOM_ARGS-} \
-      ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-      $PLAYBOOK \
-      ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-      ${@-}"
-if [[ -n ${ANSIBLE_DRY_RUN-${DRY_RUN-}} ]];then
-    log "Would have run $launchlog"
-    exit 0
+
+set_core_variables
+
+launchlog="$A_LAUNCH_CMD ${@}"
+
+if [[ -n "${A_DRY_RUN}" ]];then
+    die_ 0 "Would have run $launchlog"
 else
     if [[ -z $NONINTERACTIVE ]];then
-        log "Do you really want to launch: $launchlog"
-        log "[Y/N] ?"
+        printf "Do you really want to launch: $launchlog\n[Y/N] ?" >&2
         while read i;do
-            if echo $i | egrep -iq "^(y|yes|oui|o)";then
-                break
-            else
-                log "aborting"
-                exit 16
+            if echo $i | egrep -iq "^(y|yes|oui|o)"
+            then break
+            else die_ 16 "aborting"
             fi
         done
     fi
 fi
-debug "vaultpwfiles: $vaultpwfiles"
-debug "launching: $launchlog"
-# Do not set inventory if redefined in $@
-_A_INVENTORY=$A_INVENTORY
-if echo $@ | egrep -iq -- "(( -i )|(--(inventory-file|inventory)(=| )))";then
-    debug "Inventory CLI switch detected, removing default one"
-    _A_INVENTORY=
-fi
-# Let a way to fallback on ansible binary
-_AP=$AP
-if [[ -n "$CALL_ANSIBLE_USE_ANSIBLE" ]];then
-    _AP=$ANSIBLE_BIN
-fi
-if [[ -z "${NO_SILENT-}" ]];then
-    if [[ -n "${@}" ]];then
-        $LOCAL_COPS_ROOT/bin/silent_run \
-            $_AP $vaultpwfiles $_A_INVENTORY \
-            ${A_CUSTOM_ARGS-} \
-            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-            $PLAYBOOK \
-            ${PLAYBOOK_POST_ARGS-} \
-            ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-            "${@}"
-    else
-        $LOCAL_COPS_ROOT/bin/silent_run \
-            $_AP $vaultpwfiles $_A_INVENTORY \
-            ${A_CUSTOM_ARGS-} \
-            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-            $PLAYBOOK \
-            ${PLAYBOOK_POST_ARGS-} \
-            ${PLAYBOOK_POST_CUSTOM_ARGS-}
-    fi
+
+if [[ -n "${@}" ]];then
+    $A_LAUNCH_CMD "${@}"
 else
-    if [[ -n "${@}" ]];then
-        $_AP $vaultpwfiles $_A_INVENTORY \
-            ${A_CUSTOM_ARGS-} \
-            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-            $PLAYBOOK \
-            ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-            "${@}"
-    else
-        $_AP $vaultpwfiles $_A_INVENTORY \
-            ${A_CUSTOM_ARGS-} \
-            ${PLAYBOOK_PRE_ARGS-} ${PLAYBOOK_PRE_CUSTOM_ARGS-} \
-            $PLAYBOOK \
-            ${PLAYBOOK_POST_ARGS-} ${PLAYBOOK_POST_CUSTOM_ARGS-} \
-            "${@}"
-    fi
+    $A_LAUNCH_CMD
 fi
+ret=$?
+exit $ret
