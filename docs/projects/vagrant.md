@@ -47,7 +47,7 @@
     cd $COPS_CWD
     ./.ansible/scripts/setup_corpusops.sh
     ```
-    ```
+
 - Setup the base ansible stuff
 
     ```sh
