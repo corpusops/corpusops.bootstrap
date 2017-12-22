@@ -22,18 +22,10 @@ Deploying corpusops based projects manually
 $EDITOR .ansible/scripts/ansible_deploy_env.local
 # project repo
 export A_GIT_URL=https://gitlab.foo.net/foo/bar
-export A_GIT_PROJECT=$(basename $A_GIT_URL)
-export A_GIT_NAMESPACE=$(basename $(dirname($A_GIT_URL))
 # local working directory
-export COPS_CWD=$HOME/$A_GIT_NAMESPACE/$A_GIT_PROJECT
+export COPS_CWD=$HOME/myapp
 # deploy enviroment *****ADAPT IT****
 export A_ENV_NAME="staging"
-# local working directory
-export COPS_CWD=$HOME/projects/myproject
-# corpusops real place, you can change this to a more sensible place
-export COPS_ROOT=$HOME/corpusops.bootstrap
-# After first install (next step)
-if [ ! -e "$COPS_CWD" ];then mkdir "$COPS_CWD";fi
 # non interactive mode
 export NONINTERACTIVE=1
 ```
@@ -50,6 +42,8 @@ export NONINTERACTIVE=1
 	cd $COPS_CWD
 	# if branch is not master
 	# git checkout -b $A_ENV_NAME
+    git submodule init
+    git submodule update
 	```
 
 ### Download corpusops
@@ -57,8 +51,6 @@ export NONINTERACTIVE=1
 
 	```sh
 	cd $COPS_CWD
-	mkdir $COPS_ROOT local
-	ln -s $COPS_ROOT local/corpusops.bootstrap
 	.ansible/scripts/download_corpusops.sh
 	.ansible/scripts/setup_ansible.sh
 	```
