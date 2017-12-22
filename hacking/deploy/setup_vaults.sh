@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -e
-if [ -f .ansible/scripts/ansible_deploy_env ];then
-    . .ansible/scripts/ansible_deploy_env
+
+COPS_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
+    . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
+
 ensure_ansible_env
+
 debug "VAULT_PASSWORD_VARIABLES_PREFIX: $VAULT_PASSWORD_VARIABLES_PREFIX"
 if [[ -n ${SKIP_VAULT_PASSWORD_FILES_SETUP-} ]];then
     echo "-> Skip ansible vault password files setup" >&2
@@ -21,6 +25,7 @@ export VAULT_VARS=$( printenv \
     | egrep -oe "^${VAULT_PASSWORD_VARIABLES_PREFIX}[a-zA-Z]+=" \
     | sed -e "s/=$//g"|awk '!seen[$0]++')
 debug "VAULT_VARS: $VAULT_VARS"
+
 for vault_var in $VAULT_VARS;do
     vault_name="$(echo $vault_var \
         | awk -F "${VAULT_PASSWORD_VARIABLES_PREFIX}" '{print $2}')"
