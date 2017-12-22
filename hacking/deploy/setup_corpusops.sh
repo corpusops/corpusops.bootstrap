@@ -1,31 +1,23 @@
 #!/usr/bin/env bash
 set -e
+
 if [ -e .ansible/scripts/ansible_deploy_env ];then
     . .ansible/scripts/ansible_deploy_env
 fi
-sr=$LOCAL_COPS_ROOT/bin/silent_run
-installer=$LOCAL_COPS_ROOT/bin/install.sh
-if [[ -n ${SKIP_CORPUSOPS_SETUP-} ]];then
-    log "-> Skip corpusops setup"
-    exit 0
-fi
-corpusopsinstall() {
-    "$sr" "$installer" $@
-}
+
+if [[ -n ${SKIP_COPS_SETUP-} ]];then die_ 0 "-> Skip corpusops setup";fi
+
 # Run install only
-if [[ -z "${SKIP_CORPUSOPS_INSTALL-}" ]] && [ ! -e $LOCAL_COPS_ROOT/venv/bin/ansible ];then
-    log "Install a local copy of corpusops"
-    if ! corpusopsinstall $CORPUSOPS_INSTALL_ARGS;then
-        log "Install error"
-        exit 23
-    fi
+if [[ -z "${SKIP_COPS_INSTALL}" ]] \
+    && [ ! -e $LOCAL_COPS_ROOT/venv/bin/ansible ];then
+    log "Install corpusops"
+    if ! call_cops_installer $COPS_INSTALL_ARGS;then die_ 23 "Install error";fi
 fi
+
 # Update corpusops code, ansible & roles
-if [[ -z "${SKIP_CORPUSOPS_UPDATE-}" ]];then
-    if ! corpusopsinstall $CORPUSOPS_UPDATE_ARGS;then
-        log "Update error"
-        exit 24
-    fi
+if [[ -z "${SKIP_COPS_UPDATE}" ]];then
+    log "Refesh corpusops"
+    if ! call_cops_installer  $COPS_UPDATE_ARGS;then die_ 24 "Update error";fi
 else
     log "-> Skip corpusops update"
 fi

@@ -1,4 +1,60 @@
 #!/usr/bin/env bash
+COPS_ENV="
+REUSE_ENV
+SKIP_COPS_INSTALL
+SKIP_COPS_SETUP
+SKIP_COPS_UPDATE
+SKIP_PRINT_ENV
+SKIP_SET_CORE_VARIABLES
+SKIP_COPS_FROM_SYSTEM
+SKIP_COPS_CHECKOUT
+NO_SHARED_COPS
+NO_A_ARGS
+NO_DEFAULT_VAULTS
+NONINTERACTIVE
+NO_SILENT
+A_AP
+A_BIN
+A_CALLED_BIN
+A_CRYPTED_VAULTS
+A_CUSTOM_ARGS
+A_DRY_RUN
+A_GIT_NAMESPACE
+A_GIT_PROJECT
+A_GIT_SERVER
+A_GIT_URL
+A_INVENTORY_FILE
+A_LAUNCH_CMD
+A_USE_ANSIBLE
+A_VAULT_NAME
+A_VERBOSITY
+COPS_CWD
+COPS_SCRIPTS_DIR
+COPS_INSTALLER
+COPS_LOCAL_FOLDER
+COPS_PLAYBOOKS
+COPS_ROOT
+COREVARS_VAULT
+COPS_SILENTRUN
+COPS_SCRIPTS_DIR
+COPS_INSTALL_ARGS
+COPS_UPDATE_ARGS
+COPS_URL
+LOCAL_COPS_ROOT
+PLAYBOOK
+PLAYBOOK_POST_ARGS
+PLAYBOOK_POST_CUSTOM_ARGS
+PLAYBOOK_PRE_ARGS
+PLAYBOOK_PRE_CUSTOM_ARGS
+SECRET_VAULT_PREFIX
+SECRET_VAULTS
+SYS_COPS_ROOT
+VAULT_PASSWORD_VARIABLES_PREFIX
+"
+log() { echo "$@" >&2; }
+vv() { log "($COPS_CWD) $@";"$@"; }
+debug() { if [[ -n "${ADEBUG-}" ]];then log "$@";fi }
+vvdebug() { if [[ -n "${ADEBUG-}" ]];then log "$@";fi;"${@}"; }
 die_() {
     rc=${1:-1}
     shift
@@ -13,38 +69,39 @@ ensure_ansible_env() {
         die "Set ansible environment to use: \$A_ENV_NAME !"
     fi
 }
-log() { echo "$@" >&2; }
-vv() { log "($COPS_CWD) $@";"$@"; }
-debug() { if [[ -n "${ADEBUG-}" ]];then log "$@";fi }
+print_env() {
+    if [[ -z "${SKIP_PRINT_ENV-}" ]];then
+        for i in $COPS_ENV;do
+            eval "debug \$(echo $i=\$$i)"
+        done
+    fi
+}
 do_unset() {
     # those are not considered to be unset once define
     if [[ -z "${REUSE_ENV:-1}" ]];then
         debug "-> Clearing env"
-        unset AP
-        unset ANSIBLE_BIN
-        unset A_ENV_NAME
-        unset A_GIT_NAMESPACE
-        unset A_GIT_PROJECT
-        unset A_GIT_SERVER
-        unset A_GIT_URL
-        unset A_INVENTORY
-        unset CORPUSOPS_URL
-        unset NONINTERACTIVE
-        unset REUSE_ENV
-        unset SECRET_VAULTS
-        unset A_VAULT_NAME
-        unset COPS_CWD
-        unset VAULT_PASSWORD_VARIABLES_PREFIX
-        unset LOCAL_COPS_ROOT
-        unset COPS_ROOT
-        unset CORPUSOPS_INSTALL_ARGS
-        unset CORPUSOPS_UPDATE_ARGS
-        unset NO_SILENT
-        unset A_INVENTORY_FILE
-        unset PLAYBOOK_PRE_ARGS
-        unset PLAYBOOK_PRE_CUSTOM_ARGS
-        unset SECRET_VAULT_PREFIX
+		for i in $COPS_ENV;do
+			eval "unset $i"
+		done
     fi
+}
+set_core_variables() {
+    if [[ -n "${SKIP_SET_CORE_VARIABLES-}" ]];then
+        die_ 0 "\$SKIP_SET_CORE_VARIABLES set, skip generating $COREVARS_VAULT"
+    fi
+
+    if [ ! -e local ];then mkdir local;fi
+
+    cat > "$COREVARS_VAULT" << EOF
+---
+cops_path: "$LOCAL_COPS_ROOT"
+cops_cwd: "$COPS_CWD"
+cops_playbooks: "$COPS_PLAYBOOKS"
+EOF
+
+    log "-> Using core vault: $COREVARS_VAULT"
+
+    debug "$(cat $COREVARS_VAULT)"
 }
 set_vaultpwfiles() {
     vaultpwfiles=''
@@ -53,75 +110,158 @@ set_vaultpwfiles() {
         vault=$(echo "$SECRET_VAULT"|awk -F@ '{print $1}')
         debug "Testing $vault"
         if [ -e $vault ];then
-            log "-> Using vault: $vault"
-            if "$AP" --help 2>&1|grep -q vault-id;then
+            log "-> Using secret vault: $vault"
+            if "$A_AP" --help 2>&1|grep -q vault-id;then
                 vaultpwfiles="--vault-id=$vault"
             else
                 vaultpwfiles="--vault-password-file=$vault"
             fi
         else
-            debug "No vault password found in $vault" >&2
+            debug "No vault password found in $vault"
         fi
     done
+    debug "vaultpwfiles: $vaultpwfiles"
 }
-REUSE_ENV=${REUSE_ENV-}
-debug "REUSE_ENV: $REUSE_ENV"
+set_base_vars() {
+    export COPS_CWD="${COPS_CWD:-${cops_cwd:-$(pwd)}}"
+    export COPS_SCRIPTS_DIR="${COPS_SCRIPTS_DIR:-$COPS_CWD/.ansible/scripts}"
+    export COPS_LOCAL_FOLDER="${COPS_LOCAL_FOLDER:-$COPS_CWD/local}"
+    export REUSE_ENV="${REUSE_ENV-}"
+}
+call_cops_installer() { "$COPS_SILENTRUN" "$COPS_INSTALLER" $@; }
+#
+set_base_vars
 do_unset
-if [ -f .ansible/scripts/ansible_deploy_env.local ];then
-    . .ansible/scripts/ansible_deploy_env.local
+#
+if [ -f "$COPS_SCRIPTS_DIR/ansible_deploy_env.local" ];then
+    . "$COPS_SCRIPTS_DIR/ansible_deploy_env.local"
 fi
-export NONINTERACTIVE=${NONINTERACTIVE:-}
-export COPS_CWD=${COPS_CWD:-${cops_cwd:-$(pwd)}}
-export A_GIT_SERVER=${A_GIT_SERVER:-https://github.com}
-DEFAULT_PLAYBOOK_PRE_ARGS="-v -e@.ansible/vaults/default.yml -e@.ansible/vaults/app.yml -e@local/corevars.yml"
-DEFAULT_A_GIT_NAMESPACE=$(basename $(dirname $COPS_CWD))
-DEFAULT_A_GIT_PROJECT=$(basename $COPS_CWD)
-export A_GIT_PROJECT=${A_GIT_PROJECT-${DEFAULT_A_GIT_PROJECT}}
-export A_GIT_NAMESPACE=${A_GIT_NAMESPACE-${DEFAULT_A_GIT_NAMESPACE}}
-DEFAULT_A_GIT_URL=${A_GIT_SERVER}/${A_GIT_NAMESPACE}/${A_GIT_PROJECT}
-export A_GIT_URL=${A_GIT_URL:-$DEFAULT_A_GIT_URL}
-export A_VAULT_NAME=${A_VAULT_NAME-${A_ENV_NAME}}
+#
+set_base_vars
+log "-> In: $COPS_CWD"
+#
+export NONINTERACTIVE="${NONINTERACTIVE:-}"
+export A_USE_ANSIBLE="${A_USE_ANSIBLE-}"
+export NO_SILENT="${NO_SILENT-1}"
+export NO_A_ARGS="${NO_A_ARGS-}"
+export NO_DEFAULT_VAULTS="${NO_DEFAULT_VAULTS-}"
+export SKIP_PRINT_ENV=${SKIP_PRINT_ENV-}
+export SKIP_SET_CORE_VARIABLES="${SKIP_SET_CORE_VARIABLES-}"
+export SKIP_COPS_COREVAULT_SETUP="${SKIP_COPS_COREVAULT_SETUP-}"
+export SKIP_COPS_SETUP="${SKIP_COPS_SETUP-}"
+export SKIP_COPS_INSTALL="${SKIP_COPS_INSTALL-}"
+export SKIP_COPS_UPDATE="${SKIP_COPS_UPDATE-}"
+export NO_SHARED_COPS="${NO_SHARED_COPS-}"
+export SKIP_COPS_FROM_SYSTEM="${SKIP_COPS_FROM_SYSTEM-}"
+export SKIP_COPS_CHECKOUT="${SKIP_COPS_CHECKOUT-}"
+#
+export COPS_ROOT="${cops_root:-$HOME/corpusops.bootstrap}"
+export SYS_COPS_ROOT=${SYS_COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
+export LOCAL_COPS_ROOT="${cops_path:-$COPS_LOCAL_FOLDER/corpusops.bootstrap}"
+export COPS_PLAYBOOKS="${COPS_PLAYBOOKS:-${cops_playbooks:-"${LOCAL_COPS_ROOT}/playbooks/corpusops"}}"
+export COPS_URL="${COPS_URL:-https://github.com/corpusops/corpusops.bootstrap}"
+export COPS_SILENTRUN=$LOCAL_COPS_ROOT/bin/silent_run
+export COPS_INSTALLER=$LOCAL_COPS_ROOT/bin/install.sh
+export COPS_INSTALL_ARGS=${COPS_INSTALL_ARGS:-"-C -S"}
+export COPS_UPDATE_ARGS=${COPS_UPDATE_ARGS:-"-C -s"}
+#
+DEFAULT_AP="$LOCAL_COPS_ROOT/bin/ansible-playbook"
+DEFAULT_A_BIN="$LOCAL_COPS_ROOT/bin/ansible"
+DEFAULT_A_VERBOSITY="-v"
+export A_DRY_RUN=${A_DRY_RUN-${DRY_RUN-}}
+export A_AP="${A_AP-$DEFAULT_AP}"
+export A_BIN="${A_BIN-$DEFAULT_A_BIN}"
+export A_CALLED_BIN="${A_CALLED_BIN-$A_AP}"
+export A_VERBOSITY="${A_VERBOSITY-$DEFAULT_A_VERBOSITY}"
+export PLAYBOOK="${PLAYBOOK-}"
+export A_CUSTOM_ARGS="${A_CUSTOM_ARGS-}"
+# Let a way to fallback on ansible binary
+if [[ -n "$A_USE_ANSIBLE" ]];then A_CALLED_BIN=$A_BIN;fi
+#
+export A_GIT_SERVER="${A_GIT_SERVER:-https://github.com}"
+DEFAULT_A_GIT_NAMESPACE="$(basename $(dirname $COPS_CWD))"
+DEFAULT_A_GIT_PROJECT="$(basename $COPS_CWD)"
+export A_GIT_PROJECT="${A_GIT_PROJECT-${DEFAULT_A_GIT_PROJECT}}"
+export A_GIT_NAMESPACE="${A_GIT_NAMESPACE-${DEFAULT_A_GIT_NAMESPACE}}"
+DEFAULT_A_GIT_URL="${A_GIT_SERVER}/${A_GIT_NAMESPACE}/${A_GIT_PROJECT}"
+export A_GIT_URL="${A_GIT_URL:-$DEFAULT_A_GIT_URL}"
+export A_VAULT_NAME="${A_VAULT_NAME-${A_ENV_NAME}}"
+DEFAULT_A_VAULTS_FOLDER="$COPS_CWD/.ansible/vaults"
+export A_VAULTS_FOLDER="${A_VAULTS_FOLDER-${DEFAULT_A_VAULTS_FOLDER}}"
+DEFAULT_A_CRYPTED_VAULTS="$A_VAULTS_FOLDER/${A_ENV_NAME}.yml"
+export A_CRYPTED_VAULTS="${A_CRYPTED_VAULTS-${DEFAULT_A_CRYPTED_VAULTS}}"
+DEFAULT_A_INVENTORY_FILE=""
+if [[ -n "${A_ENV_NAME}" ]];then
+    DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
+fi
+A_INVENTORY_FILE_SUF=""
+DEFAULT_A_INVENTORY=""
+export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
+if [[ -n "${A_INVENTORY_FILE}" ]];then
+    if [ -d $A_INVENTORY_FILE ];then
+        A_INVENTORY_FILE_SUF=/
+    fi
+    DEFAULT_A_INVENTORY="-i ${A_INVENTORY_FILE}${A_INVENTORY_FILE_SUF}"
+fi
+A_INVENTORY="${A_INVENTORY-${DEFAULT_A_INVENTORY}}"
+# Do not set inventory if redefined in $@
+if echo $@ | egrep -iq -- "(( -i )|(--(inventory-file|inventory)(=| )))";then
+    debug "Inventory CLI switch detected, removing default one"
+    A_INVENTORY=""
+fi
+export A_INVENTORY
+#
 DEFAULT_SECRET_VAULTS=""
-for i in \
-    "$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME" \
-    "$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
-do
+DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
+DEFAULT_SECRET_VAULTS=""
+i="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
+if [ -e "$i" ];then
+    DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
+fi
+if [[ -n "${A_VAULT_NAME}" ]];then
+    i="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME"
     if [ -e "$i" ];then
         DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
     fi
-done
-DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
-DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS=""
-for i in \
-    .ansible/vaults/$A_VAULT_NAME.clear.yml \
-    .ansible/vaults/$A_VAULT_NAME.yml
-do
-    if [ -e "$i" ];then
-        DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS="$DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS -e@$i"
-    fi
-done
-export VAULT_PASSWORD_VARIABLES_PREFIX=${VAULT_PASSWORD_VARIABLES_PREFIX:-CORPUSOPS_VAULT_PASSWORD_}
-export CORPUSOPS_URL="${CORPUSOPS_URL:-https://github.com/corpusops/corpusops.bootstrap}"
-export CORPUSOPS_INSTALL_ARGS=${CORPUSOPS_INSTALL_ARGS:-"-C -S"}
-export CORPUSOPS_UPDATE_ARGS=${CORPUSOPS_UPDATE_ARGS:-"-C -s"}
-export COPS_ROOT="${cops_root:-$HOME/corpusops.bootstrap}"
-export SYS_COPS_ROOT=${SYS_COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
-export LOCAL_COPS_ROOT="${cops_path:-$COPS_CWD/local/corpusops.bootstrap}"
-export COREVARS_VAULT="${CORE_VAULT:-"${COPS_CWD}/local/corevars.yml"}"
-export COPS_PLAYBOOKS="${COPS_PLAYBOOKS:-${cops_playbooks:-"${LOCAL_COPS_ROOT}/playbooks/corpusops"}}"
-export AP=${AP:-"$LOCAL_COPS_ROOT/bin/ansible-playbook"}
-export ANSIBLE_BIN=${ANSIBLE_BIN:-"$LOCAL_COPS_ROOT/bin/ansible"}
-DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
-export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
-A_INVENTORY_FILE_SUF=""
-if [ -d $A_INVENTORY_FILE ];then
-LOCAL_COPS_ROOTA_INVENTORY_FILE_SUF=/
 fi
-DEFAULT_A_INVENTORY="-i ${A_INVENTORY_FILE}${A_INVENTORY_FILE_SUF}"
-export A_INVENTORY="${A_INVENTORY-${DEFAULT_A_INVENTORY}}"
+export PLAYBOOK_POST_ARGS="${PLAYBOOK_POST_ARGS-}"
+export PLAYBOOK_POST_CUSTOM_ARGS="${PLAYBOOK_POST_CUSTOM_ARGS-}"
 export SECRET_VAULTS="${SECRET_VAULTS-$DEFAULT_SECRET_VAULTS}"
 export SECRET_VAULT_PREFIX="${SECRET_VAULT_PREFIX-${DEFAULT_SECRET_VAULT_PREFIX}}"
+export VAULT_PASSWORD_VARIABLES_PREFIX=${VAULT_PASSWORD_VARIABLES_PREFIX:-CORPUSOPS_VAULT_PASSWORD_}
+export COREVARS_VAULT="${CORE_VAULT:-"${COPS_LOCAL_FOLDER}/corevars.yml"}"
+#
+DEFAULT_PLAYBOOK_PRE_ARGS="${A_VERBOSITY}"
+DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS=""
+if [[ -z "$NO_DEFAULT_VAULTS" ]];then
+    for i in \
+        "$COREVARS_VAULT" \
+        "$A_VAULTS_FOLDER/default.yml" \
+        "$A_VAULTS_FOLDER/app.yml" \
+        "$A_VAULTS_FOLDER/$A_VAULT_NAME.clear.yml" \
+        "$A_VAULTS_FOLDER/$A_VAULT_NAME.yml"
+    do
+        if [ -e "$i" ];then
+            DEFAULT_PLAYBOOK_PRE_ARGS="$DEFAULT_PLAYBOOK_PRE_ARGS -e@$i"
+        fi
+    done
+fi
+#
 export PLAYBOOK_PRE_ARGS="${PLAYBOOK_PRE_ARGS-$DEFAULT_PLAYBOOK_PRE_ARGS}"
 export PLAYBOOK_PRE_CUSTOM_ARGS="${PLAYBOOK_PRE_CUSTOM_ARGS-$DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS}"
-export NO_SILENT=${NO_SILENT-1}
-export PATH=$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH
+#
+export PATH="$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH"
+#
+_COPS_SILENTRUN=$COPS_SILENTRUN
+if [[ -n "$NO_SILENT" ]];then _COPS_SILENTRUN=vv;fi
+set_vaultpwfiles
+DEFAULT_A_LAUNCH_CMD="$_COPS_SILENTRUN $A_CALLED_BIN $vaultpwfiles\
+${A_CUSTOM_ARGS-} \
+${PLAYBOOK_PRE_ARGS} ${PLAYBOOK_PRE_CUSTOM_ARGS} \
+${A_INVENTORY} \
+$PLAYBOOK \
+${PLAYBOOK_POST_ARGS} ${PLAYBOOK_POST_CUSTOM_ARGS}"
+#
+if [[ -n $NO_A_ARGS ]];then DEFAULT_A_LAUNCH_CMD=;fi
+export A_LAUNCH_CMD=${A_LAUNCH_CMD:-${DEFAULT_A_LAUNCH_CMD}}
+#
