@@ -25,14 +25,13 @@
 - From there you get two options
     1. If you already have ``corpusops.bootstrap``, or if you want to get one
        that you 'll share in the future with other projects,
-       clone it somewhere and syhmlink it in this subfolder: ``./local/corpusops.bootstrap``.
-        1. Install (do this step only once per project)
+       clone it somewhere and a symlink will be in this subfolder: ``./local/corpusops.bootstrap``.
 
-            ```sh
-            # export COPS_ROOT=$HOME/common_corpusops/ ;  # default: ~/corpusops/corpusops.bootstrap
-            cd $COPS_CWD
-            ./.ansible/scripts/download_corpusops.sh
-            ```
+        ```sh
+        # export COPS_ROOT=$HOME/common_corpusops/ ;  # default: ~/corpusops/corpusops.bootstrap
+        cd $COPS_CWD
+        ./.ansible/scripts/download_corpusops.sh
+        ```
 
     2. Or if you just want to have a local copy of ``corpusops.bootstrap``, just issue
 
