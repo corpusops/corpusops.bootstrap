@@ -55,6 +55,12 @@
     git submodule init
     git submodule update --recursive
     ```
+- Setup the base ansible stuff
+
+    ```sh
+    cd $COPS_CWD
+    ./.ansible/scripts/setup_ansible.sh
+    ```
 
 - You can change the options of the VM that we are going to create
   [note this README](https://github.com/corpusops/corpusops.bootstrap/blob/master/hacking/vagrant/README.md)
