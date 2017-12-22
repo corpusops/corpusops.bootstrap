@@ -5,7 +5,7 @@ This packages helps to bring out a working ansible environment to boostrap
 a whole modern infrastructure
 
 ## Documentation topics
-- [Doc](./doc)
+- [Docs](./docs)
 
 ## Galaxy
 corpusops team normally add entries to this [galaxy user](https://galaxy.ansible.com/corpusops/).
