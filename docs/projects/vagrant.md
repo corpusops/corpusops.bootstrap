@@ -328,7 +328,6 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
   also use our ansible wrappers, which are simpler:
 
     ```sh
-    .ansible/scripts/setup_core_variables.sh
     .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
      -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml \
@@ -347,7 +346,6 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
   reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
 
     ```sh
-    .ansible/scripts/setup_core_variables.sh
     .ansible/scripts/call_ansible.sh -v \
      --inventory-file=.vagrant/provisioners/ansible/inventory \
      -e@local/corevars.yml -e@.ansible/vaults/vagrant.yml  \
