@@ -17,7 +17,7 @@
   code inside a dedicated folder which will host the vm.
 
     ```sh
-    git clone --recursive $GIT_URL $COPS_CWD
+    git clone --recursive $A_GIT_URL $COPS_CWD
     cd $COPS_CWD
     git submodule init
     git submodule update --recursive
