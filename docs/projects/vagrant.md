@@ -86,7 +86,7 @@ vm_file=$(basename $FTP_URL)
 # We go inside project top folder (defined in your top readme)
 cd $COPS_CWD
 # We get the VM
-rsync $FTP_URL ./local/$vm_file
+rsync -azvP $FTP_URL ./local/$vm_file
 # Note that the further command will overwrite your local vagrant_config.yml (backup it !?)
 ./vm_manage import ./local/$vm_file
 # Note that important --no-provision, VERY VERY IMPORTANT to save you time, MANY MANY TIME.
