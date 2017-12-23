@@ -82,12 +82,13 @@ If someone does have already build a VM for this project,
 you should start from there and it will save you precious minutes.
 
 ```sh
+vm_file=$(basename $FTP_URL)
 # We go inside project top folder (defined in your top readme)
 cd $COPS_CWD
 # We get the VM
-rsync -azvP $FTP_URL ./
+rsync $FTP_URL ./local/$vm_file
 # Note that the further command will overwrite your local vagrant_config.yml (backup it !?)
-./vm_manage import $PWD/<project>-corpusopsXX-X.box
+./vm_manage import ./local/$vm_file
 # Note that important --no-provision, VERY VERY IMPORTANT to save you time, MANY MANY TIME.
 ./vm_manage up --no-provision
 ```
