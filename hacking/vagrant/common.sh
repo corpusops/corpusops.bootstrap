@@ -14,10 +14,12 @@ sourcefile() {
     done
 }
 
+if [ -e .vagrant/provision_settings.sh ];then
+    sourcefile .vagrant/provision_settings.sh
+fi
 if [ -e /root/vagrant/provision_settings.sh ];then
     sourcefile /root/vagrant/provision_settings.sh
 fi
-
 
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
@@ -27,6 +29,14 @@ NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
 LOGGER_NAME=${LOGGER_NAME:-cops_vagrant}
 
 
+DEFAULT_COPS_SSHFS_OPTS="-o cache=yes -o kernel_cache"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o large_read"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Compression=no"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o ServerAliveCountMax=3 -o ServerAliveInterval=15"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o reconnect"
+DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -C -o workaround=all"
+COPS_SSHFS_OPTS="${COPS_SSHFS_OPTS:-"$DEFAULT_COPS_SSHFS_OPTS"}"
 DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
 DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
