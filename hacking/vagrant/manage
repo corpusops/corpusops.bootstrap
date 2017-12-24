@@ -122,13 +122,16 @@ cleanup_import_box() {
     fi
 }
 
-
-do_ssh() {
-    host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
-    do_sshgen $host
+do_ssh_() {
+    local host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
     ssh -F .vagrant/cops-sshconfig-$host vagrant "${@}"
 }
 
+do_ssh() {
+    local host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
+    do_sshgen $host
+    ssh_host=$host do_ssh_ "${@}"
+}
 
 get_cops_installer() {
     for i in ./ ../bin ../../bin;do
@@ -163,13 +166,20 @@ install_python() {
 
 
 do_sshgen() {
-     hosts=$@
+    hosts=$@
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
     for h in $hosts;do
         if [ ! -e .vagrant ];then mkdir .vagrant;fi
+        local scfg=.vagrant/cops-sshconfig-$h
         COPS_DEBUG= vagrant ssh-config $h | sed \
             -e "s/User .*/User root/g" \
-            -e "s/Host .*/Host vagrant/g" > .vagrant/cops-sshconfig-$h
+            -e "s/Host .*/Host vagrant/g" > "$scfg"
+        if echo "$COPS_SSHFS_OPTS" | grep -qi arcfour;then
+            #sed -i -e '/Port.*/ { a Ciphers arcfour;a Compression no; a\ ;}' "$scfg"
+            sed -i -e '/Port.*/ a\  Ciphers arcfour' "$scfg"
+            sed -i -e '/Compression/d'  "$scfg"
+            sed -i -e '/Port.*/ a\  Compression no' "$scfg"
+        fi
         if ! ( grep -q "Host vagrant" .vagrant/cops-sshconfig-$h );then
             echo "pb with vagrant-sshconfig $h" >&2
             exit 1
@@ -182,13 +192,26 @@ do_mount() {
     hosts=$@
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
     for h in $hosts;do
+        local ssh_host=$h
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
         if [ ! -e "${VM_MOUNTPOINT}" ];then
             mkdir -p "${VM_MOUNTPOINT}"
         fi
+        # activating all ciphers on remote
         if [ ! -e "${VM_MOUNTPOINT}/bin" ];then
-            do_sshgen $@\
-                && vv sshfs \
+            do_sshgen $h || die_in_error "sshgen $h"
+            local scfg=/etc/ssh/sshd_config
+            if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
+                ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
+                if [[ -n $ciphers ]];then
+                    cmd="sed -i '/^Ciphers /d' $scfg"
+                    cmd="$cmd && printf \"\n\nCiphers $ciphers\n\n\""
+                    cmd="$cmd >>$scfg"
+                    cmd="$cmd && service ssh restart"
+                    do_ssh_ "$cmd" || die "reconfigure sshd ciphers for $h"
+                fi
+            fi
+            vv sshfs $COPS_SSHFS_OPTS \
                 -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
                 vagrant:/ "${VM_MOUNTPOINT}"
             die_in_error "Error while mounting $h"
