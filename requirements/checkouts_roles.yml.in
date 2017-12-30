@@ -21,6 +21,7 @@
     #    #- "{{prefix}}/roles/corpusops.saltcall"
     #    #- "{{prefix}}/roles/corpusops.debug"
     # checkout
+    # Retro compat link for playbooks
     - stat: {path: "{{prefix}}/playbooks/corpusops"}
       register: playbooks_dir
     - file:
@@ -34,6 +35,7 @@
         state: link
         path: "{{prefix}}/playbooks/corpusops"
         src: "{{prefix}}/roles/corpusops.roles/playbooks"
+    # Checkout roles
     - include_tasks: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
       tags: checkouts,checkout,checkout_cops
