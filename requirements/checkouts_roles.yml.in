@@ -32,6 +32,7 @@
         state: directory
         path: "{{prefix}}/playbooks"
     - file:
+        force: true
         state: link
         path: "{{prefix}}/playbooks/corpusops"
         src: "{{prefix}}/roles/corpusops.roles/playbooks"
