@@ -121,7 +121,6 @@ set_vars() {
     DO_ONLY_RECONFIGURE="${DO_ONLY_RECONFIGURE-""}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
-    DO_SYNC_PLAYBOOKS="${DO_SYNC_PLAYBOOKS-${DO_SYNC_CODE}}"
     DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_CODE}}"
     DO_SYNC_ANSIBLE="${DO_SYNC_ANSIBLE-${DO_SYNC_ANSIBLE}}"
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
@@ -177,7 +176,6 @@ set_vars() {
     export DO_ONLY_RECONFIGURE
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
-    export DO_SYNC_PLAYBOOKS
     export DO_SYNC_ROLES
     export DO_SYNC_ANSIBLE
     export DO_SYNC_CORE
@@ -234,9 +232,6 @@ recap_(){
         fi
         if [ "x${DO_SYNC_CORE}" != "xno" ];then
             msg="${msg} core -"
-        fi
-        if [ "x${DO_SYNC_PLAYBOOKS}" != "xno" ];then
-            msg="${msg} playbooks -"
         fi
         if [ "x${DO_SYNC_ROLES}" != "xo" ];then
             msg="${msg} roles"
@@ -363,9 +358,6 @@ checkout_code() {
             fi
             if [ "x$DO_SYNC_CORE" != "xno" ];then
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
-            fi
-            if [ "x$DO_SYNC_PLAYBOOKS" != "xno" ];then
-                TO_CHECKOUT="${TO_CHECKOUT} checkouts_playbooks.yml"
             fi
             if [ "x$DO_SYNC_ROLES" != "xno" ];then
                 TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
@@ -626,8 +618,6 @@ usage() {
         "$(print_contrary ${DO_SYNC_ANSIBLE})"  y
     bs_help "     --skip-sync-core" "Do not sync core (bootstrap)" \
         "$(print_contrary ${DO_SYNC_CORE})"  y
-    bs_help "     --skip-sync-playbooks" "Do not sync playbooks" \
-        "$(print_contrary ${DO_SYNC_PLAYBOOKS})"  y
     bs_help "     --skip-sync-roles" "Do not sync roles" \
         "$(print_contrary ${DO_SYNC_ROLES})"  y
     bs_help "    -s|--only-synchronize-code|--only-sync-code|--synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
@@ -696,10 +686,6 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--skip-sync-core" ]; then
             DO_SYNC_CORE="no"
-            argmatch="1"
-        fi
-        if [ "x${1}" = "x--skip-sync-playbooks" ]; then
-            DO_SYNC_PLAYBOOKS="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--skip-sync-roles" ]; then
