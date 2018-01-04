@@ -1,0 +1,35 @@
+diff -Nur old/usr/lib/python2/test/test_support.py new/usr/lib/python2/test/test_support.py
+--- old/usr/lib/python2/test/test_support.py	2018-01-04 19:26:40.694718750 +0100
++++ new/usr/lib/python2/test/test_support.py	2018-01-04 19:29:33.497800076 +0100
+@@ -494,17 +494,20 @@
+
+ def _is_ipv6_enabled():
+     """Check whether IPv6 is enabled on this host."""
+-    if socket.has_ipv6:
+-        sock = None
+-        try:
+-            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+-            sock.bind((HOSTv6, 0))
+-            return True
+-        except socket.error:
+-            pass
+-        finally:
+-            if sock:
+-                sock.close()
++    try:
++        if socket.has_ipv6:
++            sock = None
++            try:
++                sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
++                sock.bind((HOSTv6, 0))
++                return True
++            except socket.error:
++                pass
++            finally:
++                if sock:
++                    sock.close()
++    except Exception:
++        pass
+     return False
+
+ IPV6_ENABLED = _is_ipv6_enabled()
