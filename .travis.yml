@@ -66,4 +66,3 @@ cache:
     - $HOME/.cache/pip
     - $TRAVIS_BUILD_DIR/venv
     - $TRAVIS_BUILD_DIR/roles/corpusops.roles
-    - $TRAVIS_BUILD_DIR/playbooks/corpusops
