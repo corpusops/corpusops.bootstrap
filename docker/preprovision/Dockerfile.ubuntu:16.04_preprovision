@@ -45,16 +45,52 @@ RUN bash -c 'step_rev=3;\
     :;\
     silent ./cops_container_disable_networkifacesscripts.sh'
 
-# 2/ isolate virtualenv contruction
-COPY requirements/os_* \
+# 2/ configure python & isolate virtualenv contruction
+# the python diffs are to fix ipv6 error (cant bind address)
+COPY hacking/patches/python*.diff \
+     requirements/os_* \
      requirements/python_* \
      ${COPS_ROOT}/requirements/
 RUN bash -c 'step_rev=2;set -e;\
     silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
+    pos=;if [ -e /etc/redhat-release ];then pos=.rh;fi;\
+    rhpyvers="36";pypkgs="";\
+    if [ "x${pos}" = "x.rh" ];then \
+        for i in ${rhpyvers};do pypkgs="$pypkgs python${i}u-test python${i}u-libs python${i}u-pip python${i}u-devel";done;\
+        yum -y install https://centos7.iuscommunity.org/ius-release.rpm;\
+    fi;\
+    if [ "x${pypkgs}" != "x" ];then /bootstrap/cops_pkgmgr_install.sh $pypkgs;fi;\
+    while read f;do \
+        cd "$f";\
+        pyver=3;\
+        applypatch=;\
+        if [ -e test/support/__init__.py ] \
+        && grep -q "^    if socket.has_ipv6" test/support/__init__.py;then\
+            applypatch=1;\
+        fi;\
+        p="$COPS_ROOT/requirements/python${pyver}${pos}.diff";\
+        if [ "x${applypatch}" != "x" ];then\
+            echo "Patching $f W $p" >&2;patch -fp4 < $p;\
+        fi;\
+    done < <(ls -d /usr/lib*/python3* 2>/dev/null);\
+    while read f;do \
+        cd "$f";\
+        applypatch=;\
+        pyver=2;\
+        if [ -e test/test_support.py ] \
+        && grep -q "^    if socket.has_ipv6" test/test_support.py;then\
+            applypatch=1;\
+        fi;\
+        p="$COPS_ROOT/requirements/python${pyver}${pos}.diff";\
+        if [ "x${applypatch}" != "x" ];then\
+            echo "Patching $f W $p" >&2;patch -fp4 < $p;\
+        fi;\
+    done < <(ls -d /usr/lib*/python2* 2>/dev/null);\
     cd ${COPS_ROOT};\
     silent virtualenv --system-site-packages --unzip-setuptools venv;\
     . venv/bin/activate;\
     :;\
+    silent python -c "from test import test_support";\
     silent pip install -U pip;\
     silent pip install -U -r requirements/python_requirements.txt;'
 
