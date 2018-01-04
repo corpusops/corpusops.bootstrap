@@ -318,7 +318,7 @@ def cops_init(opts)
     end
     if cops_playbooks.nil?
         cops_playbooks = File.join(
-          cops_path, 'playbooks/corpusops')
+          cops_path, 'roles/corpusops.roles/playbooks')
     end
     cfg['CWD'] = cwd
     cfg['SCWD'] = cfg['CWD'].gsub(/\//, '_').slice(1..-1)
