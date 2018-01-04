@@ -21,7 +21,20 @@
     #    #- "{{prefix}}/roles/corpusops.saltcall"
     #    #- "{{prefix}}/roles/corpusops.debug"
     # checkout
-    - include: './checkouts_tasks.yml'
+    - stat: {path: "{{prefix}}/playbooks/corpusops"}
+      register: playbooks_dir
+    - file:
+        state: absent
+        path: "{{prefix}}/playbooks/corpusops"
+      when: playbooks_dir.stat.exists and not playbooks_dir.stat.islnk
+    - file:
+        state: directory
+        path: "{{prefix}}/playbooks"
+    - file:
+        state: link
+        path: "{{prefix}}/playbooks/corpusops"
+        src: "{{prefix}}/roles/corpusops.roles/playbooks"
+    - include_tasks: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
       tags: checkouts,checkout,checkout_cops
       loop_control:

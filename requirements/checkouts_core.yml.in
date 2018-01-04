@@ -5,7 +5,7 @@
         dest: '{{prefix}}'
         version: '__CORPUSOPS_BRANCH__'
   tasks:
-    - include: './checkouts_tasks.yml'
+    - include_tasks: './checkouts_tasks.yml'
       with_items: "{{ checkouts }}"
       tags: checkouts,checkout
       loop_control:

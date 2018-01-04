@@ -3,12 +3,11 @@
 
 FROM corpusops/ubuntu:latest_preprovision
 ADD roles/ /srv/corpusops/corpusops.bootstrap/roles/
-ADD playbooks/ /srv/corpusops/corpusops.bootstrap/playbooks/
 
 # 5/ Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    silent $COPS_APPLY_ROLE -e "cops_vars_debug=true" "${COPS_ROOT}/playbooks/corpusops/provision/server.yml"'
+    silent $COPS_APPLY_ROLE -e "cops_vars_debug=true" "${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml"'
 
 # pack any found git repo
 RUN bash -c 'step_rev=3;set -e;\

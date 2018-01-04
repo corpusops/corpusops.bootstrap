@@ -76,7 +76,6 @@ RUN bash -c 'step_rev=2;set -e;\
 # 4/ Bring in all playbooks & roles
 COPY .git ${COPS_ROOT}/.git
 COPY roles ${COPS_ROOT}/roles
-COPY playbooks ${COPS_ROOT}/playbooks
 RUN bash -c 'step_rev=3;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
     cd $COPS_ROOT;\
