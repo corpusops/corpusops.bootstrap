@@ -8,6 +8,7 @@ ADD roles/ /srv/corpusops/corpusops.bootstrap/roles/
 # 5/ Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
     silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
+    ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;\
     silent $COPS_APPLY_ROLE -e "cops_vars_debug=true" "${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml"'
 
 # pack any found git repo
