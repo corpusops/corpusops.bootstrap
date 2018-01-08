@@ -167,7 +167,9 @@ install_python() {
 
 do_sshgen() {
     hosts=$@
+    local ciphers=$(echo $(ssh -Q cipher)|sed "s/ /,/g")
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    ciphers="arcfour,$ciphers"
     for h in $hosts;do
         if [ ! -e .vagrant ];then mkdir .vagrant;fi
         local scfg=.vagrant/cops-sshconfig-$h
@@ -176,7 +178,7 @@ do_sshgen() {
             -e "s/Host .*/Host vagrant/g" > "$scfg"
         if echo "$COPS_SSHFS_OPTS" | grep -qi arcfour;then
             #sed -i -e '/Port.*/ { a Ciphers arcfour;a Compression no; a\ ;}' "$scfg"
-            sed -i -e '/Port.*/ a\  Ciphers arcfour' "$scfg"
+            sed -i -e '/Port.*/ a\  Ciphers '"$ciphers" "$scfg"
             sed -i -e '/Compression/d'  "$scfg"
             sed -i -e '/Port.*/ a\  Compression no' "$scfg"
         fi
@@ -185,6 +187,22 @@ do_sshgen() {
             exit 1
         fi
     done
+}
+
+
+activate_arcfour() {
+    local h=$1
+    local scfg=/etc/ssh/sshd_config
+    if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
+        ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
+        if [[ -n $ciphers ]];then
+            cmd="sed -i '/^Ciphers /d' $scfg"
+            cmd="$cmd && printf \"\n\nCiphers $ciphers\n\n\""
+            cmd="$cmd >>$scfg"
+            cmd="$cmd && service ssh restart"
+            do_ssh_ "$cmd" || die "reconfigure sshd ciphers for $h"
+        fi
+    fi
 }
 
 
@@ -199,18 +217,8 @@ do_mount() {
         fi
         # activating all ciphers on remote
         if [ ! -e "${VM_MOUNTPOINT}/bin" ];then
+            activate_arcfour $h
             do_sshgen $h || die_in_error "sshgen $h"
-            local scfg=/etc/ssh/sshd_config
-            if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
-                ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
-                if [[ -n $ciphers ]];then
-                    cmd="sed -i '/^Ciphers /d' $scfg"
-                    cmd="$cmd && printf \"\n\nCiphers $ciphers\n\n\""
-                    cmd="$cmd >>$scfg"
-                    cmd="$cmd && service ssh restart"
-                    do_ssh_ "$cmd" || die "reconfigure sshd ciphers for $h"
-                fi
-            fi
             vv sshfs $COPS_SSHFS_OPTS \
                 -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
                 vagrant:/ "${VM_MOUNTPOINT}"
