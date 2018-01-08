@@ -42,6 +42,7 @@ DNAME=${DNAME:-${DNAME_DEFAULT}}
 DOCKER_EXTRA_ARGS=${DOCKER_EXTRA_ARGS-}
 LOCAL_COPS_ROOT=${LOCAL_COPS_ROOT:-$W/local/corpusops.bootstrap}
 COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
+DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 if [ -e $COPS_ROOT ];then
     COPS_ROOT=$(readlink -f $COPS_ROOT)
 fi
@@ -49,9 +50,9 @@ COPS_PLAY="${COPS_PLAY:-.ansible/site.yml}"
 COPS_ALTPLAY="${COPS_ALTPLAY:-.ansible/playbooks/site.yml}"
 
 if vv docker run \
-    -v $LOCAL_COPS_ROOT/bin:$COPS_ROOT/bin \
-    -v $LOCAL_COPS_ROOT/hacking:$COPS_ROOT/hacking \
-    -v $LOCAL_COPS_ROOT/roles/corpusops.roles:$COPS_ROOT/roles/corpusops.roles \
+    -v $LOCAL_COPS_ROOT/bin:$DOCKER_COPS_ROOT/bin \
+    -v $LOCAL_COPS_ROOT/hacking:$DOCKER_COPS_ROOT/hacking \
+    -v $LOCAL_COPS_ROOT/roles/corpusops.roles:$DOCKER_COPS_ROOT/roles/corpusops.roles \
     -v $SETUP_DIR:/setup:ro \
     -v $DATA_DIR:/srv/projects/$TAG_NAME/data \
     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
@@ -69,7 +70,7 @@ if vv docker run \
     $IMAGE_BASE $IMAGE_EP;then
     echo "Well done, connect using docker exec -ti ${DNAME} bash"
     echo "In most cases to test provison, use: "
-    acmd="rsync -azv ${PROVISION_DIR}.in/ ${PROVISION_DIR}/;cd $PROVISION_DIR;$COPS_ROOT/bin/cops_apply_role -vvvv --skip-tags to_skip -e@/setup/reconfigure.yml -e cops_playbooks=$COPS_ROOT/roles/corpusops.roles/playbooks -e cops_path=$COPS_ROOT -e cops_cwd=${PROVISION_DIR}"
+    acmd="rsync -azv ${PROVISION_DIR}.in/ ${PROVISION_DIR}/;cd $PROVISION_DIR;$DOCKER_COPS_ROOT/bin/cops_apply_role -vvvv --skip-tags to_skip -e@/setup/reconfigure.yml -e cops_playbooks=$DOCKER_COPS_ROOT/roles/corpusops.roles/playbooks -e cops_path=$DOCKER_COPS_ROOT -e cops_cwd=${PROVISION_DIR}"
     for i in $DEFAULT_VAULTS;do
         if [ -e $W/$i ];then
             acmd="$acmd -e@$i"
