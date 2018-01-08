@@ -78,6 +78,7 @@
     - OR use a prebacked VM for your project only and only if it exists
 
 ### With the prebacked VM
+git subhmodule init
 
 If someone does have already build a VM for this project,
 you should start from there and it will save you precious minutes.
@@ -228,7 +229,7 @@ cd $COPS_CWD
 # un git pull from there just update deploy glue
 git pull --recurse-submodules=yes
 # DONT FORGET SUBMODULES IF ANY
-git subhmodule init
+git submodule init
 git submodule update --recursive
 ./.ansible/scripts/setup_corpusops.sh
 ```
@@ -283,7 +284,8 @@ After code update, you should also do this step
 cd -
 vm_manage ssh
 root@corpusopsXX-X:~# cd /srv/projects/*/
-root@corpusopsXX-X:~# cd /srv/projects/s*/project/
+root@corpusopsXX-X:~# cd /srv/projects/s*/projecgit subhmodule init
+t/
 root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 + Testing relative link /srv/projects/*/project/www/sites/default exists
 
