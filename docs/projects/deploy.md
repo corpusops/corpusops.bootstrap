@@ -30,8 +30,6 @@ export A_ENV_NAME="staging"
 export NONINTERACTIVE=1
 ```
 
-
-.ansible/scripts/call_ansible.sh -vvv .ansible/playbooks/haproxy.yml
 ## Prepare for deployment
 
 ### Get the code
