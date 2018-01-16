@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-if [ -e .ansible/scripts/ansible_deploy_env ];then
-    . .ansible/scripts/ansible_deploy_env
+COPS_SCRIPTS_DIR="${COPS_SCRIPTS_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
+    . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
 
 if [[ -n ${SKIP_COPS_SETUP-} ]];then die_ 0 "-> Skip corpusops setup";fi
