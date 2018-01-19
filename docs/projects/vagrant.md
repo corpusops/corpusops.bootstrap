@@ -277,14 +277,14 @@ If you have searching for the name supported by this VM, never hesitate to look 
 It should most of the times contain the names, remember that it's then not `127.0.0.1` but the VM IP (``192.168.xx.xx``).
 
 
-### DRUPAL: Update your website dabase
+### DRUPAL: Update your website database
 After code update, you should also do this step
 ```
 # puis on lance le post-update pour faire tourner les updb, config-sync et autres joyeusetés
 cd -
 vm_manage ssh
 root@corpusopsXX-X:~# cd /srv/projects/*/
-root@corpusopsXX-X:~# cd /srv/projects/s*/projecgit subhmodule init
+root@corpusopsXX-X:~# cd /srv/projects/s*/project && git subhmodule init
 t/
 root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 + Testing relative link /srv/projects/*/project/www/sites/default exists
