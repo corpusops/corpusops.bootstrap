@@ -284,7 +284,7 @@ After code update, you should also do this step
 cd -
 vm_manage ssh
 root@corpusopsXX-X:~# cd /srv/projects/*/
-root@corpusopsXX-X:~# cd /srv/projects/s*/project && git subhmodule init
+root@corpusopsXX-X:~# cd /srv/projects/s*/project && git submodule init
 t/
 root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 + Testing relative link /srv/projects/*/project/www/sites/default exists
