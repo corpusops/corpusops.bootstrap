@@ -277,6 +277,13 @@ If you have searching for the name supported by this VM, never hesitate to look 
 It should most of the times contain the names, remember that it's then not `127.0.0.1` but the VM IP (``192.168.xx.xx``).
 
 
+### DRUPAL: use console
+```sh
+./vm_manage ssh
+cd /srv/projects/<foo>/project
+vendor/bin/drupal
+```
+
 ### DRUPAL: Update your website database
 After code update, you should also do this step
 ```
@@ -311,7 +318,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
     root@corpusopsXX-X: cd /srv/projects/*/project
     root@corpusopsXX-X: sbin/drush uli
     http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
-    ``` 
+    ```
 
 ## ZOPE: get the web admin password
 - Login is generally: admin
@@ -320,7 +327,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 ./vm_manage ssh \
 'for i in /etc/*secrets/*zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'\
 |awk '!a[$0]++'|sort -nk2
-```    
+```
 
 ## Launch ansible commands by hand
 - When we do `vm_manage up`, we can see long ``ansible`` command lines, you can copy/paste them and adapt to replay deploy parts, it will work.
