@@ -1,9 +1,54 @@
 # Corpusops based projects documentation
 
 # Deploying projects
-- Deploy methods
-    - [Deploying on environments](./deploy.md)
-    - [Deploying on vagrant](./vagrant.md)
+- See [deploy/variables](./deploy.md#variables) before everything else
+
+
+## projects specific notes
+
+### Drupal
+- [Install the cluster](./zope.md#install_cluster)
+- [Update the cluster](./drupal.md#update_cluster)
+- [Get admin password](./drupal.md#password)
+- [Go inside the site (admin user)](./drupal.md#duli)
+- [Use drush](./drupal.md#drush)
+- [Use console](./drupal.md#dconsole)
+- [Update your website database](./drupal.md#ddbup)
+
+### Zope
+- [Install the cluster](./zope.md#install_cluster)
+- [Update the cluster](./zope.md#update_cluster)
+- [Get the web admin password](zope.md#password)
+
+
+## Vagrant
+- [Setup variables ](./vagrant.md#variables)
+- [Install vagrant and corpusops](./vagrant.md#install)
+- [Start with the prebacked VM](./vagrant.md#prebacked)
+- [Start from scratch](./vagrant.md#scratch)
+- FAQ
+    - [Where is the common ./vagrant.md code that the Vagrantfile points to](./vagrant.md#vcommon)
+    - [Stop VM](./vagrant.md#stop)
+    - [Start VM](./vagrant.md#tart)
+    - [OMG, i launched provision but i did not want to ](./vagrant.md#stop)
+    - [I shut down the provision procedure, how do I put back the sshfs link ?](./vagrant.md#mount)
+    - [Going inside the vm, with ssh](./vagrant.md#sshto)
+    - [Where do i link my EDITOR (IDE) & where to edit the code, in or out the VM ?](./vagrant.md#editor)
+    - [Update your provision (deploy) code](./vagrant.md#upglue)
+    - [Update your app code (manips git)](./vagrant.md#upcode)
+    - [Symlink your project code folders](./vagrant.md#scode)
+    - [Access the VM websites](./vagrant.md#vmhosts)
+    - [Launch ansible commands by hand](./vagrant.md#ansiblehand)
+    - [Launch ansible commands, & deploy step by step only_steps](./vagrant.md#only_steps)
+
+## Generic managment
+- [Generic deploy doc](./deploy.md)
+- [Localhost setup](./deploy.md#prepare)
+- [Inventory setup](./deploy.md#inventory)
+- [Servers preparation](./deploy.md#prepareservers)
+- [Inventory setup](./deploy.md#inventory)
+- [Install procedure](./deploy.md#install_cluster)
+- [Update procedure](./deploy.md#update_cluster)
 
 # corpusops based projects & quickstarters
 - Non exhaustive list of corpusops based projects & quickstarters
@@ -25,36 +70,4 @@
 - Many of the repositories have a ``project`` branch, and it's from this branch, if it exists, that you should initiate a new project, see below.
 
 ## Initiate a project
-
-So, for example, Let's say you **initiate** a new 'toto' project (for client **Zorg**) , which is a drupal project, no other collegue as already made the stuff for you, someone should start it, and it's you.
-
-    # prepare your local project paths
-    export A_GIT_URL="git@gitlab.makina-corpus.net:zorg/toto.git"
-    export COPS_CWD="$HOME/makina/zorg/vmtoto"
-    # clone the gilab repo, which should be empty
-    mkdir -p ${COPS_CWD}
-    cd ${COPS_CWD}
-    git clone ${A_GIT_URL} .
-    # fetch the model project from the template project listed above
-    git remote add template https://github.com/corpusops/setups.drupal.git
-    git fetch --all
-    # checkout the base project branche (listed above also)
-    # warning: not the deploy branch, you do not need it on the new project
-    # you'll get it as submodule
-    git checkout -b template-deploy template/D8_project
-    # and push it to the new project master branch (on origin)
-    git push origin template-deploy:master
-    # back on the master
-    git checkout master
-    git pull
-    # init the project and the submodules before any customization
-    # (check the other docs for details) ---------------
-    git submodule init
-    git submodule update --recursive
-    ./.ansible/scripts/download_corpusops.sh
-    # ------------------------------------------------------
-    # now customize the project.
-    # check .ansible/vaults/app.yml and .ansible/vaults/default.yml
-    # alter the project related stuff also (like the profiles files for drupal)
-    # startup code, etc.)
-    # and when you are ready start the vm for the first time...
+- [here](./start.md)
