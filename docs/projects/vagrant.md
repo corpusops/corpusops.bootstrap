@@ -1,6 +1,6 @@
 # Vagrant based setup for corpusops based projects
 
-## Setup variables
+## <a name="variables"/>Setup variables
 
 - Core variables
   ```sh
@@ -10,7 +10,7 @@
   export FTP_URL=<tri>@ftp.x-x.net:/srv/projects/*/data/*/nobackup/vm_bar/*-*box
   ```
 
-## Install Vagrant for corpusops
+## <a name="install"/>Install Vagrant and corpusops
 - We provide disposable dev environments provisioned
   via the corpusops framework [corpusops](https://github.com/corpusops/corpusops.bootstrap.git)
 - First thing you need is to clone recursivly your project
@@ -59,25 +59,25 @@
 - You can change the options of the VM that we are going to create
   [note this README](https://github.com/corpusops/corpusops.bootstrap/blob/master/hacking/vagrant/README.md)
   et [this file containing useful variables](https://github.com/corpusops/corpusops.bootstrap/blob/master/hacking/vagrant/Vagrantfile_common.rb),
-- Please note all of **required vagrant plugins** that are detailed inside/
-- Also, verify twice that your VirtualBox & vagrant tools are *up-to-date*.
-- **However** if in the next step, you are going to use a
-  **prebacked** vm done by your fellow teamates,
-  this file will be overwritten, so dont touch it for the first run.
+    - Please note all of **required vagrant plugins** that are detailed inside
+    - Also, verify twice that your VirtualBox & vagrant tools are *up-to-date*.
+    - **However** if in the next step, you are going to use a
+      **prebacked** vm done by your fellow teamates,
+      this file will be overwritten, so dont touch it for the first run.
 
-    ```sh
-    # mostly you'll edit the vm unique NUM
-    # but do not forget to check the README for vagrant plugins
-    # WARNING: if you use te box uimport on next step this file will be
-    # overwritten by the imported box one
-    $EDITOR vagrant_config.yml
-    ```
+        ```sh
+        # mostly you'll edit the vm unique NUM
+        # but do not forget to check the README for vagrant plugins
+        # WARNING: if you use te box uimport on next step this file will be
+        # overwritten by the imported box one
+        $EDITOR vagrant_config.yml
+        ```
 
 - Now you have TWO options:
-    - Make a new VM with a slightly longer build/provisioning time
-    - OR use a prebacked VM for your project only and only if it exists
+    - Generally use a prebacked VM for your project only and only if it exists
+    - Or make a new VM with a slightly longer build/provisioning time
 
-### With the prebacked VM
+### <a name="prebacked"/> With the prebacked VM
 git subhmodule init
 
 If someone does have already build a VM for this project,
@@ -122,7 +122,7 @@ To edit code, there is a sshfs share, documented below.
 Look at the **FAQ** chapter or go up to the **From scratch** Section.
 
 
-### From scratch
+### <a name="scratch"/>From scratch
 
 Here, we are going to reconstruct from scratch the VM without importing a prebacked one.
 
@@ -153,45 +153,47 @@ We edit the vm conf file
 
 You should have then a one-time-login available.
 
-# FAQ
+## FAQ
 
-## Where is the common vagrant code that the Vagrantfile points to
+### <a name="vcommon"/> Where is the common vagrant code that the Vagrantfile points to
 - Common setup use by the vm is in [hacking/vagrant](https://github.com/corpusops/corpusops.bootstrap/tree/master/hacking/vagrant),
    in case you are curious
 
-## Stop VM
+### <a name="stop"/>Stop VM
 
 ```sh
 vm_manage down
 ```
 
-## Start VM
+### <a name="start"/>Start VM
 
 ```sh
 vm_manage up --no-provision
 ```
 
-## OMG, i launched provision but i did not want to
+### <a name="stopprov"/>OMG, i launched provision but i did not want to
 Long, huh ?
 
 ```sh
 CONTROL+C
 ```
 
-## I shut down the provision procedure, how do I put back the sshfs link ?
+### <a name="remount"/>I shut down the provision procedure, how do I put back the sshfs link ?
 You should have called `--no-provision`, But, after, all, after <Control-c>
 
 ```sh
 vm_manage mount
+# umount
+vm_manage umount
 ```
 
-## Going inside the vm, with ssh
+### <a name="sshto"/>Going inside the vm, with ssh
 
 ```sh
 vm_manage ssh
 ```
 
-## Where do i link my EDITOR (IDE) & where to edit the code, in or out the VM ?
+### <a name="editor"/>Where do i link my EDITOR (IDE) & where to edit the code, in or out the VM ?
 - Rules are simples
     - Code tied to deployment is **mostly out** of the VM (ansible, vagrant files)
     - Code of the APP is **inside the VM** or via the **SSHFS** share and
@@ -222,7 +224,7 @@ vm_manage ssh
     [cops_vagrant] sshfs -F .vagrant/cops-sshconfig-corpusopsXX-X vagrant:/ local/mountpoint/corpusopsXX-X
     ```
 
-## Update your provision (deploy) code
+### <a name="upglue"/>Update your provision (deploy) code
 
 ```sh
 cd $COPS_CWD
@@ -236,7 +238,7 @@ git submodule update --recursive
 
 After you just have to launch VM without `--no-provision`, and take a very BIG coffee/tea.
 
-## Update your app code (manips git)
+### <a name="upcode"/>Update your app code (manips git)
 ```sh
 cd $COPS_CWD
 ./vm_manage mount
@@ -247,7 +249,7 @@ git pull --rebase
 - Then, if DRUPAL, look the step *Update your website dabase*.
 
 
-## Symlink your project code folders
+### <a name="scode"/>Symlink your project code folders
 Not bad:
 
 ```sh
@@ -259,7 +261,7 @@ done
 done
 ```
 
-## Access the VM websites
+### <a name="vmhosts"/>Access the VM websites
 - Add a line in your `/etc/hosts`, which depends of the VM IP Address:
 
     ```sh
@@ -276,60 +278,7 @@ done
 If you have searching for the name supported by this VM, never hesitate to look its `/etc/hosts`.
 It should most of the times contain the names, remember that it's then not `127.0.0.1` but the VM IP (``192.168.xx.xx``).
 
-
-### DRUPAL: use console
-```sh
-./vm_manage ssh
-cd /srv/projects/<foo>/project
-vendor/bin/drupal
-```
-
-### DRUPAL: Update your website database
-After code update, you should also do this step
-```
-# puis on lance le post-update pour faire tourner les updb, config-sync et autres joyeusetés
-cd -
-vm_manage ssh
-root@corpusopsXX-X:~# cd /srv/projects/*/
-root@corpusopsXX-X:~# cd /srv/projects/s*/project && git submodule init
-t/
-root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
-+ Testing relative link /srv/projects/*/project/www/sites/default exists
-
- * 0- Do you want to run a drush -y updb ? [o/n]: o
-  - So we run drush -y updb
- [success] No database updates required.
-
- * 1- Do you want to run a drush -y cim ? [o/n]: o
-  - So we run drush -y cim
-+ drush -y cim
- [notice] There are no changes to import.
-
- * 2- Clear all caches via drush ? [o/n]: o
-+ drush -y cr
- [success] Cache rebuild complete.
-```
-
-## DRUPAL: Go inside the site
-- Time is up for going inside the vm and issue the following drush command
-
-    ```sh
-    vm_manage ssh
-    root@corpusopsXX-X: cd /srv/projects/*/project
-    root@corpusopsXX-X: sbin/drush uli
-    http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
-    ```
-
-## ZOPE: get the web admin password
-- Login is generally: admin
-- Password
-```sh
-./vm_manage ssh \
-'for i in /etc/*secrets/*zope_admin_password;do printf "$(basename $i): "$(cat $i)\\n;done'\
-|awk '!a[$0]++'|sort -nk2
-```
-
-## Launch ansible commands by hand
+### <a name="ansiblehand"/>Launch ansible commands by hand
 - When we do `vm_manage up`, we can see long ``ansible`` command lines, you can copy/paste them and adapt to replay deploy parts, it will work.
 - You should in any case execute ansible from the top folder
  of the project from outside the VM (directly from localhost)
@@ -349,7 +298,7 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
 - See "**cops_supereditors**, this indicate that from outside the VM, with your
   favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
 
-## Launch ansible commands, & deploy step by step: ``only_steps``
+### <a name="only_steps"/>Launch ansible commands, & deploy step by step: ``only_steps``
 - Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` for your to select which
   deployment steps to execute and not to relaunch the whole thing.
@@ -365,4 +314,3 @@ root@corpusopsXX-X:/srv/projects/*/project# sbin/post_update.sh
      --skip-tags play_db \
      -e "only_steps=True cops_drupal_s_fpm=true"
     ```
-
