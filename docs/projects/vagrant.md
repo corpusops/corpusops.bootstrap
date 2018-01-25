@@ -92,10 +92,10 @@ rsync -azvP $FTP_URL ./local/$vm_file
 # Note that the further command will overwrite your local vagrant_config.yml (backup it !?)
 ./vm_manage import ./local/$vm_file
 # Note that important --no-provision, VERY VERY IMPORTANT to save you time, MANY MANY TIME.
-./vm_manage up --no-provision
+./vm_manage up
 ```
 
-Note that you should always use `--no-provision`, never forget to use it each morning !
+Note that you should always use the prebacked vm !
 This will save you precious minutes, if you dont use it on the VM START, the full provision
 procedure may run, not fully but the amount of checks done will make a long procedure on the overall.
 Website wont be reinstaller nor destrcuted, but it will be a long procedure nevertheles.
@@ -104,7 +104,7 @@ Website wont be reinstaller nor destrcuted, but it will be a long procedure neve
 mounting it if you cant wait the end of the former procedure.**
 
 **After importing your VM, moreover the first time, it is possible that the vbgest plugin
-update stuff inside the vm. Sometime, the provision will fail, so just redo it one time.
+update stuff inside the vm. Sometime, the provision will fail, so just redo it one time.**
 
 Below on the doc (*Accéder aux sites web de la VM*), youn have the commands
 to extract the IP of the VM, copy/paste the IP in you /etc/hosts, par exemple:
@@ -144,7 +144,7 @@ We edit the vm conf file
 - Then we start
 
     ```sh
-    ./vm_manage up
+    ./vm_manage provision
     ```
 
 - In case of failure, check first that vagrant & virtualbox are up to date
@@ -168,7 +168,7 @@ vm_manage down
 ### <a name="start"/>Start VM
 
 ```sh
-vm_manage up --no-provision
+vm_manage up
 ```
 
 ### <a name="stopprov"/>OMG, i launched provision but i did not want to

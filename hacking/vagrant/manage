@@ -8,7 +8,7 @@ cd "$W"
 
 actions="+(help"
 actions="${actions}|halt|stop|down|destroy"
-actions="${actions}|start|up|fire"
+actions="${actions}|start|up|fire|provision"
 actions="${actions}|ssh|sshgen"
 actions="${actions}|import|export"
 actions="${actions}|mount|umount"
@@ -22,7 +22,7 @@ do_help() {
 
 
 sanitize() {
-    echo $@  | sed \
+    echo ${@}  | sed \
         -e "s/[ :_éàèçù\*]//g" \
         -e "s/[ \/\\]/-/g"
 }
@@ -57,7 +57,7 @@ long_status() {
 
 is_running() {
     local i=""
-    for i in $(default_to_all_hosts $@);do
+    for i in $(default_to_all_hosts ${@});do
         if status $i | grep -vq running;then
             return 1
         fi
@@ -67,7 +67,7 @@ is_running() {
 
 
 all_hosts() {
-    long_status $@ | awk '{print $1}'
+    long_status ${@} | awk '{print $1}'
 }
 
 
@@ -80,12 +80,12 @@ first_host() {
 
 
 all_running_hosts() {
-    long_status $@ | grep running | awk '{print $1}'
+    long_status ${@} | grep running | awk '{print $1}'
 }
 
 
 first_running_host() {
-    all_running_hosts $@ | head -n 1
+    all_running_hosts ${@} | head -n 1
 }
 
 
@@ -108,7 +108,7 @@ default_to_all_hosts() {
 
 
 do_status() {
-    vagrant status "$@" 2>/dev/null
+    vagrant status "${@}" 2>/dev/null
 }
 
 
@@ -122,16 +122,19 @@ cleanup_import_box() {
     fi
 }
 
+
 do_ssh_() {
     local host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
     ssh -F .vagrant/cops-sshconfig-$host vagrant "${@}"
 }
+
 
 do_ssh() {
     local host=$(default_to_first_host ${ssh_host:-${sshhost:-${host}}})
     do_sshgen $host
     ssh_host=$host do_ssh_ "${@}"
 }
+
 
 get_cops_installer() {
     for i in ./ ../bin ../../bin;do
@@ -165,8 +168,22 @@ install_python() {
 }
 
 
+set_hosts_args() {
+    hosts=""
+    cmd_args=""
+    for i in ${@};do
+        if echo $i |grep -v help| egrep -ivq -- "^-";then
+            hosts="$hosts $i"
+        else
+            cmd_args="$cmd_args $i"
+        fi
+    done
+    if [[ -z $hosts ]];then hosts=$(default_to_first_host);fi
+}
+
+
 do_sshgen() {
-    hosts=$@
+    hosts=${@}
     local ciphers=$(echo $(ssh -Q cipher)|sed "s/ /,/g")
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
     ciphers="arcfour,$ciphers"
@@ -193,6 +210,8 @@ do_sshgen() {
 activate_arcfour() {
     local h=$1
     local scfg=/etc/ssh/sshd_config
+    do_ssh_ /bin/true
+    die_in_error "$h ssh connection failed"
     if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
         ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
         if [[ -n $ciphers ]];then
@@ -207,8 +226,8 @@ activate_arcfour() {
 
 
 do_mount() {
-    hosts=$@
-    if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
     for h in $hosts;do
         local ssh_host=$h
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
@@ -218,7 +237,9 @@ do_mount() {
         # activating all ciphers on remote
         if [ ! -e "${VM_MOUNTPOINT}/bin" ];then
             activate_arcfour $h
-            do_sshgen $h || die_in_error "sshgen $h"
+            die_in_error "Error while activating arcfour on $h"
+            do_sshgen $h
+            die_in_error "sshgen $h"
             vv sshfs $COPS_SSHFS_OPTS \
                 -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
                 vagrant:/ "${VM_MOUNTPOINT}"
@@ -229,22 +250,10 @@ do_mount() {
     done
 }
 
-set_hosts_args() {
-    hosts=""
-    cmd_args=""
-    if [[ -z $hosts ]];then hosts=$(default_to_first_host);fi
-    for i in $@;do
-        if echo $i |grep -v help| egrep -ivq -- "^-";then
-            hosts="$hosts $i"
-        else
-            cmd_args="$cmd_args $i"
-        fi
-    done
-}
-
 
 do_umount() {
-    set_hosts_args $@
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
     for h in $hosts;do
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
         if [ -e "$VM_MOUNTPOINT/bin" ];then
@@ -257,21 +266,33 @@ do_umount() {
 }
 
 
-do_up() {
-    set_hosts_args $@
+vagrant_up() {
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
     for h in $hosts;do
         vagrant up $h $cmd_args
         die_in_error "Error while starting $h"
     done
-    for h in $hosts;do
-        do_mount $h
-        die_in_error "Error while mounting $h"
-    done
+}
+
+
+do_provision() {
+    local hosts="" cmd_args=""
+    vagrant_up --provision ${@}
+    do_mount $hosts
+}
+
+
+do_up() {
+    local hosts="" cmd_args=""
+    vagrant_up --no-provision ${@}
+    do_mount $hosts
 }
 
 
 do_down() {
-    set_hosts_args $@
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
     for h in $hosts;do
         do_umount $h
         die_in_error "Error while mounting $h"
@@ -284,7 +305,8 @@ do_down() {
 
 
 do_destroy() {
-    set_hosts_args $@
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
     for h in $hosts;do
         do_down $h
         die_in_error "Error while downning $h"
@@ -306,7 +328,7 @@ do_import() {
         die "provide a valid box file"
     fi
     boximportname=cops_$(sanitize $PWD)
-    vv vagrant box add --force "${boximportname}" "${BOX}" $@
+    vv vagrant box add --force "${boximportname}" "${BOX}" ${@}
     die_in_error "vagrant box import from $BOX failed"
     if [ ! -e vagrant_config.yml ];then
         echo "---">>vagrant_config.yml
@@ -329,14 +351,12 @@ EOF
 
 do_export() {
     BOX=${1:-$(default_to_first_host)}
-    hosts=$@
-    host=$2
-    if [[ -z $host ]];then
+    shift
+    local hosts="" cmd_args=""
+    set_hosts_args ${@}
+    if [[ -z $hosts ]];then
          hosts=$(default_to_first_host)
-    else
-         hosts=$2
     fi
-    shift;shift
     if [ -z "${BOX}" ];then
         die "give a box name"
     fi
@@ -350,7 +370,7 @@ do_export() {
         fi
         vv vagrant package --output $f \
             $([[ -f vagrant_config.yml ]] && \
-                    echo --include vagrant_config.yml $@ $h ; )
+                    echo --include vagrant_config.yml ${cmd_args} $h ; )
         die_in_error "vagrant export to ${h}-$BOX failed"
     done
 }
@@ -439,6 +459,14 @@ Umount, stop, destroy the vm
 '"$(vagrant destroy --help)"
 }
 
+provision_usage() {
+    NO_HEADER=y die '
+Start, provision and mount the vm
+
+    '"$0 $action"' [id]
+'"$(vagrant up --help)"
+
+}
 
 up_usage() {
     NO_HEADER=y die '
@@ -485,13 +513,14 @@ Specific help
 '
 }
 
+
 parse_usage() {
-    for a in $@;do
+    for a in ${@};do
         case $a in
             -h|-l|--help)
                 case $action in
-                    halt|stop|down) down_usage $@;;
-                    start|up|fire) up_usage $@;;
+                    halt|stop|down) down_usage ${@};;
+                    start|up|fire) up_usage ${@};;
                     $actions) ${action}_usage;;
                     *) usage;;
                 esac
@@ -505,12 +534,12 @@ main() {
     shift
     parse_usage $action $1
     case $action in
-        halt|stop|down) do_down $@;;
-        start|up|fire) do_up $@;;
-        install_python) install_python $@;;
-        $actions) do_$action $@;;
-        *) vagrant "$action" "$@";;
+        halt|stop|down) do_down ${@};;
+        start|up|fire) do_up ${@};;
+        install_python) install_python ${@};;
+        $actions) do_$action ${@};;
+        *) vagrant "$action" "${@}";;
     esac
 }
-main $@
+main ${@}
 # vim:set et sts=4 ts=4 tw=80:
