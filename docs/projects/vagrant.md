@@ -214,7 +214,7 @@ vm_manage ssh
   you should certainly wire your IDE/EDITOR here
 
     ```sh
-    local/mountpoint/corpusopsXX-X/srv/projects/<project>/project
+    local/mountpoint/corpusopsX-X/srv/projects/<project>/project
     ```
 
 - You can restart the sshfs mount with:
@@ -222,7 +222,7 @@ vm_manage ssh
     ```sh
     ./vm_manage mount
     (...)
-    [cops_vagrant] sshfs -F .vagrant/cops-sshconfig-corpusopsXX-X vagrant:/ local/mountpoint/corpusopsXX-X
+    [cops_vagrant] sshfs -F .vagrant/cops-sshconfig-corpusopsX-X vagrant:/ local/mountpoint/corpusopsX-X
     ```
 
 ### <a name="upglue"/>Update your provision (deploy) code
