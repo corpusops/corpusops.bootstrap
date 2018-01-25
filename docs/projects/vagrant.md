@@ -103,8 +103,8 @@ mounting it if you cant wait the end of the former procedure.**
 **After importing your VM, moreover the first time, it is possible that the vbgest plugin
 update stuff inside the vm. Sometime, the provision will fail, so just redo it one time.**
 
-Below on the doc (*Accéder aux sites web de la VM*), youn have the commands
-to extract the IP of the VM, copy/paste the IP in you /etc/hosts, par exemple:
+Below on the doc, on the chapter [Access to the VM](#vmhosts), you have the commands
+to extract the IP of the VM, copy/paste the IP in you /etc/hosts:
 
 ```sh
 echo "192.168.XX.X corpusopsXX-X.vbox.local <project>.vbox.local" | sudo tee -a /etc/hosts
