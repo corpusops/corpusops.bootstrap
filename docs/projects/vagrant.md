@@ -237,7 +237,7 @@ git submodule update --recursive
 ./.ansible/scripts/setup_corpusops.sh
 ```
 
-After you just have to launch VM without `--no-provision`, and take a very BIG coffee/tea.
+After you just have to launch VM with ``vm_manage provision``, and take a very BIG coffee/tea.
 
 ### <a name="upcode"/>Update your app code (manips git)
 ```sh
