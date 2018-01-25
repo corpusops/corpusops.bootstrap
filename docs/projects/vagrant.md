@@ -78,8 +78,6 @@
     - Or make a new VM with a slightly longer build/provisioning time
 
 ### <a name="prebacked"/> With the prebacked VM
-git subhmodule init
-
 If someone does have already build a VM for this project,
 you should start from there and it will save you precious minutes.
 
@@ -91,7 +89,6 @@ cd $COPS_CWD
 rsync -azvP $FTP_URL ./local/$vm_file
 # Note that the further command will overwrite your local vagrant_config.yml (backup it !?)
 ./vm_manage import ./local/$vm_file
-# Note that important --no-provision, VERY VERY IMPORTANT to save you time, MANY MANY TIME.
 ./vm_manage up
 ```
 
@@ -183,6 +180,11 @@ You should have called `--no-provision`, But, after, all, after <Control-c>
 
 ```sh
 vm_manage mount
+```
+
+### <a name="umount"/>How do i umount manually the VM
+
+```sh
 # umount
 vm_manage umount
 ```
@@ -248,6 +250,20 @@ git pull --rebase
 
 - Then, if DRUPAL, look the step *Update your website dabase*.
 
+### <a name="vagrantboxes"/>Maintenance of vagrant boxes
+- To save hard drive space, you may have time to time to removed imported box which
+  stay in the vagrant cache, you can list them
+
+    ```sh
+    vagrant box list
+    ```
+- And remove with
+
+    ```sh
+    vagrant box remove <id>
+    ```
+- Vagrant may also cleanup not correctly on import and export, and you can cleanup things in<br/>
+  ``~/.vagrant.d/tmp/``
 
 ### <a name="scode"/>Symlink your project code folders
 Not bad:
