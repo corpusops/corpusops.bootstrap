@@ -185,7 +185,6 @@ vm_manage mount
 ### <a name="umount"/>How do i umount manually the VM
 
 ```sh
-# umount
 vm_manage umount
 ```
 
