@@ -62,7 +62,8 @@ vendor/bin/drupal
     ```
 
 ### <a name="password"/>Get the web admin password
-- Login is generally: **admin** and password can have been generated if not given explicitly (first install)
+- Login is generally: **admin** and password may have been generated if not configured explicitly in the ansible vaults<br/>
+  and in this case, it is stored locally on a file located on the remote server (created at first install)
 - vagrant:
 
     ```sh
