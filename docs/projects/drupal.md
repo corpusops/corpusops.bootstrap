@@ -73,6 +73,7 @@ vendor/bin/drupal
 - Or on a remote environment:
 
     ```sh
+    MYENV=prod-foobar.company.com
     ssh $MYENV \
     'for i in /etc/*secrets/*password;do printf "$(basename $i): "$(cat $i)\\n;done'\
     |awk '!a[$0]++'|sort -nk2
