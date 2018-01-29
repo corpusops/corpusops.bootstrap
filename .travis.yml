@@ -3,10 +3,10 @@ sudo: required
 dist: trusty
 env:
   matrix:
-    - IMAGES="ubuntu:16.04"
-    - IMAGES="ubuntu:14.04"
-    - IMAGES="ubuntu:latest"
-    - IMAGES="centos:7"
+    - IMAGES="corpusops/ubuntu:16.04_preprovision  corpusops/ubuntu:16.04"
+    - IMAGES="corpusops/ubuntu:14.04_preprovision  corpusops/ubuntu:14.04"
+    - IMAGES="corpusops/ubuntu:latest_preprovision corpusops/ubuntu:latest"
+    - IMAGES="corpusops/centos:7_preprovision      corpusops/centos:7"
 language: python
 python: "2.7"
 before_install:
@@ -47,7 +47,7 @@ install:
       bin/install.sh -C --synchronize-code
     fi
   - sudo service docker stop
-  - sudo -E bin/cops_apply_role roles/corpusops.roles/services_virt_docker/role.yml
+  - bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
 script:
   - |
     if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
@@ -60,7 +60,6 @@ script:
     NO_SYNC=1 hacking/test_script
 after_success:
   - DEBUG=1 hacking/docker_release
-
 cache:
   directories:
     - $HOME/.cache/pip
