@@ -12,7 +12,6 @@ Release images to docker
 
  [FORCE_NO_RELEASE=] \
  [FORCE_RELEASE=] \
- [DOCKER_REGISTY=xxx] \
  [DOCKER_RELEASER=xxx] \
  [DOCKER_PASSWORD=xxx] \
  [RELEASABLE_BRANCHES=xxx] \
@@ -34,21 +33,7 @@ parse_cli() {
         RELEASED_DIR=${W}
     fi
     R_IMAGES="${@:-"${IMAGES}"}"
-    for r in $R_IMAGES;do
-        add_preprov=
-        for s in $BASE_IMAGES;do
-            if [[ "$r" == "$s" ]];then
-                add_preprov=1
-            fi
-        done
-        if [[ -n "$add_preprov" ]];then
-            pimg="$(add_preprovision_slug "$r")"
-            R_IMAGES="${R_IMAGES} ${pimg}"
-        fi
-    done
-    R_IMAGESp="$(echo "$R_IMAGES"|xargs -n1|grep    _preprovision|sort -u)"
-    R_IMAGESr="$(echo "$R_IMAGES"|xargs -n1|grep -v _preprovision|sort -u)"
-    R_IMAGES="$( (echo "${R_IMAGESp}";echo "$R_IMAGESr")|xargs -n1)"
+    R_IMAGES="$(echo "$R_IMAGES"|xargs -n1|awk '!seen[$0]++')"
     RELEASABLE=""
     for img in ${R_IMAGES};do
         fimg=${img}
@@ -95,22 +80,34 @@ parse_cli "$@"
 ret=0
 if release_test; then
     log "Releasing ${RELEASABLE}"
-    log "docker login"
-    docker login \
-        -u="$DOCKER_RELEASER" \
-        -p="$DOCKER_PASSWORD" \
-        $([[ -n ${DOCKER_REGISTRY} ]] && echo "${DOCKER_REGISTRY}")
-    die_in_error "Login for $DOCKER_RELEASER failed on $DOCKER_REGISTRY"
     for img in ${RELEASABLE};do
-        ( if [[ -n $FORCE_NO_RELEASE ]];then
-            vv echo docker push "${img}"
-          else
-              if [[ -n "${DOCKER_REGISTRY}" ]];then
-                  vv docker push "${DOCKER_REGISTRY}"/"${img}"
-              else
-                  vv docker push "${img}"
-              fi
-          fi
+        docker_registry=
+        # registry
+        image_pattern="\(\([^:]\+:[^/]\+\)\/\)\?"
+        # repo
+        image_pattern="${image_pattern}\(\(\([^\/:]\+\)\/\?\)"
+        # image
+        image_pattern="${image_pattern}\(\(\([^\/:]\+\)\/\?\)"
+        # tag
+        image_pattern="${image_pattern}:\?\(.*\)\)\)$"
+        img_without_registry=$(echo "$img"|sed -e "s/$image_pattern/\3/g")
+        docker_registry=$(echo "$img"|sed -e "s/$image_pattern/\2/g")
+        vecho="";if [[ -n $FORCE_NO_RELEASE ]];then vecho="echo";fi
+        if [[ -n $docker_registry ]];then
+            log "docker login -> ${docker_registry}"
+        else
+            log "docker login"
+        fi
+        $vecho docker login -u="$DOCKER_RELEASER"  -p="$DOCKER_PASSWORD" \
+            $([[ -n ${docker_registry} ]] && echo "${docker_registry}")
+        die_in_error "Login for $DOCKER_RELEASER failed on $docker_registry"
+        ( if [[ -n "${docker_registry}" ]];then \
+            $vecho vv \
+            docker push "${docker_registry}"/"${img_without_registry}";\
+        else \
+            $vecho \
+            vv docker push "${img_without_registry}";\
+        fi
         )
         if [[ ${?} != 0 ]];then
             log "Failed to release: ${img}"
