@@ -1,38 +1,119 @@
 #!/usr/bin/env bash
+# DEPRECATED/RETROCOMPAT: not used anymore as docker added --squash to build
+# now it is just another docker build wrapper
+# corpusops.bootstrap uses docker_build_chain to build images
 OW=$(pwd)
 cd "$(dirname ${0})/.."
 export LOGGER_NAME=$(basename $0)
 
-sc=hacking/build_env
-[[ ! -e $sc ]] && echo "missing $sc" >&2
-. "$sc" || exit 1
+RED="\\e[0;31m"
+CYAN="\\e[0;36m"
+YELLOW="\\e[0;33m"
+NORMAL="\\e[0;0m"
+NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
+LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
+ERROR_MSG="There were errors"
+log_() {
+    reset_colors;msg_color=${2:-${YELLOW}};
+    logger_color=${1:-${RED}};
+    logger_slug="${logger_color}[${LOGGER_NAME}]${NORMAL} ";
+    shift;shift;
+    if [[ -n ${NO_LOGGER_SLUG} ]];then logger_slug="";fi
+    printf "${logger_slug}${msg_color}$(echo "${@}")${NORMAL}\n" >&2;
+    printf "" >&2;  # flush
+}
+reset_colors() { if [[ -n ${NO_COLOR} ]];then BLUE="";YELLOW="";RED="";CYAN="";fi; }
+log() { log_ "${RED}" "${CYAN}" "${@}"; }
+cronolog() { log_ "${RED}" "${CYAN}" "($(get_chrono)) ${@}"; }
+debug() { if [[ -n "${DEBUG// }" ]];then log_ "${YELLOW}" "${YELLOW}" "${@}"; fi; }
+warn() { log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"; }
+bs_log(){ log_ "${RED}" "${YELLOW}" "${@}"; }
+bs_yellow_log(){ log_ "${YELLOW}" "${YELLOW}" "${@}"; }
+may_die() {
+    reset_colors
+    thetest=${1:-1}
+    rc=${2:-1}
+    shift
+    shift
+    if [ "x${thetest}" != "x0" ]; then
+        if [[ -z "${NO_HEADER-}" ]]; then
+            NO_LOGGER_SLUG=y log_ "" "${CYAN}" "Problem detected:"
+        fi
+        NO_LOGGER_SLUG=y log_ "${RED}" "${RED}" "$@"
+        exit $rc
+    fi
+}
+die() { may_die 1 1 "${@}"; }
+die_in_error_() {
+    ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
+}
+die_in_error() { die_in_error_ "${?}" "${@}"; }
+test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
+test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
+silent_run_post() { if [ -e "${tmpf}" ];then rm -f "${tmpf}";fi; }
+silent_run_() {
+    tmpf=$(mktemp)
+    local ret=
+    if ! test_silent;then
+        "${@}"
+        ret=${?}
+    else
+        do_trap silent_run_post EXIT TERM QUIT INT
+        if test_silent_log;then
+            log "Logging command output to ${tmpf}"
+        fi
+        "${@}" >"${tmpf}" 2>&1
+        ret=${?}
+        if [ "x${ret}" != "x0" ] && [ -e "${tmpf}" ]; then
+            cat "${tmpf}"
+        fi
+    fi
+    return ${ret}
+}
+silent_run() { ( silent_run_ "${@}" ; ); }
+run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
+vvv() { debug "${@}";silent_run "${@}"; }
+vv() { log "${@}";silent_run "${@}";}
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
+do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
+do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
 
 usage() {
     NO_HEADER=y die '
-Wrapper to docker build, but will also try to squash any created layer up
+Wrapper to docker build
 
- [NOCOLOR=y] \
- [NO_BUILD=y] \
- [FORCE_REPULL=y] \
- [FORCE_REBUILD=y] \
- [NO_SQUASH=y] \
- [NO_SQUASH_CLEANUP=y] \
- [NO_CANDIDATE_CLEANUP=y] \
- [NO_OLD_IMAGE_CLEANUP=y] \
- [DEBUG=y] \
     '"$0"' <tag> [<dockerfile>] [<path_to_working_dir>]
  '
 }
+
 
 cd "$OW"
 
 parse_cli() {
     parse_cli_common "${@}"
+    tag=${1:-myimg:latest}
+    dockerfile=${2:-Dockerfile}
+    wd=${3:-.}
     tag=$1
     dockerfile=${2-}
     wd=${3:-$OW}
     if [[ -z ${3-} ]];then
-        # test if 2nd arg is a directory or a file (Dockerfile, in this case)
+        # test if 2nd arg is a wd or a file (Dockerfile, in this case)
         if [[ -d ${2-} ]];then
             dockerfile=""
             wd=${2}
@@ -69,207 +150,8 @@ parse_cli() {
 }
 
 parse_cli "$@"
-
-#TMPS="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
-candidate=${tag}_cops_candidate
-taggued=${candidate}
-candidate_squashed=${candidate}_s
-
-ret=1
-
-# If wanted, try to install image squasher if not already done
-if [[ -n "${SQUASHER_URL}" ]];then
-    if [ -e "$W/venv/bin/activate" ];then
-        . "$W/venv/bin/activate"
-    else
-        ( VENV_PATH="$W/venv" make_virtualenv; )
-        die_in_error "Virtualenv creation failed"
-        . "$W/venv/bin/activate"
-    fi
-    if [ ! -e "$SQUASHER" ];then
-        echo "Getting $SQUASHER_URL -> $SQUASHER" &&\
-        pip install --upgrade -e "${SQUASHER_URL}"
-        die_in_error "$SQUASHER install error"
-    fi
-fi
-
-init_candidate_vars() {
-    old_tag_id=$(get_image "${tag}")
-    old_candidate_id=$(get_image "${candidate}")
-    old_squashed_id=$(get_image "${candidate_squashed}")
-    tag_id=${old_tag_id}
-    candidate_id=${old_candidate_id}
-    squashed_id=${old_squashed_id}
-}
-
-
-init_candidate_vars
-dockerfile=${dockerfile:-${wd}/Dockerfile}
-ancestor=
-ancestor_id=
-
-# If we are free from any candidates, build a new image
-if [[ -n ${candidate_id} ]]; then
-    if [[ -n ${FORCE_REBUILD} ]]; then
-        SILENT_LOG=1 vv docker rmi -f "${candidate_id}"
-        die_in_error "${candidate_id} cleanup failed"
-        init_candidate_vars
-    fi
-fi
-
-if [[ -z ${candidate_id} ]];then
-    debug "No candidates found prior to build"
-fi
-
-ancestor=$(get_ancestor_from_dockerfile "${dockerfile}")
-
-if [[ -n "${ancestor}" ]]; then
-    ancestor_id=$(get_docker_ids "${ancestor}")
-    ret=0
-    if [[ -n "${FORCE_REPULL-}" ]] || [[ "${ancestor_id}" == "" ]]; then
-        SILENT_LOG=1 vv docker pull "${ancestor}"
-        ret=${?}
-        ancestor_id=$(get_docker_ids "${ancestor}")
-    fi
-    if [[ ${ret} != 0 ]]; then
-        if [[ "${ancestor_id}" != "" ]]; then
-            warn "docker pull ${ancestor} failed"
-            warn "but tag exists locally, using it"
-        fi
-    fi
-    if [[ "${ancestor_id}" == "" ]]; then
-        die "docker image: ${ancestor} not found"
-    fi
-    log "Ancestor ${CYAN}${ancestor} (id: ${ancestor_id})"
-fi
-
-if [[ -z ${NO_BUILD} ]]; then
-    log "Building ${candidate}"
-    SILENT_LOG=1 vvv docker build -t "${candidate}" -f "${dockerfile}" "${wd}"
-    ret=$?
-else
-    debug "Skip build of ${tag} :: ${dockerfile} :: ${wd}"
-fi
-
-# Assure to have one candidate
-if [[ ${ret} == 0 ]];then
-    candidate_id=$(get_image "${candidate}")
-    if [[ -z ${candidate_id} ]]; then
-        log "Candidate not found: ${candidate}"
-        ret=1
-    fi
-fi
-
-cleanup_tag() {
-    local old_tag_or_id="$1" tag="$2" suf="$3"
-    if [[ -z ${old_tag_or_id} ]];then
-        debug "Skip cleanup, no old tag id for $tag (${suf})"
-        return 0
-    fi
-    if [[ -z ${tag} ]];then
-        debug "Skip cleanup, no tag for $tag (${suf})"
-        return 0
-    fi
-    local ctag_id=$(vv docker inspect -f '{{.Id}}' "${old_tag_or_id}" 2>/dev/null)
-    local dtag_id=$(vv docker inspect -f '{{.Id}}' "${tag}" 2>/dev/null)
-    if [[ -z "${ctag_id}" ]];then
-        log "Old image id for ${old_tag_or_id} not found, skipping tag cleanup for $tag"
-        return 0
-    fi
-    if [[ -z "${dtag_id}" ]];then
-        log "Image ${tag} not found, skipping tag cleanup for $tag"
-        return 0
-    fi
-    if [[ "${dtag_id}" != "${ctag_id}" ]];then
-        # delete by id to be sure to delete an image which has only one tag
-        # left, the 'squashed tag'
-        SILENT=1 vvv docker rmi "${old_tag_or_id}" >/dev/null 2>&1
-        if [[ ${?} != 0 ]];then
-            # retry to verify if the failure is because of dependant images
-            # and we should not bail out here
-            SILENT=1 vvv docker rmi "${old_tag_or_id}" 2>&1\
-                | egrep -q 'image has dependent|being used'
-            if [[ ${?} != 0 ]];then
-                vvv docker rmi "${old_tag_or_id}"
-                die "Error when cleaning ${suf} tag: ${tag}/${old_tag_or_id}/${ctag_id}/${dtag_id}"
-            else
-                debug "skip tag $tag cleanup: has dependant images"
-            fi
-        else
-            log "Cleaned ${suf} tag: ${tag}"
-        fi
-    else
-        log "We do not have produced a new image for ${tag}"
-    fi
-}
-
-# Maybe squash produced candidate
-if [[ ${ret} == 0 ]]; then
-    if [[ -z ${NO_SQUASH} ]];then
-        log "Squashing to ${candidate_squashed}"
-        taggued=${candidate_squashed}
-        case "${SQUASHER}" in
-            $SQUASHER_GO)
-                SILENT_LOG=1 vvv docker save "${candidate_id}" \
-                    | SILENT_LOG=1 vv "${SQUASHER}" \
-                        -t "${candidate_squashed}" \
-                        $( [[ -n "${ancestor_id}" ]] && echo  "-from '${ancestor_id}'" ) \
-                    | SILENT_LOG=1 vvv docker load
-                ret=$?
-                ;;
-            *)
-                SILENT_LOG=1 vv "${SQUASHER}" \
-                    -t "${candidate_squashed}" \
-                    $( [[ -n "${ancestor_id}" ]] && echo  "-f ${ancestor_id}" ) \
-                    ${candidate_id}
-                ret=$?
-                ;;
-        esac
-        if [[ ${ret} == 0 ]]; then
-            log "Squashed ${tag} :: ${dockerfile} :: ${wd}"
-            squashed_id=$(get_image "${candidate_squashed}")
-        fi
-    else
-        debug "Skip squash of ${tag} :: ${dockerfile} :: ${wd}"
-    fi
-fi
-
-# Everything has gone well, tag back candidate to img
-if [[ ${ret} == 0 ]];then
-    log "Tagging candidate ${taggued} to ${tag}"
-    SILENT_LOG=1 vvv docker tag "${taggued}" "${tag}"
-    ret=${?}
-    if [[ ${ret} == 0 ]];then
-        tag_id=$(get_image "${tag}")
-    else
-        log "${tag} tag failed"
-    fi
-fi
-
-# Last cleanup bits (cleanup if found leftover squashed candidates
-if [[ ${ret} == 0 ]]; then
-    if [[ -z ${NO_CANDIDATE_CLEANUP} ]]; then
-        cleanup_tag "${old_candidate_id}" "${candidate}" candidate
-    else
-        debug "Skip old candidate cleanup of ${tag} :: ${dockerfile} :: ${wd}"
-    fi
-    if [[ -z ${NO_SQUASH} ]] && [[ -z ${NO_SQUASH_CLEANUP} ]]; then
-        cleanup_tag "${old_squashed_id}" "${candidate_squashed}" squashed
-    else
-        debug "Skip squashed image tag cleanup"
-    fi
-    if [[ -z ${NO_OLD_IMAGE_CLEANUP} ]]; then
-        cleanup_tag "${old_tag_id}" "${tag}" image
-    else
-        debug "Skip old image cleanup of ${tag} :: ${dockerfile} :: ${wd}"
-    fi
-fi
-
-if [[ -z ${tag_id} ]];then
-    log "We do not have anymore an image for ${tag}"
-    ret=8
-fi
-
+vv docker build -t "$tag" -f "$dockerfile" "$wd"
+ret=$?
 debug "${0} ret: ${ret}"
 if [[ ${ret} == 0 ]];then
     log "${YELLOW}Image: ${NORMAL}${CYAN}${tag} ${NORMAL}${YELLOW}built"
