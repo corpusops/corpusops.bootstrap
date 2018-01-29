@@ -22,7 +22,8 @@ if W not in sys.path:
 import helper_mod as _H  # noqa
 OW = _H.OW
 TOP = _H.TOP
-_STATUS = {'error': {}, 'success': {}, 'message': {}, 'skip': {}}
+_STATUS = OrderedDict([('error', OrderedDict()), ('success', OrderedDict()),
+                       ('message', OrderedDict()), ('skip', OrderedDict())])
 _HELP = '''\
 Build images
 
