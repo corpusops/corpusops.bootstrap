@@ -390,6 +390,7 @@ def try_charsets(val, charsets=None):
 def _build(cmd,
            img,
            fmt=True,
+           squash=False,
            builder_args=None,
            build_retries=None,
            build_retry_check=None,
@@ -429,6 +430,7 @@ def _build(cmd,
             if i > 0:
                 log(msg)
                 log('Retry: {0}'.format(i))
+            log('Running: {0}'.format(cmd))
             ret = shellexec(cmd, quiet=quiet)
             if ret[0] == 0:
                 status = True
@@ -474,10 +476,20 @@ def packer_build(img, *a, **kw):
     return _build(cmd, img, *a, **kw)
 
 
-def dockerfile_build(img, *a, **kw):
-    cmd = ('docker build {builder_args} {extra_args}'
-           ' -f {fimage_file} -t {tag} {working_dir}')
-    return _build(cmd, img, *a, **kw)
+def dockerfile_build(img, squash=False, *a, **kw):
+    cmds = []
+    if squash:
+        cmds.append(('docker build {builder_args} --squash {extra_args}'
+                     ' -f {fimage_file} -t {tag} {working_dir}'))
+    cmds.append(('docker build {builder_args}  {extra_args}'
+                 ' -f {fimage_file} -t {tag} {working_dir}'))
+    for cmd in cmds:
+        ret = _build(cmd, img, *a, **kw)
+        if squash and not ret[0] and '--squash' in ret[1]:
+            continue
+        else:
+            break
+    return ret
 
 
 def _print(data, level=0):
@@ -690,6 +702,7 @@ def build_image(img,
                 status=None,
                 dry_run=False,
                 builder_args=None,
+                squash=False,
                 quiet=False):
     if status is None:
         status = copy.deepcopy(_STATUS)
@@ -714,7 +727,7 @@ def build_image(img,
                 log(log_pre+' build started')
                 ret = globals()[
                     '{0}_build'.format(builder_type)
-                ](img, builder_args=builder_args, quiet=quiet)
+                ](img, builder_args=builder_args, quiet=quiet, squash=squash)
             if ret[0]:
                 s = 'success'
             else:
@@ -735,6 +748,7 @@ def build_image(img,
 
 def build_images(images_files, skip_images=None, quiet=False,
                  images=None, dry_run=False, status=None,
+                 squash=False,
                  builder_args=None):
     if not images:
         images = []
@@ -764,7 +778,7 @@ def build_images(images_files, skip_images=None, quiet=False,
                 _status = (True, 'skip', True)
             else:
                 _status = build_image(img, cwd=cwd, builder_args=builder_args,
-                                      quiet=quiet,
+                                      quiet=quiet, squash=squash,
                                       dry_run=dry_run, status=status)
             if not _status[0]:
                 break
@@ -813,6 +827,7 @@ def main():
         status = build_images(vargs['images_files'], status=status,
                               quiet=vargs['quiet'],
                               images=vargs['images'],
+                              squash=not vargs['no_squash'],
                               skip_images=vargs['skip_images'],
                               builder_args=vargs['builder_args'],
                               dry_run=vargs['dry_run'])
