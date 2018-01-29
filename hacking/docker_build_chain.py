@@ -495,16 +495,15 @@ def _print(data, level=0):
 
 
 def print_status(status, quiet=False):
-    for k in ['message', 'success']:
-        if status.get(k, None):
-            print("\n"+k.capitalize()+'s:')
-            for img in status[k]:
-                data = status[k][img]
-                if quiet:
-                    if k == 'success':
-                        data = (True, '')
-                print(" "+img)
-                _print(data, level=2)
+    k = 'success'
+    if status.get(k, None):
+        print("\n"+k.capitalize()+'s:')
+        for img in status[k]:
+            data = status[k][img]
+            if quiet:
+                data = (True, '')
+            print(" "+img)
+            _print(data, level=2)
     for k in ['message', 'error', 'skip']:
         if status.get(k, None):
             print("\n"+k.capitalize()+'s:')
