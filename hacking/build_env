@@ -23,22 +23,14 @@ NO_SQUASH=${NO_SQUASH-}
 NO_OLD_CANDIDATE_CLEANUP=${NO_OLD_CANDIDATE_CLEANUP-}
 NO_CANDIDATE_CLEANUP=${NO_CANDIDATE_CLEANUP-}
 NO_OLD_IMAGE_CLEANUP=${NO_OLD_IMAGE_CLEANUP-}
-SKIP_FOUND_CANDIDATE_EXIT=${SKIP_FOUND_CANDIDATE_EXIT-}
-SQUASHER_V=0.2.0
-SQUASHER_GO="$W/hacking/docker-squash-${SQUASHER_V}"
-BSQUASHER_URL="https://github.com/jwilder/docker-squash/releases/download"
-if uname -ar | grep -qi linux;then
-    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-linux-amd64-v$SQUASHER_V.tar.gz"
-elif uname -ar | grep -qi darwin;then
-    SQUASHER_GO_URL="$BSQUASHER_URL/v$SQUASHER_V/docker-squash-darwin-amd64-v$SQUASHER_V.tar.gz"
-else
-    SQUASHER_GO_URL="${SQUASHER_URL-}"
-fi
-SQUASHER_REV="05cd17fe639183e2986fa89b3ddb62bcf903cf2b"
-SQUASHER_FORK="https://github.com/goldmann/docker-squash.git"
-SQUASHER_PY_URL="git+${SQUASHER_FORK}@${SQUASHER_REV}#egg=docker_squash"
-SQUASHER_PY="$W/venv/bin/docker-squash"
-BASE_IMAGES="ubuntu:latest ubuntu:16.04 ubuntu:14.04 centos:7"
+#
+BASE_IMAGES="ubuntu:latest_preprovision"
+BASE_IMAGES="$BASE_IMAGES ubuntu:16.04_preprovision"
+BASE_IMAGES="$BASE_IMAGES ubuntu:14.04_preprovision"
+BASE_IMAGES="$BASE_IMAGES centos:7_preprovision"
+#
+BASE_IMAGES="$BASE_IMAGES ubuntu:latest ubuntu:16.04"
+BASE_IMAGES="$BASE_IMAGES ubuntu:14.04 centos:7"
 DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 ROLE_TESTSCRIPT_TEMPLATE=${ROLE_TESTSCRIPT_TEMPLATE:-${W}/hacking/test_script.role}
 
@@ -197,25 +189,7 @@ get_short_roles_to_test() {
     echo "$(get_roles_to_test "$roles_to_test")"
 }
 
-set_docker_folder
-if [[ -z "${IMAGES-}" ]]; then
-    if echo "${DOCKER_FOLDER}" | egrep -q "${W}/?"; then
-        IMAGES=${BASE_IMAGES}
-    else
-        IMAGES=$(get_images_from_folder "${DOCKER_FOLDER}")
-    fi
-fi
-
-case "${SQUASHER-}" in
-    $SQUASHER_GO)
-        SQUASHER=$SQUASHER_GO
-        SQUASHER_URL=$SQUASHER_GO_URL
-        ;;
-    *)
-        SQUASHER=$SQUASHER_PY
-        SQUASHER_URL=$SQUASHER_PY_URL
-        ;;
-esac
+IMAGES=${IMAGES-}
 
 reset_colors
 
@@ -224,12 +198,10 @@ export DOCKERFILE_TEMPLATE
 export DOCKER_USER
 export DOCKER_FOLDER
 export DOCKERFILES_FOLDER
-export IMAGES BASE_IMAGES
+export IMAGES
+export BASE_IMAGES
 export NO_GEN
 export NO_BUILD
 export NO_SYNC
 export NO_SQUASH
-export SKIP_FOUND_CANDIDATE_EXIT
-export SQUASHER
-export SQUASHER_URL
 # vim:set et sts=4 ts=4 tw=80:
