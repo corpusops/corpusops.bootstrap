@@ -3,7 +3,7 @@
 ## bin/build.py: Helper to construct images either from a running container or a dockerfile
 
 ### requirements
-- docker > 1.11
+- docker > 1.13
 - packer.io > 1.0
 - OPT:
     - to build systemd based images, a Running linux,
