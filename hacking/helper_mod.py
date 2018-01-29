@@ -259,7 +259,7 @@ def parse_docker_images(images, images_file='images.json'):
 
 
 def parse_images_file(images_file):
-    images, errors = {}, []
+    images, errors = OrderedDict(), []
     fimages_file = A(images_file)
     debug('parse_images_file: {0}'.format(fimages_file))
     if not os.path.exists(fimages_file):
