@@ -1,0 +1,36 @@
+{
+  "images": [
+    {
+      "tag": "corpusops/ubuntu:14.04_preprovision",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:16.04_preprovision",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:latest_preprovision",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/centos:7_preprovision",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:14.04",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:16.04",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:latest",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/centos:7",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    }
+  ]
+}
