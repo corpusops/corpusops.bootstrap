@@ -673,11 +673,17 @@ def parse_cli():
         default='default image name',
         help='images json file (default: $docker_folder/IMAGES.json)')
     parser.add_argument(
+        'aditionnal_images',
+        nargs='*',
+        default=[],
+        help='additional images to filter build on')
+    parser.add_argument(
         '--images-files',
         nargs='*',
         default=splitstrip(os.environ.get('IMAGES_FILE', '')),
         help='images json file (default: $docker_folder/IMAGES.json)')
     args = parser.parse_args()
+    args.images.extend(args.aditionnal_images)
     for i in ['salt', 'ansible', 'docker']:
         opt = '{0}_folder'.format(i)
         folder = getattr(args, opt)
