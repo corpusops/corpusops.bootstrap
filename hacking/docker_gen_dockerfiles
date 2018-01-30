@@ -3,9 +3,11 @@ OW=$(pwd)
 cd "$(dirname "${0}")/.."
 export LOGGER_NAME=$(basename $0)
 
-sc=hacking/build_env
+export COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
+sc=bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
+DOCKERFILE_TEMPLATE=${DOCKERFILE_TEMPLATE:-${W}/hacking/Dockerfile.in}
 
 usage () {
     NO_HEADER=y die '
@@ -14,16 +16,11 @@ but too dockerfiles, eg ./Dockerfile.in & ./Dockerfile.in._preprovision)
 
  [DOCKERFILE_TEMPLATE=] \
  [NOCOLOR=y] \
- [NO_GEN=y] \
  [DEBUG=y] \
  [IMAGES="ubuntu:16.04"] \
     '"$0"'
 '
 }
-
-if [[ -n ${NO_GEN} ]];then
-    die 0 "Skipping dockerfile generation"
-fi
 
 parse_cli "$@"
 log "Generating dockerfiles"
@@ -33,23 +30,38 @@ for e in images preprovision;do
         mkdir docker/$e
     fi
 done
+rewrite_dockerfile() {
+    local template=${1}
+    local image=${2}
+    local cops_root=${3:-${COPS_ROOT}}
+    local image_preprovision=${4:-"${image}_preprovision"}
+    local default_base_image=${image//corpusops\//}
+    local base_image=${5:-${default_base_image}}
+    sed -r \
+        -e "/__STRIPME__/d" \
+        -e "s|__COPS_ROOT__|${cops_root}|g" \
+        -e "s|__IMAGE__|${image}|g" \
+        -e "s|__BASE_IMAGE__|${base_image}|g" \
+        -e "s|__IMAGE_PREPROVISION__|${image_preprovision}|g" \
+        "${template}"
+}
 while read image_line;do
     for image in ${image_line}; do
         if echo ${image} | grep -q _preprovision;then
             continue
         fi
-        image_preprovision=$(add_preprovision_slug ${image})
+        image_preprovision=${image}_preprovision
         dfiles=""
-        dfiles="${dfiles} docker/preprovision/Dockerfile.${image_preprovision}"
-        dfiles="${dfiles} docker/images/Dockerfile.${image}"
+        dfiles="${dfiles} docker/${image_preprovision}"
+        dfiles="${dfiles} docker/${image}"
         for f in ${dfiles};do
             template=${DOCKERFILE_TEMPLATE}
             if echo $f | grep -q preprovision; then
                 template=${template}._preprovision
             fi
             log "   Rewriting ${f} from ${template}"
-                rewrite_dockerfile "${template}" "${image}" > "${f}"
+            rewrite_dockerfile "${template}" "${image}" >"${f}"
         done
     done
-done <<< ${IMAGES}
+done <<< ${BASE_CORE_IMAGES}
 # vim:set et sts=4 ts=4 tw=80:
