@@ -2,7 +2,7 @@
 # and their requisites; together with docker cache
 
 # __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
-FROM __IMAGE__
+FROM __BASE_IMAGE__
 ENV container docker
 ENV PYTHONUNBUFFERED=1
 ENV ANSIBLE_FORCE_COLOR=true
@@ -141,4 +141,4 @@ RUN bash -c 'step_rev=3;set -e;\
 # You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
 STOPSIGNAL SIGRTMIN+3
 CMD ["/entry_point"]
-# vim:set et:
+# vim:set et ft=Dockerfile:

@@ -1,1 +1,1 @@
-docker/images/Dockerfile.ubuntu:16.04
+docker/corpusops/ubuntu:16.04

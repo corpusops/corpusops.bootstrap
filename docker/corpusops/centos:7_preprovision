@@ -117,6 +117,7 @@ RUN bash -c 'step_rev=3;set -e;\
     cd $COPS_ROOT;\
     : be sure every file is in place;\
     silent git reset --hard HEAD;\
+    ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;\
     : DISABLED, use only local checkout;\
     : bin/install.sh -C --only-sync-code;'
 
@@ -139,4 +140,4 @@ RUN bash -c 'step_rev=3;set -e;\
 # You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
 STOPSIGNAL SIGRTMIN+3
 CMD ["/entry_point"]
-# vim:set et:
+# vim:set et ft=Dockerfile:
