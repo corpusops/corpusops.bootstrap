@@ -179,7 +179,6 @@ Wrapper to docker build
 }
 
 DOCKER_BUILD_CHAIN=${DOCKER_BUILD_CHAIN:-"$W/hacking/docker_build_chain.py"}
-COPS_SC=${COPS_SC:-"$COPS_ROOT/bin/cops_shell_common"}
 LOGGER_FUNC=${LOGGER_FUNC:-log}
 
 usage () {
