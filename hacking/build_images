@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-OW=$(pwd)
-cd "$(dirname ${0})/.."
-export COPS_ROOT=${LOCAL_COPS_ROOT:-${COPS_ROOT:-$(pwd)}}
-export LOGGER_NAME=$(basename $0)
-
+# scripts vars
+SCRIPT=$0
+LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
+SCRIPT_NAME=$(basename "${SCRIPT}")
+SCRIPT_DIR=$(cd "$(dirname $0)" && pwd)
+# OW: from where script was called (must be defined from callee)
+OW="${OW:-$(pwd)}"
+# W is script_dir/..
+W=${W:-$(cd "$SCRIPT_DIR/.." && pwd)}
+# colors
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
@@ -11,6 +16,25 @@ NORMAL="\\e[0;0m"
 NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
 LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
+do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
+do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
+parse_cli() { parse_cli_common "${@}"; }
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
 log_() {
     reset_colors;msg_color=${2:-${YELLOW}};
     logger_color=${1:-${RED}};
@@ -22,6 +46,7 @@ log_() {
 }
 reset_colors() { if [[ -n ${NO_COLOR} ]];then BLUE="";YELLOW="";RED="";CYAN="";fi; }
 log() { log_ "${RED}" "${CYAN}" "${@}"; }
+get_chrono() { date "+%F_%H-%M-%S"; }
 cronolog() { log_ "${RED}" "${CYAN}" "($(get_chrono)) ${@}"; }
 debug() { if [[ -n "${DEBUG// }" ]];then log_ "${YELLOW}" "${YELLOW}" "${@}"; fi; }
 warn() { log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"; }
@@ -71,17 +96,16 @@ output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
                       output_in_error_ "${@}" ; ); }
 output_in_error_(){
     if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
-    CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
     if [[ -n $TRAVIS ]] || [[ -n $GITLAB_CI ]];then
         DEFAULT_CI_BUILD=y
     fi
+    CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
     if [[ -n $CI_BUILD ]];then
         DEFAULT_NO_OUTPUT=y
         DEFAULT_DO_OUTPUT_TIMER=y
     fi
     VERBOSE="${VERBOSE-}"
     TIMER_FREQUENCE="${TIMER_FREQUENCE:-120}"
-    DEFAULT_NO_OUTPUT=
     NO_OUTPUT="${NO_OUTPUT-${DEFAULT_NO_OUTPUT-1}}"
     DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-$DEFAULT_DO_OUTPUT_TIMER}"
     LOG=${LOG-}
@@ -99,10 +123,11 @@ output_in_error_(){
     if [[ -n $VERBOSE ]];then
         log "Running$([[ -n $LOG ]] && echo "($LOG)"; ): $@";
     fi
+    TMPTIMER=
     if [[ -n ${DO_OUTPUT_TIMER} ]]; then
-        TMP=$(mktemp)
+        TMPTIMER=$(mktemp)
         ( i=0;\
-          while test -f $TMP;do\
+          while test -f $TMPTIMER;do\
            i=$((++i));\
            if [ `expr $i % $TIMER_FREQUENCE` -eq 0 ];then \
                log "BuildInProgress$([[ -n $LOG ]] && echo "($LOG)"; ): ${@}";\
@@ -116,11 +141,12 @@ output_in_error_(){
         "${@}" >>"$LOG" 2>&1;ret=$?
     else
         if [[ -n $LOG ]] && has_command tee;then
-            pipe_return "tee -a $LOG" ${@};ret=$?
+            pipe_return "tee -a $LOG" "${@}";ret=$?
         else
             "${@}";ret=$?
         fi
     fi
+    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
     if [[ -z ${OUTPUT_IN_ERROR_NO_WAIT-} ]];then wait;fi
     if [ -e "$LOG" ] &&  [[ "${ret}" != "0" ]] && [[ -n $NO_OUTPUT ]];then
         cat "$LOG" >&2
@@ -129,7 +155,7 @@ output_in_error_(){
     return ${ret}
 }
 output_in_error_post() {
-    if [[ -e "$TMP" ]] && [[ -n $DO_OUTPUT_TIMER ]]; then rm -f "${TMP}";fi
+    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
     if [[ -e "$LOG" ]] && [[ -n $CLEANUP_LOG ]];then rm -f "$LOG";fi
 }
 test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
@@ -141,22 +167,6 @@ run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
 vvv() { debug "${@}";silent_run "${@}"; }
 vv() { log "${@}";silent_run "${@}";}
 silent_vv() { SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"; }
-parse_cli_common() {
-    USAGE=
-    for i in ${@-};do
-        case ${i} in
-            --no-color|--no-colors|--nocolor|--no-colors)
-                NO_COLOR=1;;
-            -h|--help)
-                USAGE=1;;
-            *) :;;
-        esac
-    done
-    reset_colors
-    if [[ -n ${USAGE} ]]; then
-        usage
-    fi
-}
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
 
@@ -168,7 +178,7 @@ Wrapper to docker build
  '
 }
 
-DOCKER_BUILD_CHAIN=${DOCKER_BUILD_CHAIN:-"$COPS_ROOT/hacking/docker_build_chain.py"}
+DOCKER_BUILD_CHAIN=${DOCKER_BUILD_CHAIN:-"$W/hacking/docker_build_chain.py"}
 COPS_SC=${COPS_SC:-"$COPS_ROOT/bin/cops_shell_common"}
 LOGGER_FUNC=${LOGGER_FUNC:-log}
 
@@ -208,13 +218,7 @@ else
         $DOCKER_BUILD_CHAIN --list ${@} \
         |egrep -iv -- "--images=|^messages"))"
 fi
-DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS=""
-if [[ -n $NO_OUTPUT ]];then
-    DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS="--quiet ${DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS}"
-fi
-DOCKER_BUILD_CHAIN_EXTRA_ARGS="${DOCKER_BUILD_CHAIN_EXTRA_ARGS:-"$DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS"}"
-$COPS_SC vv \
-    output_in_error $DOCKER_BUILD_CHAIN $DOCKER_BUILD_CHAIN_EXTRA_ARGS ${@}
+output_in_error $DOCKER_BUILD_CHAIN "${@}"
 ret=$?
 exit ${ret}
 # vim:set et sts=4 ts=4 tw=0:
