@@ -2,30 +2,25 @@
 # and their requisites; together with docker cache
 
 FROM ubuntu:14.04
-ENV container docker
-ENV PYTHONUNBUFFERED=1
-ENV ANSIBLE_FORCE_COLOR=true
+
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
+ARG NO_OUTPUT=y
+ARG PYTHONUNBUFFERED=1
+
+ENV container docker
 ENV COPS_ROOT $COPS_ROOT
-ENV COPS_APPLY_ROLE "${COPS_ROOT}/bin/cops_apply_role -vvvv"
+ENV _cops_ar "$COPS_ROOT/bin/cops_apply_role"
+ENV _sar "$COPS_ROOT/bin/silent_run $_cops_ar -vvvvv -ecops_vars_debug=y"
+ENV _ar "$_cops_ar -vvvvv -ecops_vars_debug=y"
+ENV _s "$COPS_ROOT/bin/silent_run"
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
-COPY requirements/os_* \
-     hacking/container_rootfs/sbin/cops_container_snapshot.sh \
-     hacking/container_rootfs/sbin/cops_container_strip.sh \
-     hacking/container_rootfs/sbin/cops_container_cleanup.sh \
-     hacking/container_rootfs/sbin/cops_container_disable_networkifacesscripts.sh \
-     bin/cops_shell_common \
-     bin/cops_pkgmgr_install.sh \
-     bin/cops_reset_passwords.sh \
-     /bootstrap/
-RUN bash -c 'step_rev=3;\
+COPY requirements/os_* $COPS_ROOT/requirements/
+COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
+RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
-    silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
-    cd /bootstrap;\
-    DISTRIB_ID=$(. cops_shell_common && echo $DISTRIB_ID);\
-    if [ "x$DISTRIB_ID" = "x" ]; then exit 139;fi;\
+    : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
     WANTED_PACKAGES="$(cat os_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
@@ -41,9 +36,7 @@ RUN bash -c 'step_rev=3;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y silent ./cops_pkgmgr_install.sh;\
-    :;\
-    silent ./cops_container_disable_networkifacesscripts.sh'
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh'
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
@@ -51,15 +44,15 @@ COPY hacking/patches/python*.diff \
      requirements/os_* \
      requirements/python_* \
      ${COPS_ROOT}/requirements/
-RUN bash -c 'step_rev=2;set -e;\
-    silent() { SILENT=1 /bootstrap/cops_shell_common vv "${@}"; };\
+COPY bin/silent_run $COPS_ROOT/bin/
+RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
     pos=;if [ -e /etc/redhat-release ];then pos=.rh;fi;\
     rhpyvers="36";pypkgs="";\
     if [ "x${pos}" = "x.rh" ];then \
         for i in ${rhpyvers};do pypkgs="$pypkgs python${i}u-test python${i}u-libs python${i}u-pip python${i}u-devel";done;\
         yum -y install https://centos7.iuscommunity.org/ius-release.rpm;\
     fi;\
-    if [ "x${pypkgs}" != "x" ];then /bootstrap/cops_pkgmgr_install.sh $pypkgs;fi;\
+    if [ "x${pypkgs}" != "x" ];then $COPS_ROOT/bin/cops_pkgmgr_install.sh $pypkgs;fi;\
     while read f;do \
         cd "$f";\
         pyver=3;\
@@ -87,12 +80,12 @@ RUN bash -c 'step_rev=2;set -e;\
         fi;\
     done < <(ls -d /usr/lib*/python2* 2>/dev/null);\
     cd ${COPS_ROOT};\
-    silent virtualenv --system-site-packages --unzip-setuptools venv;\
+    $_s virtualenv --system-site-packages --unzip-setuptools venv;\
     . venv/bin/activate;\
     :;\
-    silent python -c "from test import test_support";\
-    silent pip install -U pip;\
-    silent pip install -U -r requirements/python_requirements.txt;'
+    $_s python -c "from test import test_support";\
+    $_s pip install -U pip;\
+    $_s pip install -U -r requirements/python_requirements.txt;'
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
@@ -100,44 +93,37 @@ COPY .corpusops ${COPS_ROOT}/.corpusops
 COPY bin ${COPS_ROOT}/bin
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
-RUN bash -c 'step_rev=2;set -e;\
-    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    DISTRIB_ID=$(. /bootstrap/cops_shell_common && echo $DISTRIB_ID);\
-    cd ${COPS_ROOT};\
-    :;\
-    silent bin/install.sh -C --skip-sync-code;\
-    :;\
-    rm -rf /bootstrap;'
+RUN bash -c 'step_rev=2;set -e;cd ${COPS_ROOT};\
+    $_s bin/install.sh -C --skip-sync-code'
 
-# 4/ Bring in all playbooks & roles
-COPY .git ${COPS_ROOT}/.git
 COPY roles ${COPS_ROOT}/roles
-RUN bash -c 'step_rev=3;set -e;\
-    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    cd $COPS_ROOT;\
-    : be sure every file is in place;\
-    silent git reset --hard HEAD;\
-    ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;\
-    : DISABLED, use only local checkout;\
-    : bin/install.sh -C --only-sync-code;'
 
 # Now copy all rootfs helpers & make the container a good systemd / process
 # manager citizen
-RUN bash -c 'step_rev=3;set -e;\
-    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    silent $COPS_ROOT/hacking/sync_files ;\
-    silent rsync -av $COPS_ROOT/hacking/container_rootfs/ /;\
-    silent /sbin/cops_container_activate_core_services.sh;'
+COPY hacking/container_rootfs/ $COPS_ROOT/hacking/container_rootfs/
+COPY hacking/sync_files $COPS_ROOT/hacking/
+RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+    $_s $COPS_ROOT/hacking/sync_files;\
+    $_s rsync -a hacking/container_rootfs/ /;\
+    $_s /sbin/cops_container_activate_core_services.sh;\
+    $_s /sbin/cops_container_disable_networkifacesscripts.sh;'
+
+# 4/ Bring in all rest of reepository
+COPY .git ${COPS_ROOT}/.git
+RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+   : be sure every file is in place;\
+   git reset --hard HEAD;\
+   ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;'
 
 # pack, cleanup, snapshot any found git repo
-RUN bash -c 'step_rev=3;set -e;\
-    silent() { SILENT=1 $COPS_ROOT/bin/cops_shell_common vv "${@}"; };\
-    /sbin/cops_container_strip.sh\
-    silent /sbin/cops_container_disable_networkifacesscripts.sh;\
-    silent /sbin/cops_container_cleanup.sh;\
-    silent /sbin/cops_container_snapshot.sh;'
+RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+    $_s /sbin/cops_container_strip.sh;\
+    $_s /sbin/cops_container_cleanup.sh;\
+    $_s /sbin/cops_container_snapshot.sh;'
 
-# You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+ENV ANSIBLE_FORCE_COLOR=true
+ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED
 STOPSIGNAL SIGRTMIN+3
+# You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
 CMD ["/entry_point"]
 # vim:set et ft=Dockerfile:
