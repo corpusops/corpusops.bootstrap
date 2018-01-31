@@ -13,5 +13,5 @@ docker exec -ti copsansibletest sh -c \
 
 docker exec -ti copsansibletest sh -c \
 'cd /srv/corpusops/corpusops.bootstrap/venv;. bin/activate;cd src/ansible;
-test/runner/test.py integration -v --color yes --requirements include_role_nested`
+test/runner/test.py integration -v --color yes --requirements include_role_nested'
 ```
