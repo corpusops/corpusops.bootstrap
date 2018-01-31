@@ -19,12 +19,16 @@ corpusops.roles/localsettings_apparmor"
 NO_BUILD=${NO_BUILD-}
 NO_SYNC=${NO_SYNC-}
 NO_SQUASH=${NO_SQUASH-}
-export LOGGER_NAME=$(basename $0)
-sc=hacking/build_env
-# W is script_dir/..
-W=${W:-$(pwd)}
+# scripts vars
+SCRIPT=$0
+LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
+SCRIPT_NAME=$(basename "${SCRIPT}")
+SCRIPT_DIR=$(cd "$(dirname $0)" && pwd)
 # OW: from where script was called (must be defined from callee)
-OW="${OW:-${W}}"
+OW="${OW:-$(pwd)}"
+# W is script_dir/..
+W=${W:-$(cd "$SCRIPT_DIR/.." && pwd)}
+# colors
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
 YELLOW="\\e[0;33m"
@@ -34,6 +38,23 @@ LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
+parse_cli() { parse_cli_common "${@}"; }
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
 log_() {
     reset_colors;msg_color=${2:-${YELLOW}};
     logger_color=${1:-${RED}};
@@ -70,48 +91,102 @@ die_in_error_() {
     ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
-test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
-test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
-silent_run_post() { if [ -e "${tmpf}" ];then rm -f "${tmpf}";fi; }
-silent_run_() {
-    tmpf=$(mktemp)
-    local ret=
-    if ! test_silent;then
-        "${@}"
-        ret=${?}
+has_command() {
+    ret=1
+    if which which >/dev/null 2>/dev/null;then
+      if which "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      fi
     else
-        do_trap silent_run_post EXIT TERM QUIT INT
-        if test_silent_log;then
-            log "Logging command output to ${tmpf}"
+      if command -v "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      else
+        if hash -r "${@}" >/dev/null 2>/dev/null;then
+            ret=0
         fi
-        "${@}" >"${tmpf}" 2>&1
-        ret=${?}
-        if [ "x${ret}" != "x0" ] && [ -e "${tmpf}" ]; then
-            cat "${tmpf}"
-        fi
+      fi
     fi
     return ${ret}
 }
+pipe_return() {
+    local filter=$1;shift;local command=$@;
+    (((($command; echo $? >&3) | $filter >&4) 3>&1) | (read xs; exit $xs)) 4>&1;
+}
+output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
+                      output_in_error_ "${@}" ; ); }
+output_in_error_(){
+    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
+    if [[ -n $TRAVIS ]] || [[ -n $GITLAB_CI ]];then
+        DEFAULT_CI_BUILD=y
+    fi
+    CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
+    if [[ -n $CI_BUILD ]];then
+        DEFAULT_NO_OUTPUT=y
+        DEFAULT_DO_OUTPUT_TIMER=y
+    fi
+    VERBOSE="${VERBOSE-}"
+    TIMER_FREQUENCE="${TIMER_FREQUENCE:-120}"
+    NO_OUTPUT="${NO_OUTPUT-${DEFAULT_NO_OUTPUT-1}}"
+    DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-$DEFAULT_DO_OUTPUT_TIMER}"
+    LOG=${LOG-}
+    if [[ -n $NO_OUTPUT ]];then
+        if [[ -z "${LOG}" ]];then
+            LOG=$(mktemp)
+            DEFAULT_CLEANUP_LOG=y
+        else
+            DEFAULT_CLEANUP_LOG=
+        fi
+    else
+        DEFAULT_CLEANUP_LOG=
+    fi
+    CLEANUP_LOG=${CLEANUP_LOG:-${DEFAULT_CLEANUP_LOG}}
+    if [[ -n $VERBOSE ]];then
+        log "Running$([[ -n $LOG ]] && echo "($LOG)"; ): $@";
+    fi
+    TMPTIMER=
+    if [[ -n ${DO_OUTPUT_TIMER} ]]; then
+        TMPTIMER=$(mktemp)
+        ( i=0;\
+          while test -f $TMPTIMER;do\
+           i=$((++i));\
+           if [ `expr $i % $TIMER_FREQUENCE` -eq 0 ];then \
+               log "BuildInProgress$([[ -n $LOG ]] && echo "($LOG)"; ): ${@}";\
+             i=0;\
+           fi;\
+           sleep 1;\
+          done;\
+          if [[ -n $VERBOSE ]];then log "done: ${@}";fi; ) &
+    fi
+    if [[ -n $NO_OUTPUT ]];then
+        "${@}" >>"$LOG" 2>&1;ret=$?
+    else
+        if [[ -n $LOG ]] && has_command tee;then
+            pipe_return "tee -a $LOG" "${@}";ret=$?
+        else
+            "${@}";ret=$?
+        fi
+    fi
+    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
+    if [[ -z ${OUTPUT_IN_ERROR_NO_WAIT-} ]];then wait;fi
+    if [ -e "$LOG" ] &&  [[ "${ret}" != "0" ]] && [[ -n $NO_OUTPUT ]];then
+        cat "$LOG" >&2
+    fi
+    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set +x;fi
+    return ${ret}
+}
+output_in_error_post() {
+    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
+    if [[ -e "$LOG" ]] && [[ -n $CLEANUP_LOG ]];then rm -f "$LOG";fi
+}
+test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
+test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
+silent_run_() { (LOG=${SILENT_LOG:-${LOG}};NO_OUTPUT=;\
+                 if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";) }
 silent_run() { ( silent_run_ "${@}" ; ); }
 run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
 vvv() { debug "${@}";silent_run "${@}"; }
 vv() { log "${@}";silent_run "${@}";}
-parse_cli_common() {
-    USAGE=
-    for i in ${@-};do
-        case ${i} in
-            --no-color|--no-colors|--nocolor|--no-colors)
-                NO_COLOR=1;;
-            -h|--help)
-                USAGE=1;;
-            *) :;;
-        esac
-    done
-    reset_colors
-    if [[ -n ${USAGE} ]]; then
-        usage
-    fi
-}
+silent_vv() { SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"; }
 
 usage () {
     NO_HEADER=y die '
