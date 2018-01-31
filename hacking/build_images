@@ -46,32 +46,101 @@ die_in_error_() {
     ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
-test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
-test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
-silent_run_post() { if [ -e "${tmpf}" ];then rm -f "${tmpf}";fi; }
-silent_run_() {
-    tmpf=$(mktemp)
-    local ret=
-    if ! test_silent;then
-        "${@}"
-        ret=${?}
+has_command() {
+    ret=1
+    if which which >/dev/null 2>/dev/null;then
+      if which "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      fi
     else
-        do_trap silent_run_post EXIT TERM QUIT INT
-        if test_silent_log;then
-            log "Logging command output to ${tmpf}"
+      if command -v "${@}" >/dev/null 2>/dev/null;then
+        ret=0
+      else
+        if hash -r "${@}" >/dev/null 2>/dev/null;then
+            ret=0
         fi
-        "${@}" >"${tmpf}" 2>&1
-        ret=${?}
-        if [ "x${ret}" != "x0" ] && [ -e "${tmpf}" ]; then
-            cat "${tmpf}"
-        fi
+      fi
     fi
     return ${ret}
 }
+pipe_return() {
+    local filter=$1;shift;local command=$@;
+    (((($command; echo $? >&3) | $filter >&4) 3>&1) | (read xs; exit $xs)) 4>&1;
+}
+output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
+                      output_in_error_ "${@}" ; ); }
+output_in_error_(){
+    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
+    CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
+    if [[ -n $TRAVIS ]] || [[ -n $GITLAB_CI ]];then
+        DEFAULT_CI_BUILD=y
+    fi
+    if [[ -n $CI_BUILD ]];then
+        DEFAULT_NO_OUTPUT=y
+        DEFAULT_DO_OUTPUT_TIMER=y
+    fi
+    VERBOSE="${VERBOSE-}"
+    TIMER_FREQUENCE="${TIMER_FREQUENCE:-120}"
+    DEFAULT_NO_OUTPUT=
+    NO_OUTPUT="${NO_OUTPUT-${DEFAULT_NO_OUTPUT-1}}"
+    DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-$DEFAULT_DO_OUTPUT_TIMER}"
+    LOG=${LOG-}
+    if [[ -n $NO_OUTPUT ]];then
+        if [[ -z "${LOG}" ]];then
+            LOG=$(mktemp)
+            DEFAULT_CLEANUP_LOG=y
+        else
+            DEFAULT_CLEANUP_LOG=
+        fi
+    else
+        DEFAULT_CLEANUP_LOG=
+    fi
+    CLEANUP_LOG=${CLEANUP_LOG:-${DEFAULT_CLEANUP_LOG}}
+    if [[ -n $VERBOSE ]];then
+        log "Running$([[ -n $LOG ]] && echo "($LOG)"; ): $@";
+    fi
+    if [[ -n ${DO_OUTPUT_TIMER} ]]; then
+        TMP=$(mktemp)
+        ( i=0;\
+          while test -f $TMP;do\
+           i=$((++i));\
+           if [ `expr $i % $TIMER_FREQUENCE` -eq 0 ];then \
+               log "BuildInProgress$([[ -n $LOG ]] && echo "($LOG)"; ): ${@}";\
+             i=0;\
+           fi;\
+           sleep 1;\
+          done;\
+          if [[ -n $VERBOSE ]];then log "done: ${@}";fi; ) &
+    fi
+    if [[ -n $NO_OUTPUT ]];then
+        "${@}" >>"$LOG" 2>&1;ret=$?
+    else
+        if [[ -n $LOG ]] && has_command tee;then
+            pipe_return "tee -a $LOG" ${@};ret=$?
+        else
+            "${@}";ret=$?
+        fi
+    fi
+    if [[ -z ${OUTPUT_IN_ERROR_NO_WAIT-} ]];then wait;fi
+    if [ -e "$LOG" ] &&  [[ "${ret}" != "0" ]] && [[ -n $NO_OUTPUT ]];then
+        cat "$LOG" >&2
+    fi
+    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set +x;fi
+    return ${ret}
+}
+output_in_error_post() {
+    if [[ -e "$TMP" ]] && [[ -n $DO_OUTPUT_TIMER ]]; then rm -f "${TMP}";fi
+    if [[ -e "$LOG" ]] && [[ -n $CLEANUP_LOG ]];then rm -f "$LOG";fi
+}
+test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
+test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
+silent_run_() { (LOG=${SILENT_LOG:-${LOG}};NO_OUTPUT=;\
+                 if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";) }
 silent_run() { ( silent_run_ "${@}" ; ); }
 run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
 vvv() { debug "${@}";silent_run "${@}"; }
 vv() { log "${@}";silent_run "${@}";}
+silent_vv() { SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"; }
 parse_cli_common() {
     USAGE=
     for i in ${@-};do
@@ -139,13 +208,12 @@ else
         $DOCKER_BUILD_CHAIN --list ${@} \
         |egrep -iv -- "--images=|^messages"))"
 fi
-NO_OUTPUT=${NO_BUILD_OUTPUT-${TRAVIS-}}
 DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS=""
 if [[ -n $NO_OUTPUT ]];then
     DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS="--quiet ${DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS}"
 fi
 DOCKER_BUILD_CHAIN_EXTRA_ARGS="${DOCKER_BUILD_CHAIN_EXTRA_ARGS:-"$DOCKER_BUILD_CHAIN_DEFAULT_EXTRA_ARGS"}"
-NO_OUTPUT=$NO_OUTPUT $COPS_SC vv \
+$COPS_SC vv \
     output_in_error $DOCKER_BUILD_CHAIN $DOCKER_BUILD_CHAIN_EXTRA_ARGS ${@}
 ret=$?
 exit ${ret}
