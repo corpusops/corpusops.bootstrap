@@ -509,7 +509,7 @@ def _print(data, level=0):
 def print_status(status, quiet=False):
     k = 'success'
     if status.get(k, None):
-        print("\n"+k.capitalize()+'s:')
+        print("\n"+k.capitalize())
         for img in status[k]:
             data = status[k][img]
             if quiet:
@@ -518,7 +518,7 @@ def print_status(status, quiet=False):
             _print(data, level=2)
     for k in ['message', 'error', 'skip']:
         if status.get(k, None):
-            print("\n"+k.capitalize()+'s:')
+            print("\n"+k.capitalize())
             for img in status[k]:
                 data = status[k][img]
                 print(" "+img)
@@ -602,9 +602,20 @@ def generate(versions_file, target):
         fic.write(json.dumps(res, indent=2))
 
 
+def is_travis():
+    return bool(os.environ.get('TRAVIS', '').strip())
+
+
+def is_gitlab_ci():
+    return bool(os.environ.get('GITLAB_CI', '').strip())
+
+
+def is_ci():
+    return is_travis() or is_gitlab_ci()
+
+
 def parse_cli():
     parser = argparse.ArgumentParser(usage=_HELP)
-    quiet_mode = bool(os.environ.get('TRAVIS', '').strip())
     no_squash = bool(os.environ.get('NO_SQUASH', '').strip())
     parser.add_argument(
         '--generate-images',
@@ -614,7 +625,8 @@ def parse_cli():
         action='store_true')
     parser.add_argument(
         '--quiet',
-        default=quiet_mode,
+        dest='quiet',
+        default=False,
         action='store_true')
     parser.add_argument(
         '--no-squash',
