@@ -35,7 +35,8 @@ detect_os() {
         DISTRIB_ID=$(echo $DISTRIB_ID | awk '{print tolower($1)}')
     else
         if ! ( echo ${@-} | grep -q no_fail );then
-            die "unespected case, no lsb_release"
+            echo "unexpected case, no lsb_release" >&2
+            exit 1
         fi
     fi
 }
