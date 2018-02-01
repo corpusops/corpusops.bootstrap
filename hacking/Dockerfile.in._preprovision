@@ -91,12 +91,13 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
 COPY .corpusops ${COPS_ROOT}/.corpusops
-COPY bin ${COPS_ROOT}/bin
+COPY bin/install.sh bin/cops_shell_common ${COPS_ROOT}/bin/
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
 RUN bash -c 'step_rev=2;set -e;cd ${COPS_ROOT};\
     $_s bin/install.sh -C --skip-sync-code'
 
+COPY bin/ ${COPS_ROOT}/bin/
 COPY roles ${COPS_ROOT}/roles
 
 # Now copy all rootfs helpers & make the container a good systemd / process
@@ -116,11 +117,16 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
    git reset --hard HEAD;\
    ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;'
 
+ENV GIT_SHALLOW_DEPTH=1
+ENV GIT_SHALLOW=y
+ENV NO_IMAGE_STRIP=
+# Autoremove/reinstall gcc & git (can be overriden in children anyway)
+# as those packages are way too heavy
+ENV DEB_REMOVES="gcc git"
+
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
-    $_s /sbin/cops_container_strip.sh;\
-    $_s /sbin/cops_container_cleanup.sh;\
-    $_s /sbin/cops_container_snapshot.sh;'
+    /sbin/cops_container_strip.sh'
 
 ENV ANSIBLE_FORCE_COLOR=true
 ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED
