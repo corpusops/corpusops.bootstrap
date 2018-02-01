@@ -3,10 +3,18 @@ sudo: required
 dist: trusty
 env:
   matrix:
-    - IMAGES="corpusops/ubuntu:16.04_preprovision  corpusops/ubuntu:16.04"
-    - IMAGES="corpusops/ubuntu:14.04_preprovision  corpusops/ubuntu:14.04"
-    - IMAGES="corpusops/ubuntu:latest_preprovision corpusops/ubuntu:latest"
-    - IMAGES="corpusops/centos:7_preprovision      corpusops/centos:7"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:16.04_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:14.04_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:14.04"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:latest_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest"
+    - >
+      TEST_IMAGES="corpusops/centos:7_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/centos:7"
 language: python
 python: "2.7"
 before_install:
