@@ -1,4 +1,22 @@
 #!/usr/bin/env bash
+ANSIBLE_FILTER_OUTPUT="(^("
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(included|skipping):|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(task|play)\s+(recap|\[(debug|all|include|setup)\])|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*$|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( => {)?$|"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
+ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
+DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
+COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
+BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
+BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
 
 # scripts vars
 SCRIPT=$0
@@ -275,6 +293,151 @@ may_sudo() {
         echo "sudo $([[ -z $DIRECT_SUDO ]] && echo "-HE")"
     fi
 }
+get_ancestor_from_dockerfile() {
+    local dockerfile=${1}
+    local ancestor=
+    if [[ -e "${dockerfile}" ]] && egrep -q ^FROM "${dockerfile}"; then
+        ancestor=$(egrep ^FROM "${dockerfile}"\
+            | head -n1 | awk '{print $2}' | xargs -n1| sort -u )
+    fi
+    echo ${ancestor}
+}
+do_tmp_cleanup() {
+    local tmp_dockers=$2
+    local tmp_files=$1
+    local tmp_imgs=$3
+    log "Post cleanup"
+    for tmp_file in ${tmp_files};do
+        if [ -e "${tmp_file}" ]; then
+            vv rm -f "${tmp_file}"
+        fi
+    done
+    for test_docker in ${tmp_dockers};do
+        test_dockerid=$(vvv get_container_id ${test_docker})
+        if [[ "${test_dockerid}" != "" ]]; then
+            log "Removing produced test docker ${test_docker}"
+            docker rm -f "${test_dockerid}"
+        fi
+    done
+    for test_tag in ${tmp_imgs};do
+        test_tagid=$(vvv get_image ${test_tag})
+        if [[ "${test_tagid}" != "" ]]; then
+            log "Removing produced test image: ${test_tag}"
+            docker rmi "${test_tagid}"
+        fi
+    done
+}
+update_wd_to_br() {
+    (
+        local wd="${2:-$(pwd)}"
+        local up_branch="${1}"
+        cd "${wd}" || die "${wd} does not exists"
+        if ! git diff --exit-code -q;then
+            git stash
+        fi &&\
+        vv git pull origin "${up_branch}"
+    )
+
+}
+upgrade_wd_to_br() {
+    (
+        local wd="${2:-$(pwd)}"
+        local up_branch="${1}"
+        cd "${wd}" || die "${wd} does not exists"
+        local test_branch="${3:-$(get_git_branch)}"
+        local existing_gitmodules="$(git submodule status|awk '{print $2}')"
+        if [ "x${test_branch}" != "x${up_branch}" ];then
+            warn "Upgrading $wd to branch: $up_branch"
+            git fetch --all || die "git fetch in $wd failed"
+            if get_git_branchs | egrep -q "^${up_branch}$";then
+                vv git checkout ${up_branch} &&\
+                    vv git reset --hard origin/${up_branch}
+            else
+                vv git checkout origin/${up_branch} -b ${up_branch}
+            fi
+        fi
+        update_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        while read subdir;do
+            subdir=$(echo $subdir|sed -e "s/^\.\///g")
+            if [ -h "${subdir}/.git" ] || [ -f "${subdir}/.git" ];then
+                debug "Checking if ${subdir} is always a submodule"
+                if [ -e .gitmodules ] && ( grep -q -- "${subdir}" .gitmodules );then
+                    debug "${subdir} is always a gitmodule"
+                else
+                    warn "${subdir} is not a git submodule anymore"
+                    vv rm -rf "${subdir}"
+                fi
+            fi
+        done < <( echo "${existing_gitmodules}" )
+        if [ -e .gitmodules ];then
+            warn "Upgrading submodules in $wd"
+            vv git submodule update --recursive
+        fi
+    )
+}
+get_python2_() {
+    local py2=
+    for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
+        local lpy=$(get_command $i 2>/dev/null)
+        if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
+            py2=${lpy}
+            break
+        fi
+    done
+    echo $py2
+}
+get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
+make_virtualenv() {
+    local py=${1:-$(get_python2)}
+    local venv_path=${2-${VENV_PATH:-$(pwd)/venv}}
+    local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
+    if     [ ! -e "${venv_path}/bin/activate" ] \
+        || [ ! -e "${venv_path}/lib" ] \
+        || [ ! -e "${venv_path}/include" ] \
+        ; then
+        bs_log "Creating virtualenv in ${venv_path}"
+        if [ ! -e "${PIP_CACHE}" ]; then
+            mkdir -p "${PIP_CACHE}"
+        fi
+        if [ ! -e "${venv_path}" ]; then
+            mkdir -p "${venv_path}"
+        fi
+    virtualenv \
+        $( [[ -n $py ]] && echo "--python=$py"; ) \
+        --system-site-packages --unzip-setuptools \
+        "${venv_path}" &&\
+    ( . "${venv_path}/bin/activate" &&\
+      "${venv_path}/bin/easy_install" -U setuptools &&\
+      "${venv_path}/bin/pip" install -U pip &&\
+      deactivate; )
+    fi
+}
+ensure_last_python_requirement() {
+    local i=
+    local copt=
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
+    if pip --help | grep -q download-cache; then
+        copt="--download-cache"
+    else
+        copt="--cache-dir"
+    fi
+    for i in $@;do
+        log "Installing last version of $i"
+        pip install -U $copt "${PIP_CACHE}" $i
+    done
+}
+filtered_ansible_playbook_custom() {
+    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
+    shift
+    (((( \
+        vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
+        | egrep -iv "${filter}" >&4) 3>&1) \
+        | (read xs; exit $xs)) 4>&1
+    return $?
+}
+filtered_ansible_playbook() { filtered_ansible_playbook_ "" "${@}"; }
+usage() { die 128 "No usage found"; }
+# END: corpusops common glue
 
 usage() {
     echo '
