@@ -1,0 +1,25 @@
+- hosts: localhost
+  tasks:
+    #- debug: {msg: "{{vars}}"}
+    - include_role: {name: corpusops.roles/vars}
+    - set_fact:
+        cacheable: false
+        r: "{{playbook_dir|copsf_dirname}}"
+    - shell: >
+        cd "{{r}}";
+        fics=$(grep "END: corpusops common glue" \
+        $(grep -HR "BEGIN: corpusops common glue" bin hacking|awk -F: '{print $1}')\
+        |awk -F: '{print $1}'
+        |egrep -v "hacking/shell_glue|refresh_glue.yml");
+        if [ "x$fics" != "x" ];then find $fics -type f -and -not -type l|awk '!seen[$0]++';fi
+      register: fics
+    - shell: |
+       cd "{{r}}"
+       cat hacking/shell_glue
+      register: glue
+    - blockinfile:
+        marker: "# {mark}: corpusops common glue"
+        content: "{{(glue.stdout_lines[:-1]|join('\n')
+                    ).strip()}}"
+        path: "{{r}}/{{item}}"
+      with_items: "{{fics.stdout_lines}}"
