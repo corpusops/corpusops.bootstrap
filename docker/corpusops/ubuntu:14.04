@@ -4,8 +4,13 @@
 FROM corpusops/ubuntu:14.04_preprovision
 
 # Rewarm apt cache
-RUN bash -c "if egrep -qi \"ubuntu|mint|debian\" /etc/*-release 2>/dev/null;then\
-      apt-get update -y -qq;fi"
+RUN bash -c '\
+  if egrep -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
+      apt-get update -y -qq;\
+      if [ "x${DEB_REMOVES-}" != "x" ];then\
+        apt-get install -y $DEB_REMOVES;\
+      fi;\
+  fi'
 
 ARG NO_OUTPUT=y
 ## Refresh files
@@ -29,10 +34,9 @@ RUN bash -c 'step_rev=2;set -e;\
 RUN bash -c 'step_rev=2;set -e;\
     $_sar ${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml'
 
-# pack any found git repo
-RUN bash -c 'step_rev=3;set -e;\
-    $_s /sbin/cops_container_disable_networkifacesscripts.sh;\
-    $_s /sbin/cops_container_strip.sh'
+# pack, cleanup, snapshot any found git repo
+RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+       /sbin/cops_container_strip.sh'
 
 # Default to launch systemd, and you ll have have to mount:
 #  -v /sys/fs/cgroup:/sys/fs/cgroup:ro
