@@ -512,6 +512,16 @@ parse_cli() {
     debug "WD: $wd"
 }
 
+usage() {
+    NO_HEADER=y die '
+# DEPRECATED/RETROCOMPAT: not used anymore as docker added --squash to build
+# now it is just another docker build wrapper
+# corpusops.bootstrap uses docker_build_chain to build images
+'$0' <tag> <dockerfile> <wd>
+
+'
+}
+
 parse_cli "$@"
 vv docker build -t "$tag" -f "$dockerfile" "$wd"
 ret=$?
