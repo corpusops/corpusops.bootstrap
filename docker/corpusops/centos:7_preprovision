@@ -121,7 +121,7 @@ ENV GIT_SHALLOW=y
 ENV NO_IMAGE_STRIP=
 # Autoremove/reinstall gcc & git (can be overriden in children anyway)
 # as those packages are way too heavy
-ENV DEB_REMOVES="gcc git"
+ENV DEB_REMOVES="gcc"
 
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
