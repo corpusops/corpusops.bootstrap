@@ -17,7 +17,7 @@ fi
 
 # Update corpusops code, ansible & roles
 if [[ -z "${SKIP_COPS_UPDATE}" ]];then
-    log "Refesh corpusops"
+    log "Refresh corpusops"
     if ! call_cops_installer  $COPS_UPDATE_ARGS;then die_ 24 "Update error";fi
 else
     log "-> Skip corpusops update"
