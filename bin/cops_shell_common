@@ -7,18 +7,8 @@ ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}(ok|changed):\s+\[localhost\]( =>
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}\s*(\"msg|([{}]$))"
 ANSIBLE_FILTER_OUTPUT="${ANSIBLE_FILTER_OUTPUT}))"
 DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
-COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
-BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
-BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
-BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
-BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
-BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
 
-
+# BEGIN: corpusops common glue
 # scripts vars
 SCRIPT=$0
 LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
@@ -28,6 +18,23 @@ SCRIPT_DIR=$(cd "$(dirname $0)" && pwd)
 OW="${OW:-$(pwd)}"
 # W is script_dir/..
 W=${W:-$(cd "$SCRIPT_DIR/.." && pwd)}
+#
+#
+DEFAULTS_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
+DEFAULTS_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
+
+COPS_ROOT=${COPS_ROOT-$DEFAULTS_COPS_ROOT}
+COPS_URL=${COPS_URL-$DEFAULTS_COPS_URL}
+BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
+BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
+#
 # colors
 RED="\\e[0;31m"
 CYAN="\\e[0;36m"
@@ -54,6 +61,9 @@ parse_cli_common() {
     if [[ -n ${USAGE} ]]; then
         usage
     fi
+}
+is_ci() {
+    return $( ( [[ -n ${TRAVIS-} ]] || [[ -n ${GITLAB_CI} ]] );echo $?;)
 }
 log_() {
     reset_colors;msg_color=${2:-${YELLOW}};
@@ -116,7 +126,7 @@ output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
                       output_in_error_ "${@}" ; ); }
 output_in_error_(){
     if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
-    if [[ -n $TRAVIS ]] || [[ -n $GITLAB_CI ]];then
+    if is_ci;then
         DEFAULT_CI_BUILD=y
     fi
     CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
@@ -180,8 +190,10 @@ output_in_error_post() {
 }
 test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
 test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
-silent_run_() { (LOG=${SILENT_LOG:-${LOG}};NO_OUTPUT=;\
-                 if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";) }
+silent_run_() {
+    (LOG=${SILENT_LOG:-${LOG}};NO_OUTPUT=${NO_OUTPUT-};\
+     if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";)
+}
 silent_run() { ( silent_run_ "${@}" ; ); }
 run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
 vvv() { debug "${@}";silent_run "${@}"; }
@@ -294,9 +306,6 @@ may_sudo() {
         echo "sudo $([[ -z $DIRECT_SUDO ]] && echo "-HE")"
     fi
 }
-usage() { die 128 "No usage found"; }
-
-
 get_ancestor_from_dockerfile() {
     local dockerfile=${1}
     local ancestor=
@@ -306,7 +315,6 @@ get_ancestor_from_dockerfile() {
     fi
     echo ${ancestor}
 }
-
 do_tmp_cleanup() {
     local tmp_dockers=$2
     local tmp_files=$1
@@ -332,22 +340,6 @@ do_tmp_cleanup() {
         fi
     done
 }
-
-filtered_ansible_playbook_custom() {
-    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
-    shift
-    (((( \
-        vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
-        | egrep -iv "${filter}" >&4) 3>&1) \
-        | (read xs; exit $xs)) 4>&1
-    return $?
-}
-
-filtered_ansible_playbook() {
-    filtered_ansible_playbook_ "" "${@}"
-
-}
-
 update_wd_to_br() {
     (
         local wd="${2:-$(pwd)}"
@@ -360,7 +352,6 @@ update_wd_to_br() {
     )
 
 }
-
 upgrade_wd_to_br() {
     (
         local wd="${2:-$(pwd)}"
@@ -397,7 +388,6 @@ upgrade_wd_to_br() {
         fi
     )
 }
-
 get_python2_() {
     local py2=
     for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
@@ -409,40 +399,50 @@ get_python2_() {
     done
     echo $py2
 }
-
-set_python2() {
-    py2=$( deactivate 2>/dev/null;get_python2_)
-    if [[ -z $py2 ]];then
-        die "No Python2 interpreter found"
-    fi
-}
-
+get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
 make_virtualenv() {
-    set_python2
-    local py=${1-$py2}
-    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
-    if     [ ! -e "${VENV_PATH}/bin/activate" ] \
-        || [ ! -e "${VENV_PATH}/lib" ] \
-        || [ ! -e "${VENV_PATH}/include" ] \
+    local py=${1:-$(get_python2)}
+    local DEFAULT_VENV_PATH=$(pwd)/venv
+    local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
+    local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
+    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
+        if [ ! -e "${venv_path}" ];then
+            mkdir -p "${venv_path}"
+        fi
+        if [ -e "${DEFAULT_VENV_PATH}" ] && \
+            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
+            [ ! -h "${DEFAULT_VENV_PATH}" ];then
+            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
+        fi
+        if [ -h $DEFAULT_VENV_PATH ] &&\
+            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
+            rm -f "${DEFAULT_VENV_PATH}"
+        fi
+        if [ ! -e $DEFAULT_VENV_PATH ];then
+            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
+        fi
+    fi
+    if     [ ! -e "${venv_path}/bin/activate" ] \
+        || [ ! -e "${venv_path}/lib" ] \
+        || [ ! -e "${venv_path}/include" ] \
         ; then
-        bs_log "Creating virtualenv in ${VENV_PATH}"
+        bs_log "Creating virtualenv in ${venv_path}"
         if [ ! -e "${PIP_CACHE}" ]; then
             mkdir -p "${PIP_CACHE}"
         fi
-        if [ ! -e "${VENV_PATH}" ]; then
-            mkdir -p "${VENV_PATH}"
+        if [ ! -e "${venv_path}" ]; then
+            mkdir -p "${venv_path}"
         fi
     virtualenv \
-        $( [[ -n $py ]] && echo "--python=$py2"; ) \
+        $( [[ -n $py ]] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
-        "${VENV_PATH}" &&\
-    ( . "${VENV_PATH}/bin/activate" &&\
-      "${VENV_PATH}/bin/easy_install" -U setuptools &&\
-      "${VENV_PATH}/bin/pip" install -U pip &&\
+        "${venv_path}" &&\
+    ( . "${venv_path}/bin/activate" &&\
+      "${venv_path}/bin/easy_install" -U setuptools &&\
+      "${venv_path}/bin/pip" install -U pip &&\
       deactivate; )
     fi
 }
-
 ensure_last_python_requirement() {
     local i=
     local copt=
@@ -457,6 +457,8 @@ ensure_last_python_requirement() {
         pip install -U $copt "${PIP_CACHE}" $i
     done
 }
+usage() { die 128 "No usage found"; }
+# END: corpusops common glue
 
 detect_os no_fail
 IMAGES=${IMAGES-}
