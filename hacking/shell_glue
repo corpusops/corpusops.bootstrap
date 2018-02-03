@@ -37,23 +37,6 @@ LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
-parse_cli() { parse_cli_common "${@}"; }
-parse_cli_common() {
-    USAGE=
-    for i in ${@-};do
-        case ${i} in
-            --no-color|--no-colors|--nocolor|--no-colors)
-                NO_COLOR=1;;
-            -h|--help)
-                USAGE=1;;
-            *) :;;
-        esac
-    done
-    reset_colors
-    if [[ -n ${USAGE} ]]; then
-        usage
-    fi
-}
 is_ci() {
     return $( ( [[ -n ${TRAVIS-} ]] || [[ -n ${GITLAB_CI} ]] );echo $?;)
 }
@@ -93,6 +76,23 @@ die_in_error_() {
     ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
+parse_cli() { parse_cli_common "${@}"; }
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
 has_command() {
     ret=1
     if which which >/dev/null 2>/dev/null;then
