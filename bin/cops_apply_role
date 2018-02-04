@@ -5,8 +5,12 @@ SCRIPT_DIR="$(cd $(dirname "$0") && pwd)"
 # wrapper to be found and loaded in place of the former
 # script.
 export PATH=$SCRIPT_DIR:$PATH
-exec ansible-playbook \
-    -i "${ANSIBLE_INVENTORY:-"localhost,"}" \
-    $( [[ -z $ANSIBLE_INVENTORY ]] && echo "-c local") \
-    "${@}"
+if echo $@ | egrep -iq -- "(( ?-i +)|(--(inventory-file|inventory)(=| )))";then
+    exec ansible-playbook "${@}"
+else
+    exec ansible-playbook \
+        -i "${ANSIBLE_INVENTORY:-"localhost,"}" \
+        $( [[ -z $ANSIBLE_INVENTORY ]] && echo "-c local") \
+        "${@}"
+fi
 # vim:set et sts=4 ts=4 tw=0:
