@@ -346,29 +346,29 @@ You will need two things, **first** find the original template, **second** make 
 
 To find the template, it's quite certainly set in a ```templates``` subdirectory of ansible playbooks. But the original is not in your project's ```.ansible``` it's in your ```local/setups.XXX/.ansible/playbooks``` directory. Let' say I want my nginx templates:
 
-    ```sh
-    find ./local -name \*nginx\*
-    ```
+```sh
+find ./local -name \*nginx\*
+```
 
 Found it: ```./local/setups.drupal/.ansible/playbooks/roles/drupal/templates/nginx.conf```.
 
 I'll now make a copy of this generic shared template in my local project (loosing any future shared update, by definition).
 The local project location will be ```.ansible/playbooks/overrides```, and I'll add also a ```template``` subdirectory to keep it cleaner.
 
-    ```sh
-    mkdir -p .ansible/playbooks/overrides/templates
-    cp ./local/setups.drupal/.ansible/playbooks/roles/drupal/templates/nginx.conf \
-      .ansible/playbooks/overrides/templates/nginx.conf
-    ```
+```sh
+mkdir -p .ansible/playbooks/overrides/templates
+cp ./local/setups.drupal/.ansible/playbooks/roles/drupal/templates/nginx.conf \
+  .ansible/playbooks/overrides/templates/nginx.conf
+```
 Next step is to alter ```.ansible/playbooks/overrides/templates/nginx.conf```.
 
 Then I need to tell my application that the template used is not the classical one. This template is referenced in a variable, set in the file ```.ansible/playbooks/roles/drupal_vars/defaults/main.yml```  (the one we talked about at first). Search the variable name, in this case it's ```cops_drupal_nginx_content_template```. I need to alter this template for this specific application, so that's an application override that goes to  ```.ansible/vaults/app/yml```:
 
-    ```sh
-    vim .ansible/vaults/app/yml
-    (...)
-    cops_drupal_nginx_content_template: "overrides/templates/nginx.conf"
-    ```
+```sh
+vim .ansible/vaults/app/yml
+(...)
+cops_drupal_nginx_content_template: "overrides/templates/nginx.conf"
+```
 
 **Note** *I could use the ansible search path and a template name clearly different than the one used in the generic case, and instead simply use ```cops_drupal_nginx_content_template: "foo_nginx.conf"```. Then the local template would be ```.ansible/playbooks/templates/foo_nginx.conf```, but that's not as nice, and you may have problems in the future if a ```foo_nginx.conf``` is added to the generic templates.*
 
