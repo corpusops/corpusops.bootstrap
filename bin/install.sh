@@ -812,7 +812,7 @@ checkout_code() {
                         fi
                     fi
                 done
-                if [ ${ret} -gt 0 ];then
+                if [ "x${ret}" != "x0" ];then
                     return ${ret}
                 fi
             done
@@ -820,7 +820,6 @@ checkout_code() {
         bs_yellow_log "Cant sync code, bootstrap core is not done"
         return 1
     fi
-    exit 1
 }
 
 test_ansible_state() {
