@@ -773,6 +773,10 @@ checkouter_() {
 
 upgrade_ansible() {
     w="$(pwd)"
+    if [ ! -e  "${VENV_PATH}/src/ansible/.git" ] && [ -e "${VENV_PATH}/src/ansible/lib" ];then
+        warn "Ansible is not a checkout but seems there, bypassing"
+        return 0
+    fi
     upgrade_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
         cd "${VENV_PATH}/src/ansible" &&\
         ensure_ansible_is_usable
