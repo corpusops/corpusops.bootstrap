@@ -11,14 +11,15 @@ SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
 # OW: from where script was called (must be defined from callee)
 OW="${OW:-$(pwd)}"
 # W is script_dir/..
-W=${W:-$(cd "$SCRIPT_DIR/.." && pwd)}
+W=${OVERRIDEN_W:-$(cd "$SCRIPT_DIR/.." && pwd)}
 #
 #
-DEFAULTS_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
-DEFAULTS_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
-
-COPS_ROOT=${COPS_ROOT-$DEFAULTS_COPS_ROOT}
-COPS_URL=${COPS_URL-$DEFAULTS_COPS_URL}
+DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
+DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
+#
+SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
+DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
+COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"

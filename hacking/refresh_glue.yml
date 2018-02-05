@@ -19,7 +19,7 @@
       register: glue
     - blockinfile:
         marker: "# {mark}: corpusops common glue"
-        content: "{{(glue.stdout_lines[:-1]|join('\n')
+        content: "{{(glue.stdout_lines[1:-1]|join('\n')
                     ).strip()}}"
         path: "{{r}}/{{item}}"
       with_items: "{{fics.stdout_lines}}"
