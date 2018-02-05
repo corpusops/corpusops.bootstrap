@@ -64,10 +64,13 @@ fi
 if [[ -z $NO_SNAPSHOT ]] && [[ -e /sbin/cops_container_snapshot.sh ]];then
     vv /sbin/cops_container_snapshot.sh
 fi
+aps="$COPS_ROOT/venv/src/ansible/test $COPS_ROOT/venv/src/ansible/doc*"
 if [[ -z $NO_IMAGE_STRIP ]];then
     if [[ -z $NO_ANSIBLE_STRIP ]];then
-        for i in $COPS_ROOT/venv/src/ansible/test \
-                 $COPS_ROOT/venv/src/ansible/doc*;do
+        if [[ -z $NO_ANSIBLE_GIT_DESTROY ]];then
+            aps="$aps $COPS_ROOT/venv/src/ansible/.git"
+        fi
+        for i in $aps;do
           if [ -e "$i" ];then vv rm -rf "$i";fi
         done
     fi
