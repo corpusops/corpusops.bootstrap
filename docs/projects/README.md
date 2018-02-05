@@ -40,6 +40,7 @@
     - [Access the VM websites](./vagrant.md#vmhosts)
     - [Launch ansible commands by hand](./vagrant.md#ansiblehand)
     - [Launch ansible commands, & deploy step by step only_steps](./vagrant.md#only_steps)
+    - [Override default templates](./vagrant.md##override-default-templates)
 
 ## Generic managment
 - [Generic deploy doc](./deploy.md)
