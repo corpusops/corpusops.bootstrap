@@ -340,7 +340,7 @@ It should most of the times contain the names, remember that it's then not `127.
 
 So, right now you may have a project based on generic templates for similar projects (say a drupal project, or a zope project, with our default nginx configuration for example).
 
-A lot of things on these templates depends on variables, of you take the drupal template you can find these variables in ```.ansible/playbooks/roles/drupal_vars/defaults/main.yml``` on your git deployment installation (not the one in the vm). And, of course, you have some local overrides in ```.ansible/vaults```, with the ```app.yml``` or the env-based yml files. But this **may not be anough**. You may need to completly alter a template for a specific project.
+A lot of things on these templates depends on variables, of you take the drupal template you can find these variables in ```.ansible/playbooks/roles/drupal_vars/defaults/main.yml``` on your git deployment installation (not the one in the vm). And, of course, you have some local overrides in ```.ansible/vaults```, with the ```app.yml``` or the env-based yml files. But this **may not be enough**. You may need to completly alter a template for a specific project.
 
 You will need two things, **first** find the original template, **second** make a local copy in your project with alterations.
 
