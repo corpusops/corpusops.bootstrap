@@ -22,7 +22,9 @@ COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
 RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
-    WANTED_PACKAGES="$(cat os_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_PACKAGES="$(cat os_packages.${DISTRIB_ID} \
+                           os_packages_dev.${DISTRIB_ID} \
+                           2>/dev/null | xargs -n1)";\
     WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
@@ -117,16 +119,21 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
    git reset --hard HEAD;\
    ln -sf $COPS_ROOT/roles/corpusops.roles/playbooks $COPS_ROOT/playbooks/corpusops;'
 
-ENV GIT_SHALLOW_DEPTH=1
-ENV GIT_SHALLOW=y
-ENV NO_IMAGE_STRIP=
 # Autoremove/reinstall gcc & git (can be overriden in children anyway)
 # as those packages are way too heavy
-ENV DEB_REMOVES="gcc"
 
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
-    /sbin/cops_container_strip.sh'
+    : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
+    cd "$COPS_ROOT";\
+    PKGS_REMOVES="gcc \
+        $(cat req*/os_packages_dev.${DISTRIB_ID} \
+          2>/dev/null | xargs -n1)" \
+    DEV_AUTOREMOVE=y \
+    GIT_SHALLOW=y \
+    GIT_SHALLOW_DEPTH=1 \
+    NO_IMAGE_STRIP= \
+        /sbin/cops_container_strip.sh'
 
 ENV ANSIBLE_FORCE_COLOR=true
 ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED

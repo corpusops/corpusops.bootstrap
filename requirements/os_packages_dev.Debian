@@ -1,0 +1,13 @@
+build-essential
+autoconf
+m4
+automake
+libffi-dev
+libgmp3-dev
+libsigc++-2.0-dev
+libssl-dev
+python-dev
+swig
+pkg-config
+libtool
+groff

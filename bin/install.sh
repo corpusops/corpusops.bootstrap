@@ -589,11 +589,17 @@ set_vars() {
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
     BASE_PACKAGES_FILE="${W}/requirements/os_packages.${DISTRIB_ID}"
+    DEV_PACKAGES_FILE="${W}/requirements/os_packages_dev.${DISTRIB_ID}"
     EXTRA_PACKAGES_FILE="${W}/requirements/os_extra_packages.${DISTRIB_ID}"
     if [ -e "${BASE_PACKAGES_FILE}" ];then
         BASE_PACKAGES=$(cat "${BASE_PACKAGES_FILE}")
     else
         BASE_PACKAGES=""
+    fi
+    if [ -e "${DEV_PACKAGES_FILE}" ];then
+        DEV_PACKAGES=$(cat "${DEV_PACKAGES_FILE}")
+    else
+        DEV_PACKAGES=""
     fi
     if [ -e "${EXTRA_PACKAGES_FILE}" ];then
         EXTRA_PACKAGES=$(cat "${EXTRA_PACKAGES_FILE}")
@@ -619,7 +625,7 @@ set_vars() {
     #
     export EGGS_GIT_DIRS
     #
-    export BASE_PACKAGES EXTRA_PACKAGES
+    export BASE_PACKAGES EXTRA_PACKAGES DEV_PACKAGES
     #
     export DO_NOCONFIRM
     export DO_VERSION
@@ -709,7 +715,14 @@ recap() {
 }
 
 install_prerequisites_() {
-    local pkgs="$(echo $EXTRA_PACKAGES $BASE_PACKAGES)"
+    _PACKAGES=${BASE_PACKAGES}
+    if [[ -n ${FORCE_PACKAGES_INSTALL-} ]] || ! is_virtualenv_complete;then
+        log "Virtualenv not complete, installing also system dev packages"
+        _PACKAGES="${_PACKAGES} ${DEV_PACKAGES}"
+    else
+        log "Virtualenv complete, dev packages won't be installed"
+    fi
+    local pkgs="$(echo $EXTRA_PACKAGES $_PACKAGES)"
     if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
         bs_log "prerequisites setup skipped"
         return 0
@@ -729,7 +742,7 @@ install_prerequisites_() {
     SKIP_UPDATE=y\
     SKIP_UPGRADE=y\
         WANTED_EXTRA_PACKAGES="$(echo ${EXTRA_PACKAGES})" \
-        WANTED_PACKAGES="$(echo ${BASE_PACKAGES})" \
+        WANTED_PACKAGES="$(echo ${_PACKAGES})" \
         vv $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
         || die " [bs] Failed install prerequisites"
 }
@@ -890,6 +903,19 @@ ensure_has_virtualenv() {
             die "virtualenv command not found !"
         fi
     fi
+}
+
+is_virtualenv_complete() {
+    if [ ! -e "${VENV_PATH}/bin/activate" ];then
+        return 1
+    fi
+    if ! check_py_modules;then
+        return 2
+    fi
+    if ! ensure_ansible_is_usable;then
+        return 3
+    fi
+    return 0
 }
 
 setup_virtualenv_() {
