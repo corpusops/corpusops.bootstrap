@@ -317,7 +317,7 @@ It should most of the times contain the names, remember that it's then not `127.
 - Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` for your to select which
   deployment steps to execute and not to relaunch the whole thing.
-- Eg, to redo php-fpm, sync local code from localdir to inside the vm and
+- Eg, to redo nginx setup, php-fpm, sync local code from localdir to inside the vm and
   reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
 
     ```sh
@@ -327,5 +327,10 @@ It should most of the times contain the names, remember that it's then not `127.
      -e cops_supereditors="$(id -u)" \
      .ansible/playbooks/site*vag*l \
      --skip-tags play_db \
-     -e "only_steps=True cops_drupal_s_fpm=true"
+     -e "{only_steps: True, \
+          cops_drupal_s_setup_reverse_proxy: true, \
+          cops_drupal_s_setup_fpm: true, \
+          cops_drupal_s_setup_composer: true, \
+          cops_drupal_s_setup_app: true}"
     ```
+   You can try a shorter one (again, look at ``.ansible/playbooks/tasks/app_steps.yml``) with `cops_drupal_s_setup: true`, launching a lot of dependencies (like maintenance mode, fpm, nginx, etc).
