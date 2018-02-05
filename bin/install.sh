@@ -14,14 +14,15 @@ SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
 # OW: from where script was called (must be defined from callee)
 OW="${OW:-$(pwd)}"
 # W is script_dir/..
-W=${W:-$(cd "$SCRIPT_DIR/.." && pwd)}
+W=${OVERRIDEN_W:-$(cd "$SCRIPT_DIR/.." && pwd)}
 #
 #
-DEFAULTS_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
-DEFAULTS_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
-
-COPS_ROOT=${COPS_ROOT-$DEFAULTS_COPS_ROOT}
-COPS_URL=${COPS_URL-$DEFAULTS_COPS_URL}
+DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
+DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
+#
+SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
+DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
+COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
@@ -456,20 +457,6 @@ ensure_last_python_requirement() {
 }
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
-=======
-filtered_ansible_playbook_custom() {
-    filter=${1:-${ANSIBLE_FILTER_OUTPUT}}
-    shift
-    (((( \
-        vv bin/ansible-playbook  "${@}" ; echo $? >&3) \
-        | egrep -iv "${filter}" >&4) 3>&1) \
-        | (read xs; exit $xs)) 4>&1
-    return $?
-}
-filtered_ansible_playbook() { filtered_ansible_playbook_ "" "${@}"; }
-usage() { die 128 "No usage found"; }
-# end: corpusops common glue
->>>>>>> 805c140... bin/install.sh: make standalone
 
 CORPUSOPS_VERSION="1.0"
 THIS="$(readlink -f "${0}")"
