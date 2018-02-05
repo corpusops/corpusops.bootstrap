@@ -3,6 +3,7 @@ SCRIPT=$0
 LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
 SCRIPT_NAME=$(basename "${SCRIPT}")
 SCRIPT_DIR=$(cd "$(dirname $0)" && pwd)
+SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
 # OW: from where script was called (must be defined from callee)
 OW="${OW:-$(pwd)}"
 # W is script_dir/..
@@ -391,7 +392,7 @@ get_python2_() {
 get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
-    local DEFAULT_VENV_PATH=$(pwd)/venv
+    local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
     if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
