@@ -49,11 +49,11 @@
     - The local project location will be ``.ansible/playbooks/overrides``
     - and I'll add also a ``template`` subdirectory to keep it cleaner.
 
-        ```sh
-        mkdir -p .ansible/playbooks/overrides/templates
-        cp ./local/setups.<project_name>/.ansible/playbooks/roles/<project_name>/templates/nginx.conf \
-          .ansible/playbooks/overrides/templates/nginx.conf
-        ```
+       ```sh
+       mkdir -p .ansible/playbooks/overrides/templates
+       cp ./local/setups.<project_name>/.ansible/playbooks/roles/<project_name>/templates/nginx.conf \
+         .ansible/playbooks/overrides/templates/nginx.conf
+       ```
     - Next step is to alter ``.ansible/playbooks/overrides/templates/nginx.conf``.
     - Then I need to tell my application that the template used is not the classical one.
       This template is referenced in a variable: ``cops_<project_name>_nginx_content_template``
