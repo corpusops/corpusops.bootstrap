@@ -41,9 +41,9 @@
   it's in your ``local/setups.XXX/.ansible/playbooks`` directory.<br/>
   Let' say I want my nginx templates:
 
-        ```sh
-        find ./local -name "*nginx*"
-        ```
+    ```sh
+    find ./local -name "*nginx*"
+    ```
   - Found it: ``./local/setups.<project_name>/.ansible/playbooks/roles/<project_name>/templates/nginx.conf``.
 - I'll now make a copy of this generic shared template in my local project (loosing any future shared update, by definition).
     - The local project location will be ``.ansible/playbooks/overrides``
