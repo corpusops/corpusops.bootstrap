@@ -24,7 +24,7 @@
   which has a greater precedence from where your former variable is defined
 - To override list and dicts:
     - Read [this tip](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks) about making a var becoming a *duplicated default*, as it's handy to let users update list/dicts.
-        - Basically, it's as simple to just rename ``prefix_myvar`` to ``prefix_myvar__default``.
+        - Basically, it's as simple to just rename ``prefix_myvar`` to ``prefix_myvar___default``.
     - Then
         - put the variable in a vars file which has a greater precedence (like app.yml) and
         - To override the value, inspire from this [doc](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks), this way you will be able to concatenate/edit the former value better than overriding it completly
