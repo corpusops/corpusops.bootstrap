@@ -59,7 +59,7 @@
 - You can change the options of the VM that we are going to create
   [note this README](https://github.com/corpusops/corpusops.bootstrap/blob/master/hacking/vagrant/README.md)
   et [this file containing useful variables](https://github.com/corpusops/corpusops.bootstrap/blob/master/hacking/vagrant/Vagrantfile_common.rb),
-    - Please note all of **required vagrant plugins** that are detailed inside
+    - <a name="vaguptodate"/> Please note all of **required vagrant plugins** that are detailed inside
     - Also, verify twice that your VirtualBox & vagrant tools are *up-to-date*.
     - **However** if in the next step, you are going to use a
       **prebacked** vm done by your fellow teamates,
