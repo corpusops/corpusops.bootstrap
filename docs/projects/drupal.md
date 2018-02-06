@@ -1,35 +1,35 @@
 # Drupal specific stuff
 
 ### <a name="install_cluster"/>Install the cluster
-- [Localhost setup](./deploy.md#prepare)
-    - Be sure to have the password for the environment you are deploying onto except for vagrant, [see here](./deploy.md#setupvault)
-    - [Review inventory and variables](./deploy.md#managevault)
-- [Install procedure / Configure db](./deploy.md#install_db)
-- (opt) [Install procedure / Configure db backup](./deploy.md#install_db_backup)
-- [Install procedure / Configure backends](./deploy.md#install_app)
+- [Localhost setup](deploy.md#prepare)
+    - Be sure to have the password for the environment you are deploying onto except for vagrant, [see here](deploy.md#setupvault)
+    - [Review inventory and variables](deploy.md#managevault)
+- [Install procedure / Configure db](deploy.md#install_db)
+- (opt) [Install procedure / Configure db backup](deploy.md#install_db_backup)
+- [Install procedure / Configure backends](deploy.md#install_app)
 
 ### <a name="update_cluster"/>Update the cluster
-- **IF NOT ALREADY DONE**: [Localhost setup](./deploy.md#prepare)
-    - Be sure to have the password for the environment you are deploying onto except for vagrant, [see here](./deploy.md#setupvault)
-    - [Review inventory and variables](./deploy.md#managevault)
+- **IF NOT ALREADY DONE**: [Localhost setup](deploy.md#prepare)
+    - Be sure to have the password for the environment you are deploying onto except for vagrant, [see here](deploy.md#setupvault)
+    - [Review inventory and variables](deploy.md#managevault)
 - (maybe opt) [Update files & glue](deploy.md#code_sync)
 - (one time per env and localhost) [Do ssh setup](deploy.md#sshdeploysetup)
-- [Install procedure / Configure db](./deploy.md#install_db)
-- (opt) [Install procedure / Configure db backup](./deploy.md#install_db_backup)
-- [Install procedure / Configure backends](./deploy.md#install_app)
+- [Install procedure / Configure db](deploy.md#install_db)
+- (opt) [Install procedure / Configure db backup](deploy.md#install_db_backup)
+- [Install procedure / Configure backends](deploy.md#install_app)
 
 
 ## FAQ
 ### <a name="drush"/>Use drush
 ```sh
-./vm_manage ssh
+vm_manage ssh
 cd /srv/projects/<foo>/project
 sbin/drush
 ```
 
 ### <a name="dconsole"/>Use console
 ```sh
-./vm_manage ssh
+vm_manage ssh
 cd /srv/projects/<foo>/project
 vendor/bin/drupal
 ```
@@ -67,7 +67,7 @@ vendor/bin/drupal
 - vagrant:
 
     ```sh
-    ./vm_manage ssh \
+    vm_manage ssh \
     'for i in /etc/*secrets/*password;do printf "$(basename $i): "$(cat $i)\\n;done'\
     |awk '!a[$0]++'|sort -nk2
     ```
@@ -108,8 +108,8 @@ http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
     ```
 - You can try a shorter one (again, look at ``.ansible/playbooks/tasks/app_steps.yml``) with `cops_drupal_s_setup: true`, launching a lot of dependencies (like maintenance mode, fpm, nginx, etc).
 
-### Variables (packages, passwords, etc)
-- [See here](./usage.md#varswherehow)
+### <a name="varsedit"/>Override variables (packages, passwords, etc)
+- [See here](usage.md#varswherehow)
 
-### Override nginx (or any file) templates
-- [See here](./usage.md#ansibletemplates)
+### <a name="templatesedit"/>Override nginx (or any file) templates
+- [See here](usage.md#ansibletemplates)
