@@ -22,8 +22,8 @@
 - [Get the web admin password](zope.md#password)
 
 ## Modify a project
-- [ariables registries](usage.md#variables)
-- [hanging a nginx vhost](usage.md#variables)
+- [Variables registries](usage.md#variables)
+- [Changing a template file (eg: nginx vhost)](usage.md#variables)
 
 ## Vagrant
 - [Setup variables ](./vagrant.md#variables)
