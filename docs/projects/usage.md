@@ -27,7 +27,7 @@
         - Basically, it's as simple to just rename ``prefix_myvar`` to ``prefix_myvar__default``.
     - Then
         - put the variable in a vars file which has a greater precedence (like app.yml) and
-        - To override the value, inspire from this [doc]((https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks), this way you will be able to concatenate/edit the former value better than overriding it completly
+        - To override the value, inspire from this [doc](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks), this way you will be able to concatenate/edit the former value better than overriding it completly
 
 ### <a name="ansibletemplates"/> Override default ansible templates: example for nginx
 - This **may not be enough** to change variable values. and you may need time to time
