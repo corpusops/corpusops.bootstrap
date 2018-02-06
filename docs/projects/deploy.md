@@ -76,14 +76,14 @@ Deploying corpusops based projects manually
     - ``.ansible/vaults/staging.yml``: encrypted variables (passwords, keys)
     - ``.ansible/vaults/staging.clear.yml``: env specific non sensitive vars (hostname)
 
-- To adapt variables, you can review all the default variables inside (less to most priority):
+- <a name="allvars"/> To adapt variables, you can review all the default variables inside (less to most priority):
     - ``./ansible/playbooks/roles/*/default.yml``
     - ``./ansible/vaults/default.yml``
     - ``./ansible/vaults/app.yml``
 
 - [Setup the environment password](./deploy.md#setupvault)
 - [Create the private vault](./deploy.md#managevault) if not done
-- <a name="allvars"/> Copy &/or edit the (default or any) inventory to adapt to your env<br/>
+- <a name="allvarsenv"/> Copy &/or edit the (default or any) inventory to adapt to your env<br/>
    (eg: ``.ansible/inventory_<env>`` && ``.ansible/env*.yml``)<br/>
    and if you copy, do not forget to adapt variables.
     - If your environment does not exists, inspire from: ``.ansible/inventory_staging``
