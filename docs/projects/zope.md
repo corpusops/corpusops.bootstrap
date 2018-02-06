@@ -25,3 +25,9 @@
 'for i in /etc/*secrets/*password;do printf "$(basename $i): "$(cat $i)\\n;done'\
 |awk '!a[$0]++'|sort -nk2
 ```
+
+### Variables (packages, passwords, etc)
+- [See here](./usage.md#varswherehow)
+
+### Override nginx (or any file) templates
+- [See here](./usage.md#ansibletemplates)
