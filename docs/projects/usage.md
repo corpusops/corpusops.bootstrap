@@ -31,7 +31,7 @@
 
 ### <a name="ansibletemplates"/> Override default ansible templates: example for nginx
 - It **may not be enough** to change variable values. and you may need time to time
-  to completly alter a template for a specific project. </br/>
+  to completly alter a template for a specific project. <br/>
   Indeed, you can override most of ansible file templates that are rendered thorough the deployment,<br/>
   For this you will need two things:
     - **first**: find the original template that you need edit, eg: the nginx content vhost template.
