@@ -14,12 +14,16 @@
 - [Use drush](./drupal.md#drush)
 - [Use console](./drupal.md#dconsole)
 - [Update your website database](./drupal.md#ddbup)
+- [vagrant: composer/vhost/nginx reload](./vagrant.md#vagredo)
 
 ### Zope
 - [Install the cluster](./zope.md#install_cluster)
 - [Update the cluster](./zope.md#update_cluster)
 - [Get the web admin password](zope.md#password)
 
+## Modify a project
+- [./modify.md#variables](Variables registries)
+- [./modify.md#variables](Changing a nginx vhost)
 
 ## Vagrant
 - [Setup variables ](./vagrant.md#variables)

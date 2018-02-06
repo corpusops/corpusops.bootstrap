@@ -317,8 +317,7 @@ It should most of the times contain the names, remember that it's then not `127.
 - Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` for your to select which
   deployment steps to execute and not to relaunch the whole thing.
-- Eg, to redo nginx setup, php-fpm, sync local code from localdir to inside the vm and
-  reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
+- Eg, to redo on the project ``xxx``, the steps ``zzz`` && ``yyy``:
 
     ```sh
     .ansible/scripts/call_ansible.sh -v \
@@ -328,52 +327,10 @@ It should most of the times contain the names, remember that it's then not `127.
      .ansible/playbooks/site*vag*l \
      --skip-tags play_db \
      -e "{only_steps: True, \
-          cops_drupal_s_setup_reverse_proxy: true, \
-          cops_drupal_s_setup_fpm: true, \
-          cops_drupal_s_setup_composer: true, \
-          cops_drupal_s_setup_app: true, \
-          cops_drupal_s_reverse_proxy_reload: true}"
+          cops_xxx_s_setup_yyy: true, \
+          cops_xxx_s_setup_zzz: true}"
     ```
-   You can try a shorter one (again, look at ``.ansible/playbooks/tasks/app_steps.yml``) with `cops_drupal_s_setup: true`, launching a lot of dependencies (like maintenance mode, fpm, nginx, etc).
 
-### <a name="override_templates"/>Override default templates
-
-So, right now you may have a project based on generic templates for similar projects (say a drupal project, or a zope project, with our default nginx configuration for example).
-
-A lot of things on these templates depends on variables, of you take the drupal template you can find these variables in ```.ansible/playbooks/roles/drupal_vars/defaults/main.yml``` on your git deployment installation (not the one in the vm). And, of course, you have some local overrides in ```.ansible/vaults```, with the ```app.yml``` or the env-based yml files. But this **may not be enough**. You may need to completly alter a template for a specific project.
-
-You will need two things, **first** find the original template, **second** make a local copy in your project with alterations.
-
-To find the template, it's quite certainly set in a ```templates``` subdirectory of ansible playbooks. But the original is not in your project's ```.ansible``` it's in your ```local/setups.XXX/.ansible/playbooks``` directory. Let' say I want my nginx templates:
-
-```sh
-find ./local -name \*nginx\*
-```
-
-Found it: ```./local/setups.drupal/.ansible/playbooks/roles/drupal/templates/nginx.conf```.
-
-I'll now make a copy of this generic shared template in my local project (loosing any future shared update, by definition).
-The local project location will be ```.ansible/playbooks/overrides```, and I'll add also a ```template``` subdirectory to keep it cleaner.
-
-```sh
-mkdir -p .ansible/playbooks/overrides/templates
-cp ./local/setups.drupal/.ansible/playbooks/roles/drupal/templates/nginx.conf \
-  .ansible/playbooks/overrides/templates/nginx.conf
-```
-Next step is to alter ```.ansible/playbooks/overrides/templates/nginx.conf```.
-
-Then I need to tell my application that the template used is not the classical one. This template is referenced in a variable, set in the file ```.ansible/playbooks/roles/drupal_vars/defaults/main.yml```  (the one we talked about at first). Search the variable name, in this case it's ```cops_drupal_nginx_content_template```. I need to alter this template for this specific application, so that's an application override that goes to  ```.ansible/vaults/app/yml```:
-
-```sh
-vim .ansible/vaults/app/yml
-(...)
-cops_drupal_nginx_content_template: "overrides/templates/nginx.conf"
-```
-
-**Note** *I could use the ansible search path and a template name clearly different than the one used in the generic case, and instead simply use ```cops_drupal_nginx_content_template: "foo_nginx.conf"```. Then the local template would be ```.ansible/playbooks/templates/foo_nginx.conf```, but that's not as nice, and you may have problems in the future if a ```foo_nginx.conf``` is added to the generic templates.*
-
-That's it, we'are almost done, you stil need two things:
-
-- redeploy and test your changes, see [Launch ansible commands, & deploy step by step only_steps](./vagrant.md#only_steps), for nginx that would be running a ```only_steps: True, cops_drupal_s_setup_reverse_proxy: true, cops_drupal_s_reverse_proxy_reload: true```.
-- add and commit the ```.ansible/overrides``` directory in your git project
+### override nginx templates
+- [modify nginx](./modify.md#nginx)
 

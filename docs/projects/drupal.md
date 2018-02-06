@@ -87,3 +87,29 @@ root@corpusopsXX-X: cd /srv/projects/*/project
 root@corpusopsXX-X: sbin/drush uli
 http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
 ```
+
+### <a name="vagredo"/> vagrant: composer/drush dance/vhost gen/nginx reload
+- Eg, to redo nginx setup, php-fpm, sync local code from localdir to inside the vm and
+  reinstall the app (do a manual drush sql-drop via ``vm_manage ssh`` before):
+
+    ```sh
+    .ansible/scripts/call_ansible.sh -v \
+     --inventory-file=.vagrant/provisioners/ansible/inventory \
+     -e@.ansible/vaults/vagrant.yml  \
+     -e cops_supereditors="$(id -u)" \
+     .ansible/playbooks/site*vag*l \
+     --skip-tags play_db \
+     -e "{only_steps: True, \
+          cops_drupal_s_setup_reverse_proxy: true, \
+          cops_drupal_s_setup_fpm: true, \
+          cops_drupal_s_setup_composer: true, \
+          cops_drupal_s_setup_app: true, \
+          cops_drupal_s_reverse_proxy_reload: true}"
+    ```
+- You can try a shorter one (again, look at ``.ansible/playbooks/tasks/app_steps.yml``) with `cops_drupal_s_setup: true`, launching a lot of dependencies (like maintenance mode, fpm, nginx, etc).
+
+### Variables (packages, passwords, etc)
+- [See here](./usage.md#varswherehow)
+
+### Override nginx (or any file) templates
+- [See here](./usage.md#ansibletemplates)
