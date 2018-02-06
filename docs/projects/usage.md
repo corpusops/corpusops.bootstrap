@@ -14,6 +14,8 @@
     - ``.ansible/playbooks/roles/<project_name>_vars/defaults/main.yml`` on your git repository on your host (not the one in the vm).
     - of course, you have some local overrides in ``.ansible/vaults``:
         - With the ``app.yml``
+        - With the ``defaults.yml``: shared amongst all projects of a defined type
+          (eg: zope, drupal), you may look for reference, but most of the time this isnt where you ll place your overrides.
         - or the ``<env-based>.yml`` files.
     - See [deploy variables](deploy.md#allvars) for details on those file, and how to create new environments, with their
       encrypted, and secured vaults.
