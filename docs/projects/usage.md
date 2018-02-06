@@ -20,9 +20,10 @@
     - See [deploy variables](deploy.md#allvars) for details on those file, and how to create new environments, with their
       encrypted, and secured vaults.
 
-- To override a string var; simply copy/paste/edit it in a variable file (like ``vaults/app.yml`` which has a greater precedence from where your former variable is defined
+- To override a string var; simply copy/paste/edit it in a variable file (like ``vaults/app.yml``)<br/>
+  which has a greater precedence from where your former variable is defined
 - To override list and dicts:
-    - Read [this tip](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks) about making a var ``default``, as it's handy to let users update list/dicts.
+    - Read [this tip](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks) about making a var becoming a *duplicated default*, as it's handy to let users update list/dicts.
         - Basically, it's as simple to just rename ``prefix_myvar`` to ``prefix_myvar__default``.
     - Then
         - put the variable in a vars file which has a greater precedence (like app.yml) and
