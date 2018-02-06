@@ -30,7 +30,7 @@
         - To override the value, inspire from this [doc](https://github.com/corpusops/roles/blob/master/vars_registry/README.md#updating-a-complex-variable-tipsntricks), this way you will be able to concatenate/edit the former value better than overriding it completly
 
 ### <a name="ansibletemplates"/> Override default ansible templates: example for nginx
-- This **may not be enough** to change variable values. and you may need time to time
+- It **may not be enough** to change variable values. and you may need time to time
   to completly alter a template for a specific project. </br/>
   Indeed, you can override most of ansible file templates that are rendered thorough the deployment,<br/>
   For this you will need two things:
