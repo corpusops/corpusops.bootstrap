@@ -1,4 +1,4 @@
-# Modify the project deploment
+# Use and modify the project deployment
 ## <a name="variables"/> Variables registries
 - Ansible have already an incredible variables system with  default, variables, and facts but the problem there
   is that we lack the ability to merge them down up to a namespace, and
@@ -6,7 +6,7 @@
   without duplicating that gymnastic in a lot of places.
 - For this, we introduced in corpusops two helpers:
     - An helper [corpusops.roles/vars_registry](https://github.com/corpusops/roles/tree/master/vars_registry) role which create the namespace for you.
-    - [Another helper: copsf_registry](https://github.com/corpusops/roles/blob/master/ansible_plugins/filter_plugins/copsf_api.py#L1033) which acts as a ``fillter plugin`` to construct those registries under the hood
+    - Another helper: [copsf_registry](https://github.com/corpusops/roles/blob/master/ansible_plugins/filter_plugins/copsf_api.py#L1033) which acts as a ``fillter plugin`` to construct those registries under the hood
 
 ### <a name="varswherehow"/> Overriding variables: where, how
 - A lot of things on the templates and the deployment procedure depends on and can be altered via variables, <br/>
