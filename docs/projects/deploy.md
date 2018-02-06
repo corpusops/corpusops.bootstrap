@@ -37,23 +37,23 @@ Deploying corpusops based projects manually
 ### <a name="get"/>Get the code
 - Attention folder must be empty for cloning directly inside it.
 
-	```sh
-	git clone --recursive "$A_GIT_URL" "$COPS_CWD"
-	cd $COPS_CWD
-	# if branch is not master
-	# git checkout -b $A_ENV_NAME
+    ```sh
+    git clone --recursive "$A_GIT_URL" "$COPS_CWD"
+    cd $COPS_CWD
+    # if branch is not master
+    # git checkout -b $A_ENV_NAME
     git submodule init
     git submodule update
-	```
+    ```
 
 ### <a name="download"/>Download corpusops
 - Attention local/corpusops.bootstrap folder must be empty for cloning directly inside it.
 
-	```sh
-	cd $COPS_CWD
-	.ansible/scripts/download_corpusops.sh
-	.ansible/scripts/setup_ansible.sh
-	```
+    ```sh
+    cd $COPS_CWD
+    .ansible/scripts/download_corpusops.sh
+    .ansible/scripts/setup_ansible.sh
+    ```
 
 ### <a name="install_ansible"/>Install ansible
 - Via the ``.ansible/scripts/setup_ansible.sh`` we do in one GO:
@@ -64,11 +64,11 @@ Deploying corpusops based projects manually
         in your CI secret variables in a CI/CD env.
     - Refresh corpusops: ``.ansible/scripts/setup_corpusops.sh``
 
-		```sh
-		cd $COPS_CWD
-		export A_ENV_NAME=<env>
-		.ansible/scripts/setup_ansible.sh
-		```
+        ```sh
+        cd $COPS_CWD
+        export A_ENV_NAME=<env>
+        .ansible/scripts/setup_ansible.sh
+        ```
 
 ## <a name="inventory"/>Inventory setup
 - The inventory in corpusops projects is based on an inventory file and two inline variables files.
@@ -83,7 +83,7 @@ Deploying corpusops based projects manually
 
 - [Setup the environment password](./deploy.md#setupvault)
 - [Create the private vault](./deploy.md#managevault) if not done
-- Copy &/or edit the (default or any) inventory to adapt to your env<br/>
+- <a name="allvars"/> Copy &/or edit the (default or any) inventory to adapt to your env<br/>
    (eg: ``.ansible/inventory_<env>`` && ``.ansible/env*.yml``)<br/>
    and if you copy, do not forget to adapt variables.
     - If your environment does not exists, inspire from: ``.ansible/inventory_staging``
@@ -97,50 +97,51 @@ Deploying corpusops based projects manually
             - [Put the key in the vault](./deploy.md#sshkeyvaultsetup)
             - Update the inventory to use that key (adapt existing hosts)
 - The vagrant and docker envs are resp. **vagrant** & **docker**.
+- For details on how to edit variables, see [modify variables](usage.md#varswherehow)
 
 ### <a name="setupvault"/>Vault passwords setup
 - For each environment, setup first the ``vault password file`` that contains your vault password.
 
-	```sh
-	cd $COPS_CWD
-	export A_ENV_NAME=staging
-	# Replace here SUPER_SECRET_PASSWORD by the vault password
-	# Note the leading " " not to have the password in bash history
-	:; eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
-	.ansible/scripts/setup_vaults.sh"
+    ```sh
+    cd $COPS_CWD
+    export A_ENV_NAME=staging
+    # Replace here SUPER_SECRET_PASSWORD by the vault password
+    # Note the leading " " not to have the password in bash history
+    :; eval "CORPUSOPS_VAULT_PASSWORD_${A_ENV_NAME}='SUPER_SECRET_PASSWORD' \
+    .ansible/scripts/setup_vaults.sh"
     ```
 
 ### <a name="sshkeygen"/>create env ssh key if needed
 - To generate a ssh keypair if not present of you want to change it
 
-	```sh
-	cd $COPS_CWD/local
-	ssh-keygen -t rsa -b 2048 -N '' -f <env_name>
-	ls <env_name>*
-	```
+    ```sh
+    cd $COPS_CWD/local
+    ssh-keygen -t rsa -b 2048 -N '' -f <env_name>
+    ls <env_name>*
+    ```
 
 ### <a name="sshkeyvaultsetup"/>Configure ssh keys in vault
 - Add it then to your crypted vault (``toto.pub`` file content in public, and the other in private)
 
-	```yaml
-	cops_deploy_ssh_key_paths:
-	  clientstaging:
-		path: "{{'local/.ssh/deploy_<ENV>'|copsf_abspath}}"
-		pub: |-
-		  ssh-rsa xxx
-		private: |-
-		  -----BEGIN RSA PRIVATE KEY-----
-		  xxx
-		  -----END RSA PRIVATE KEY-----
-	```
+    ```yaml
+    cops_deploy_ssh_key_paths:
+      clientstaging:
+        path: "{{'local/.ssh/deploy_<ENV>'|copsf_abspath}}"
+        pub: |-
+          ssh-rsa xxx
+        private: |-
+          -----BEGIN RSA PRIVATE KEY-----
+          xxx
+          -----END RSA PRIVATE KEY-----
+    ```
 
 ### <a name="managevault"/>Create/Edit/Review crypted vault
 - Then edit the encrypted vault (For passwords and other variables that need to be encrypted)
 
-	```sh
-	# export A_ENV_NAME=<env>
-	.ansible/scripts/edit_vault.sh
-	```
+    ```sh
+    # export A_ENV_NAME=<env>
+    .ansible/scripts/edit_vault.sh
+    ```
 
 ## <a name="prepareservers"/> Servers preparation
 - Copy the public deploy key in every server ``~/.ssh/authorized_keys``
@@ -148,38 +149,38 @@ Deploying corpusops based projects manually
 ### Setup remote boxes for ansible control
 - This will install python on target boxes
 
-	```sh
-	# Install python (the sole and only ansible requirementà on remote boxes
-	.ansible/scripts/call_ansible.sh local/corpusops.bootstrap/playbooks/corpusops/base.yml -vv
-	```
+    ```sh
+    # Install python (the sole and only ansible requirementà on remote boxes
+    .ansible/scripts/call_ansible.sh local/corpusops.bootstrap/playbooks/corpusops/base.yml -vv
+    ```
 
 ### Setup core tools
 - Configure git, vim, screen
 
-	```sh
-	cd $COPS_CWD
-	export A_ENV_NAME=<env>
-	git checkout $A_ENV_NAME
-	# OPT: git, vim
-	.ansible/scripts/call_ansible.sh --become \
-		local/corpusops.bootstrap/roles/corpusops.roles/localsettings_screen/role.yml \
-		local/corpusops.bootstrap/roles/corpusops.roles/localsettings_git/role.yml \
-		local/corpusops.bootstrap/roles/corpusops.roles/localsettings_vim/role.yml \
-		local/corpusops.bootstrap/roles/corpusops.roles/localsettings_editor/role.yml
-	```
+    ```sh
+    cd $COPS_CWD
+    export A_ENV_NAME=<env>
+    git checkout $A_ENV_NAME
+    # OPT: git, vim
+    .ansible/scripts/call_ansible.sh --become \
+        local/corpusops.bootstrap/roles/corpusops.roles/localsettings_screen/role.yml \
+        local/corpusops.bootstrap/roles/corpusops.roles/localsettings_git/role.yml \
+        local/corpusops.bootstrap/roles/corpusops.roles/localsettings_vim/role.yml \
+        local/corpusops.bootstrap/roles/corpusops.roles/localsettings_editor/role.yml
+    ```
 
 ### <a name="sshdeploysetup"></a>GENERIC ssh setup
 - Generate a key from the vault for ansible to connect to remote boxes
 
-	```sh
-	# Generate SSH deploy key locally for ansible to work and dump
+    ```sh
+    # Generate SSH deploy key locally for ansible to work and dump
     # the ssh key contained in inventory in a place suitable
     # by ssh client (ansible)
-	cd $COPS_CWD
-	export A_ENV_NAME=<env>
-	git checkout $A_ENV_NAME
-	.ansible/scripts/call_ansible.sh .ansible/playbooks/deploy_key_setup.yml
-	```
+    cd $COPS_CWD
+    export A_ENV_NAME=<env>
+    git checkout $A_ENV_NAME
+    .ansible/scripts/call_ansible.sh .ansible/playbooks/deploy_key_setup.yml
+    ```
 
 ## <a name="install_cluster"></a>GENERIC Install procedure step
 - **see your project specific documentation**
@@ -225,27 +226,27 @@ git checkout $A_ENV_NAME
 #### <a name="update_code"/>Update the code
 - Be sure to be on the right branch & env
 
-	```sh
-	cd $COPS_CWD
-	export A_ENV_NAME=<env>
-	git checkout $A_ENV_NAME
-	git fetch --all
-	git reset --hard <COMMIT>
-	# eg: staging/clientstaging/production
-	git submodule init
-	git submodule update --recursive
-	```
+    ```sh
+    cd $COPS_CWD
+    export A_ENV_NAME=<env>
+    git checkout $A_ENV_NAME
+    git fetch --all
+    git reset --hard <COMMIT>
+    # eg: staging/clientstaging/production
+    git submodule init
+    git submodule update --recursive
+    ```
 
 #### <a name="refresh_glue"/>Refresh deploy glue
 - Be sure to be on the right branch & env
 
-	```sh
-	# certainly one of: staging/production
-	cd $COPS_CWD
-	export A_ENV_NAME=<env>
-	git checkout $A_ENV_NAME
-	.ansible/scripts/setup_ansible.sh
-	```
+    ```sh
+    # certainly one of: staging/production
+    cd $COPS_CWD
+    export A_ENV_NAME=<env>
+    git checkout $A_ENV_NAME
+    .ansible/scripts/setup_ansible.sh
+    ```
 
 ### <a name="do_upgrade"/>Run the upgrade
 - [drupal](./drupal.md#update_cluster)
