@@ -22,8 +22,8 @@
 - [Get the web admin password](zope.md#password)
 
 ## Modify a project
-- [./modify.md#variables](Variables registries)
-- [./modify.md#variables](Changing a nginx vhost)
+- [usage.md#variables](Variables registries)
+- [usage.md#variables](Changing a nginx vhost)
 
 ## Vagrant
 - [Setup variables ](./vagrant.md#variables)
