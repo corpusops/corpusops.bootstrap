@@ -265,3 +265,9 @@ ${PLAYBOOK_POST_ARGS} ${PLAYBOOK_POST_CUSTOM_ARGS}"
 if [[ -n $NO_A_ARGS ]];then DEFAULT_A_LAUNCH_CMD=;fi
 export A_LAUNCH_CMD=${A_LAUNCH_CMD:-${DEFAULT_A_LAUNCH_CMD}}
 #
+if [[ -z "$A_ENV_NAME" ]];then
+    # default mode is vagrant, vagrant may need SSH conf fixs
+    export ANSIBLE_SSH_ARGS='-o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes -o ControlMaster=auto -o ControlPersist=60s'
+    export ANSIBLE_HOST_KEY_CHECKING=fals
+fi
+#
