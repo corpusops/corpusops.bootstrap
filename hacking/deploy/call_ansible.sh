@@ -6,6 +6,38 @@ if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
     . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
 
+usage() {
+    NO_HEADER=y die '
+[NO_DEFAULT_VAULTS= ] \\
+[PLAYBOOK= ] \\
+[NO_SILENT=1 ]\\
+[A_INVENTORY=.ansible/inventory_foo ] \\
+    '$0' [$@]
+
+Call ansible-playbook with all ansible variables and vaults (variables files) preseted.
+   - PLAYBOOK, vaults & A_INVENTORY are normally automatically setted up
+     depending on the A_ENV_NAME variable
+-
+    PLAYBOOY=.ansible/playbooks/foo.yml \\
+        '$0'
+    -> Will append automatically corpusops related vars based on \$A_ENV_NAME
+-
+    '$0' .ansible/playbooks/foo.yml
+    -> Will append automatically corpusops related vars based on \$A_ENV_NAME
+-
+    '$0' -i foobar .ansible/playbooks/foo.yml
+    -> Will execute ansible-playbook as-is
+-
+    NO_DEFAULT_VAULTS=1 '$0' .ansible/playbooks/foo.yml
+    -> Will execute ansible-playbook as-is
+
+'
+}
+
+
+parse_cli $@
+
+
 if [[ -z "$PLAYBOOK" ]] && [[ -z "$@" ]];then
     die "Either set \$PLAYBOOK var or give arguments to $0"
 fi
