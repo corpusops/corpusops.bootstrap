@@ -723,3 +723,17 @@ ${PLAYBOOK_POST_ARGS} ${PLAYBOOK_POST_CUSTOM_ARGS}"
 #
 if [[ -n $NO_A_ARGS ]];then DEFAULT_A_LAUNCH_CMD=;fi
 export A_LAUNCH_CMD=${A_LAUNCH_CMD:-${DEFAULT_A_LAUNCH_CMD}}
+DEFAULT_ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s"
+DEFAULT_VAGRANT_ANSIBLE_SSH_ARGS="$DEFAULT_ANSIBLE_SSH_ARGS -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes"
+if [[ -z "${A_NO_SSH_ARGS_DEFAULTS-}" ]]; then
+    if [[ "$A_ENV_NAME" == "vagrant" ]]; then
+        ANSIBLE_SSH_ARGS=${ANSIBLE_SSH_ARGS-${DEFAULT_VAGRANT_ANSIBLE_SSH_ARGS}}
+        ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING-"false"}
+    fi
+fi
+if [[ -n ${ANSIBLE_SSH_ARGS-} ]];then
+    export ANSIBLE_SSH_ARGS
+fi
+if [[ -n ${ANSIBLE_HOST_KEY_CHECKING-} ]];then
+    export ANSIBLE_HOST_KEY_CHECKING
+fi
