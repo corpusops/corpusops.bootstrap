@@ -568,6 +568,11 @@ set_vaultpwfiles() {
     debug "vaultpwfiles: $vaultpwfiles"
 }
 set_base_vars() {
+    A_ENV_NAME=${A_ENV_NAME-}
+    if ( echo "$@" | egrep -iq vagrant; );then
+        A_ENV_NAME=vagrant
+    fi
+    export A_ENV_NAME
     export COPS_CWD="${COPS_CWD:-${cops_cwd:-$(pwd)}}"
     export COPS_SCRIPTS_DIR="${COPS_SCRIPTS_DIR:-$COPS_CWD/.ansible/scripts}"
     export COPS_LOCAL_FOLDER="${COPS_LOCAL_FOLDER:-$COPS_CWD/local}"
@@ -575,14 +580,14 @@ set_base_vars() {
 }
 call_cops_installer() { output_in_error "$COPS_INSTALLER" $@; }
 #
-set_base_vars
+set_base_vars $@
 do_unset
 #
 if [ -f "$COPS_SCRIPTS_DIR/ansible_deploy_env.local" ];then
     . "$COPS_SCRIPTS_DIR/ansible_deploy_env.local"
 fi
 #
-set_base_vars
+set_base_vars $@
 log "-> In: $COPS_CWD"
 #
 export NONINTERACTIVE="${NONINTERACTIVE:-}"
@@ -626,6 +631,7 @@ export A_CUSTOM_ARGS="${A_CUSTOM_ARGS-}"
 # Let a way to fallback on ansible binary
 if [[ -n "$A_USE_ANSIBLE" ]];then A_CALLED_BIN=$A_BIN;fi
 #
+export A_VAGRANT_INVENTORY=${A_VAGRANT_INVENTORY:-$COPS_CWD/.vagrant/provisioners/ansible/inventory}
 export A_GIT_SERVER="${A_GIT_SERVER:-https://github.com}"
 DEFAULT_A_GIT_NAMESPACE="$(basename $(dirname $COPS_CWD))"
 DEFAULT_A_GIT_PROJECT="$(basename $COPS_CWD)"
@@ -641,6 +647,11 @@ export A_CRYPTED_VAULTS="${A_CRYPTED_VAULTS-${DEFAULT_A_CRYPTED_VAULTS}}"
 DEFAULT_A_INVENTORY_FILE=""
 if [[ -n "${A_ENV_NAME}" ]];then
     DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
+    if [ ! -e $DEFAULT_A_INVENTORY_FILE ];then
+        if [[ "$A_ENV_NAME" == "vagrant" ]] && [ -e "$A_VAGRANT_INVENTORY" ] ;then
+            DEFAULT_A_INVENTORY_FILE=$A_VAGRANT_INVENTORY
+        fi
+    fi
 fi
 A_INVENTORY_FILE_SUF=""
 DEFAULT_A_INVENTORY=""
