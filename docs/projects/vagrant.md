@@ -304,9 +304,7 @@ It should most of the times contain the names, remember that it's then not `127.
 
     ```sh
     .ansible/scripts/call_ansible.sh -v \
-     --inventory-file=.vagrant/provisioners/ansible/inventory \
      -e@.ansible/vaults/vagrant.yml \
-     -e cops_supereditors="$(id -u)" \
      local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
 - See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
@@ -321,9 +319,6 @@ It should most of the times contain the names, remember that it's then not `127.
 
     ```sh
     .ansible/scripts/call_ansible.sh -v \
-     --inventory-file=.vagrant/provisioners/ansible/inventory \
-     -e@.ansible/vaults/vagrant.yml  \
-     -e cops_supereditors="$(id -u)" \
      .ansible/playbooks/site*vag*l \
      --skip-tags play_db \
      -e "{only_steps: True, \
