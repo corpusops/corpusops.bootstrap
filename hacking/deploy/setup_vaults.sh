@@ -6,6 +6,19 @@ if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
     . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
 
+usage() {
+    NO_HEADER=y die '
+
+CORPUSOPS_VAULT_PASSWORD_<env>=verysecret \\
+    '$0'
+
+Setup ansible vault password files based on environment variables
+'
+}
+
+
+parse_cli $@
+
 ensure_ansible_env
 
 debug "VAULT_PASSWORD_VARIABLES_PREFIX: $VAULT_PASSWORD_VARIABLES_PREFIX"
