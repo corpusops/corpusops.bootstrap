@@ -117,7 +117,7 @@ http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
 
 ### <a name="seevar"/> vagrant: get variables registry
 ```sh
-ansible/scripts/call_ansible.sh -vvvvv  \
+.ansible/scripts/call_ansible.sh -vvvvv  \
 	 --inventory-file=.vagrant/provisioners/ansible/inventory  -e@.ansible/vaults/vagrant.yml   \
 	 .ansible/playbooks/site*vag*l  \
 	 -e "{only_steps: True, cops_vars_debug: true, cops_drupal_s_vars: true}" \
