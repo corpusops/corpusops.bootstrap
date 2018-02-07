@@ -587,6 +587,9 @@ log "-> In: $COPS_CWD"
 #
 export NONINTERACTIVE="${NONINTERACTIVE:-}"
 export A_USE_ANSIBLE="${A_USE_ANSIBLE-}"
+export QUIET="${QUIET-}"
+export VERBOSE="${VERBOSE-}"
+if [[ -n $VERBOSE ]];then QUIET=;fi
 export NO_SILENT="${NO_SILENT-1}"
 export NO_A_ARGS="${NO_A_ARGS-}"
 export NO_DEFAULT_VAULTS="${NO_DEFAULT_VAULTS-}"
@@ -697,10 +700,10 @@ export PLAYBOOK_PRE_CUSTOM_ARGS="${PLAYBOOK_PRE_CUSTOM_ARGS-$DEFAULT_PLAYBOOK_PR
 #
 export PATH="$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH"
 #
-_COPS_SILENTRUN=VERBOSE=y output_in_error
-if [[ -n "$NO_SILENT" ]];then _COPS_SILENTRUN=vv;fi
+run_verbose=
+if [[ -z "$NO_SILENT" ]];then run_verbose="output_in_error";fi
 set_vaultpwfiles
-DEFAULT_A_LAUNCH_CMD="$_COPS_SILENTRUN $A_CALLED_BIN $vaultpwfiles\
+DEFAULT_A_LAUNCH_CMD="$run_verbose $A_CALLED_BIN $vaultpwfiles\
 ${A_CUSTOM_ARGS-} \
 ${PLAYBOOK_PRE_ARGS} ${PLAYBOOK_PRE_CUSTOM_ARGS} \
 ${A_INVENTORY} \
