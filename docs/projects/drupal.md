@@ -94,9 +94,6 @@ http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
 
     ```sh
     .ansible/scripts/call_ansible.sh -v \
-     --inventory-file=.vagrant/provisioners/ansible/inventory \
-     -e@.ansible/vaults/vagrant.yml  \
-     -e cops_supereditors="$(id -u)" \
      .ansible/playbooks/site*vag*l \
      --skip-tags play_db \
      -e "{only_steps: True, \
