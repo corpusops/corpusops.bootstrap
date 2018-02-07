@@ -10,7 +10,8 @@ usage() {
     NO_HEADER=y die '
 [NO_DEFAULT_VAULTS= ] \\
 [PLAYBOOK= ] \\
-[NO_SILENT=1 ]\\
+[QUIET=1 ]\\
+[NO_SILENT= ]\\
 [A_INVENTORY=.ansible/inventory_foo ] \\
     '$0' [$@]
 
@@ -27,6 +28,8 @@ Call ansible-playbook with all ansible variables and vaults (variables files) pr
 -
     '$0' -i foobar .ansible/playbooks/foo.yml
     -> Will execute ansible-playbook as-is
+- NO_SILENT= will make the call run without output unless an error occurs
+- QUIET= will make the call not output the underlying ansible call log
 -
     NO_DEFAULT_VAULTS=1 '$0' .ansible/playbooks/foo.yml
     -> Will execute ansible-playbook as-is
@@ -59,11 +62,10 @@ else
         done
     fi
 fi
-
 if [[ -n "${@}" ]];then
-    $A_LAUNCH_CMD "${@}"
+    quiet_vv $A_LAUNCH_CMD "${@}"
 else
-    $A_LAUNCH_CMD
+    quiet_vv $A_LAUNCH_CMD
 fi
 ret=$?
 exit $ret
