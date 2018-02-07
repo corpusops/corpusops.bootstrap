@@ -2,4 +2,3 @@ iproute2
 less
 rsync
 socat
-strace
