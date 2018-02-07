@@ -113,3 +113,13 @@ http://<project>.vbox.local/user/reset/1/xx/km-vxx/login
 
 ### <a name="templatesedit"/>Override nginx (or any file) templates
 - [See here](usage.md#ansibletemplates)
+
+
+### <a name="seevar"/> vagrant: get variables registry
+```sh
+ansible/scripts/call_ansible.sh -vvvvv  \
+	 --inventory-file=.vagrant/provisioners/ansible/inventory  -e@.ansible/vaults/vagrant.yml   \
+	 .ansible/playbooks/site*vag*l  \
+	 -e "{only_steps: True, cops_vars_debug: true, cops_drupal_s_vars: true}" \
+	--skip-tags cops_drupal_lifecycle_app_push_code,cops_drupal_lifecycle_app_setup
+```
