@@ -76,6 +76,7 @@ die_in_error_() {
     ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
+die_() { NO_HEADER=y die_in_error_ $@; }
 parse_cli() { parse_cli_common "${@}"; }
 parse_cli_common() {
     USAGE=
