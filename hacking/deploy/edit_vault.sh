@@ -6,6 +6,19 @@ if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
     . "$COPS_SCRIPTS_DIR/ansible_deploy_env"
 fi
 
+usage() {
+    NO_HEADER=y die '
+[A_ENV_NAME= ] \\
+[A_CRYPTED_VAULTS= ] \\
+    '$0' [vaultfile1] [vaultfile2] ...
+
+Wrapper to call ansible-vault with the selected vault password file, according to $A_ENV_NAME
+
+
+'
+}
+
+parse_cli $@
 ensure_ansible_env
 
 A_CRYPTED_VAULTS=${@:-${A_CRYPTED_VAULTS}}
