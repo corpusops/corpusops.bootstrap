@@ -477,6 +477,7 @@ ensure_last_python_requirement() {
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
 
+W=$OW
 DEFAULT_COPS_SSHFS_OPTS="-o cache=yes -o kernel_cache"
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o large_read"
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
