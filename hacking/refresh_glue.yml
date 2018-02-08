@@ -7,8 +7,10 @@
         r: "{{playbook_dir|copsf_dirname}}"
     - shell: >
         cd "{{r}}";
-        fics=$(grep "END: corpusops common glue" \
-        $(grep -HR "BEGIN: corpusops common glue" bin hacking|awk -F: '{print $1}')\
+        fics=$(grep "END: corpusops common glue"
+        $(grep -HR "BEGIN: corpusops common glue"
+        bin hacking
+        |awk -F: '{print $1}')
         |awk -F: '{print $1}'
         |egrep -v "hacking/shell_glue|refresh_glue.yml");
         if [ "x$fics" != "x" ];then find $fics -type f -and -not -type l|awk '!seen[$0]++';fi
