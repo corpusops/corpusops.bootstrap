@@ -444,17 +444,21 @@ make_virtualenv() {
 ensure_last_python_requirement() {
     local PIP=${PIP:-pip}
     local i=
-    local copt=
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
+    # inside the for loop as at first pip can not have the opts
+    # but can be upgraded to have them after
+    local copt=
     if $PIP --help | grep -q download-cache; then
         copt="--download-cache"
-    else
+    elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
-    for i in $@;do
-        log "Installing last version of $i"
-        $PIP install -U $copt "${PIP_CACHE}" $i
-    done
+    log "Installing last version of $@"
+    if [[ -n "$copt" ]];then
+        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+    else
+        $PIP install --src "$(get_eggs_src_dir)" -U $@
+    fi
 }
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
