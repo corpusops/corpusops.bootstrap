@@ -63,6 +63,16 @@ detect_os() {
     fi
     export DISTRIB_ID DISTRIB_CODENAME DISTRIB_RELEASE
 }
+strip_git() {
+    local corpusopsgit=$1
+    if [ -e $corpusopsgit ];then
+        cd $corpusopsgit/..
+        git log|xz>git_log.gz
+        echo "rm -rvf $corpusopsgit"
+        rm -rf $corpusopsgit
+        cd ..
+    fi
+}
 detect_os
 MAN_DIRS=${MAN_DIRS:-"
 /usr/share/man
@@ -103,7 +113,7 @@ if [[ -z $NO_DOC_STRIP ]];then
         if [ -d "$docdir" ];then
             for i in $DOC_RM;do
                 d="$docdir/$i"
-                if [ -e "$d" ];then rm -rfv $d;fi
+                if [ -e "$d" ];then vv rm -rf $d;fi
             done
             while read sdocdir;do
                 for pattern in $DOC_STRIPS;do
@@ -116,8 +126,8 @@ fi
 if [[ -z $NO_MAN_STRIP ]];then
     while read mandir;do
         if [ -d "$mandir" ];then
-            while read i;do
-                echo "Wiping manpage: $i";rm -f "$i"
+            log "Wiping manpages in: $mandir"
+            while read i;do rm -f "$i"
             done < <(find "$mandir" -type f)
         fi
     done <<< "$MAN_DIRS"
@@ -141,26 +151,21 @@ fi
 if [[ -z $NO_SNAPSHOT ]] && [[ -e /sbin/cops_container_snapshot.sh ]];then
     vv /sbin/cops_container_snapshot.sh
 fi
-aps="$COPS_ROOT/venv/src/ansible/test $COPS_ROOT/venv/src/ansible/doc*"
 if [[ -z $NO_IMAGE_STRIP ]];then
     if [[ -z $NO_ANSIBLE_STRIP ]];then
-        if [[ -z $NO_ANSIBLE_GIT_DESTROY ]];then
-            aps="$aps $COPS_ROOT/venv/src/ansible/.git"
-        fi
-        for i in $aps;do
-          if [ -e "$i" ];then vv rm -rf "$i";fi
-        done
-        for corpusopsgit in \
-            $COPS_ROOT/roles/corpusops.roles/.git \
-            $COPS_ROOT/.git;do
-            if [ -e $corpusopsgit ];then
-                cd $corpusopsgit/..
-                git log|xz>git_log.gz
-                rm -rvf $corpusopsgit
-                cd ..
+        for aroot in /usr/src/corpusops/ansible $COPS_ROOT/venv/src/ansible;do
+            if [[ -z $NO_ANSIBLE_GIT_DESTROY ]];then
+                strip_git $aroot/.git
             fi
+            for aps in $aroot/test $aroot/doc*;do
+                if [ -e "$aps" ];then
+                    vv rm -rf "$aps"
+                fi
+            done
         done
     fi
+    strip_git $COPS_ROOT/roles/corpusops.roles/.git
+    strip_git $COPS_ROOT/.git
 fi
 if [[ -z $NO_GIT_PACK ]] && [[ -e $COPS_ROOT/bin/git_pack ]];then
     vv $COPS_ROOT/bin/git_pack /

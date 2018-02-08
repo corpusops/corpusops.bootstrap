@@ -467,17 +467,21 @@ make_virtualenv() {
 ensure_last_python_requirement() {
     local PIP=${PIP:-pip}
     local i=
-    local copt=
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
+    # inside the for loop as at first pip can not have the opts
+    # but can be upgraded to have them after
+    local copt=
     if $PIP --help | grep -q download-cache; then
         copt="--download-cache"
-    else
+    elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
-    for i in $@;do
-        log "Installing last version of $i"
-        $PIP install -U $copt "${PIP_CACHE}" $i
-    done
+    log "Installing last version of $@"
+    if [[ -n "$copt" ]];then
+        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+    else
+        $PIP install --src "$(get_eggs_src_dir)" -U $@
+    fi
 }
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
@@ -501,10 +505,30 @@ ANSIBLE_FILTER_PLUGINS:filter_plugins
 ANSIBLE_TEST_PLUGINS:test_plugins
 ANSIBLE_STRATEGY_PLUGINS:strategy_plugins"
 
+search_bin() {
+    (
+    IFS=':'
+    for i in $PATH;do
+        if [ -x "$i/$1" ] && [ "x${SCRIPT_DIR}/${1}" != "x${i}/${1}" ];then
+            echo "$i/$1"
+            break
+        fi
+    done
+    )
+}
+
+EXEC_SCRIPT=$SCRIPT_NAME
 if [ -e "${VENV_PATH}/bin/activate" ]; then
     . "${VENV_PATH}/bin/activate"
 else
-    warn "virtualenv not found in ${VENV_PATH}, fallback to system ansible"
+    EXEC_SCRIPT=$(search_bin $SCRIPT_NAME)
+    amsg="virtualenv not found in ${VENV_PATH},"
+    if [[ -z $EXEC_SCRIPT ]];then
+        log "$SCRIPT_NAME not found"
+        exit 1
+    fi
+    amsg="$amsg fallback to system ansible: $EXEC_SCRIPT"
+    warn $amsg
 fi
 
 while read p;do
@@ -559,7 +583,7 @@ if [[ -n ${ENV_DEBUG-} ]]; then
     exit 1
 fi
 # if not included, but executed directly from a wrapper
-if echo "${SCRIPT_NAME}" | egrep -vq '^cops_ansible$';then
-    exec ${SCRIPT_NAME} "${@}"
+if echo "${EXEC_SCRIPT}" | egrep -vq '^cops_ansible$';then
+    exec ${EXEC_SCRIPT} "${@}"
 fi
 # vim:set et sts=4 ts=4 tw=80:
