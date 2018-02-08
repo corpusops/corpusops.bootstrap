@@ -47,23 +47,6 @@ LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
-parse_cli() { parse_cli_common "${@}"; }
-parse_cli_common() {
-    USAGE=
-    for i in ${@-};do
-        case ${i} in
-            --no-color|--no-colors|--nocolor|--no-colors)
-                NO_COLOR=1;;
-            -h|--help)
-                USAGE=1;;
-            *) :;;
-        esac
-    done
-    reset_colors
-    if [[ -n ${USAGE} ]]; then
-        usage
-    fi
-}
 is_ci() {
     return $( ( [[ -n ${TRAVIS-} ]] || [[ -n ${GITLAB_CI} ]] );echo $?;)
 }
@@ -103,6 +86,24 @@ die_in_error_() {
     ret=${1}; shift; msg="${@:-"$ERROR_MSG"}";may_die "${ret}" "${ret}" "${msg}";
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
+die_() { NO_HEADER=y die_in_error_ $@; }
+parse_cli() { parse_cli_common "${@}"; }
+parse_cli_common() {
+    USAGE=
+    for i in ${@-};do
+        case ${i} in
+            --no-color|--no-colors|--nocolor|--no-colors)
+                NO_COLOR=1;;
+            -h|--help)
+                USAGE=1;;
+            *) :;;
+        esac
+    done
+    reset_colors
+    if [[ -n ${USAGE} ]]; then
+        usage
+    fi
+}
 has_command() {
     ret=1
     if which which >/dev/null 2>/dev/null;then
@@ -201,6 +202,7 @@ run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
 vvv() { debug "${@}";silent_run "${@}"; }
 vv() { log "${@}";silent_run "${@}";}
 silent_vv() { SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"; }
+quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;silent_run "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
@@ -371,7 +373,7 @@ upgrade_wd_to_br() {
                 vv git checkout origin/${up_branch} -b ${up_branch}
             fi
         fi
-        update_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        update_wd_to_br "$up_branch" "$wd" &&\
         while read subdir;do
             subdir=$(echo $subdir|sed -e "s/^\.\///g")
             if [ -h "${subdir}/.git" ] || [ -f "${subdir}/.git" ];then
@@ -406,6 +408,7 @@ make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
+    local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
     if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
         if [ ! -e "${venv_path}" ];then
@@ -435,7 +438,7 @@ make_virtualenv() {
         if [ ! -e "${venv_path}" ]; then
             mkdir -p "${venv_path}"
         fi
-    virtualenv \
+    $venv \
         $( [[ -n $py ]] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
@@ -446,22 +449,22 @@ make_virtualenv() {
     fi
 }
 ensure_last_python_requirement() {
+    local PIP=${PIP:-pip}
     local i=
     local copt=
-    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
-    if pip --help | grep -q download-cache; then
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
+    if $PIP --help | grep -q download-cache; then
         copt="--download-cache"
     else
         copt="--cache-dir"
     fi
     for i in $@;do
         log "Installing last version of $i"
-        pip install -U $copt "${PIP_CACHE}" $i
+        $PIP install -U $copt "${PIP_CACHE}" $i
     done
 }
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
-
 
 
 curl_() { curl -s -u "${username}:${token}" "${@}" ; }
