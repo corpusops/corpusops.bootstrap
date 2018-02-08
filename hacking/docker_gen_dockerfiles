@@ -364,7 +364,7 @@ upgrade_wd_to_br() {
                 vv git checkout origin/${up_branch} -b ${up_branch}
             fi
         fi
-        update_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        update_wd_to_br "$up_branch" "$wd" &&\
         while read subdir;do
             subdir=$(echo $subdir|sed -e "s/^\.\///g")
             if [ -h "${subdir}/.git" ] || [ -f "${subdir}/.git" ];then
@@ -399,6 +399,7 @@ make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
+    local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
     if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
         if [ ! -e "${venv_path}" ];then
@@ -428,7 +429,7 @@ make_virtualenv() {
         if [ ! -e "${venv_path}" ]; then
             mkdir -p "${venv_path}"
         fi
-    virtualenv \
+    $venv \
         $( [[ -n $py ]] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
@@ -439,17 +440,18 @@ make_virtualenv() {
     fi
 }
 ensure_last_python_requirement() {
+    local PIP=${PIP:-pip}
     local i=
     local copt=
-    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
-    if pip --help | grep -q download-cache; then
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
+    if $PIP --help | grep -q download-cache; then
         copt="--download-cache"
     else
         copt="--cache-dir"
     fi
     for i in $@;do
         log "Installing last version of $i"
-        pip install -U $copt "${PIP_CACHE}" $i
+        $PIP install -U $copt "${PIP_CACHE}" $i
     done
 }
 usage() { die 128 "No usage found"; }
