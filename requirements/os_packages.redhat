@@ -44,4 +44,4 @@ tcl
 xz
 xz-libs
 zlib
-python-pip
+python-setuptools

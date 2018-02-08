@@ -369,7 +369,7 @@ upgrade_wd_to_br() {
                 vv git checkout origin/${up_branch} -b ${up_branch}
             fi
         fi
-        update_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
+        update_wd_to_br "$up_branch" "$wd" &&\
         while read subdir;do
             subdir=$(echo $subdir|sed -e "s/^\.\///g")
             if [ -h "${subdir}/.git" ] || [ -f "${subdir}/.git" ];then
@@ -404,6 +404,7 @@ make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
+    local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
     if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
         if [ ! -e "${venv_path}" ];then
@@ -433,7 +434,7 @@ make_virtualenv() {
         if [ ! -e "${venv_path}" ]; then
             mkdir -p "${venv_path}"
         fi
-    virtualenv \
+    $venv \
         $( [[ -n $py ]] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
@@ -444,18 +445,23 @@ make_virtualenv() {
     fi
 }
 ensure_last_python_requirement() {
+    local PIP=${PIP:-pip}
     local i=
+    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
+    # inside the for loop as at first pip can not have the opts
+    # but can be upgraded to have them after
     local copt=
-    local PIP_CACHE=${PIP_CACHE:-${VENV_PATH}/cache}
-    if pip --help | grep -q download-cache; then
+    if $PIP --help | grep -q download-cache; then
         copt="--download-cache"
-    else
+    elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
-    for i in $@;do
-        log "Installing last version of $i"
-        pip install -U $copt "${PIP_CACHE}" $i
-    done
+    log "Installing last version of $@"
+    if [[ -n "$copt" ]];then
+        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+    else
+        $PIP install --src "$(get_eggs_src_dir)" -U $@
+    fi
 }
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
@@ -465,12 +471,12 @@ THIS="$(readlink -f "${0}")"
 LAUNCH_ARGS=${@}
 
 ensure_last_virtualenv() {
-    venv=$(get_command virtualenv)
-    pip=$(get_command pip)
-    ez=$(get_command easy_install)
+    venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
+    pip=$(get_command $(basename ${PIP:-pip}))
+    ez=$(get_command $(basename ${EASY_INSTALL:-easy_install}))
     if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
          || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
-        if version_lt "$(virtualenv --version)" "15.1.0"; then
+        if version_lt "$($venv --version)" "15.1.0"; then
             log "Installing last version of virtualenv"
             if [[ -n $pip ]];then
                 $(may_sudo) "$pip" install --upgrade virtualenv
@@ -551,6 +557,27 @@ get_ansible_url() {
         "$(get_corpusops_orga_url)/ansible.git"
 }
 
+get_corpusops_use_venv() {
+    ret=$(get_default_knob corpusops_use_venv "${CORPUSOPS_USE_VENV}" "yes")
+    if echo $ret | egrep -q "^(yes|1)$";then
+        echo yes
+    else
+        echo no
+    fi
+}
+
+corpusops_use_venv() {
+    ( [[ "$(get_corpusops_use_venv)" == "yes" ]] )
+}
+
+get_eggs_src_dir() {
+    if corpusops_use_venv;then
+        echo "${VENV_PATH}/src"
+    else
+        echo "${EGGS_SRC_DIR:-/usr/src/corpusops}"
+    fi
+}
+
 get_corpusops_branch() {
     get_default_knob corpusops_branch "${CORPUSOPS_BRANCH}" "master"
 }
@@ -580,6 +607,7 @@ set_vars() {
     CORPUSOPS_ORGA_URL="${CORPUSOPS_ORGA_URL-}"
     CORPUSOPS_URL="${CORPUSOPS_URL-}"
     CORPUSOPS_BRANCH="${CORPUSOPS_BRANCH-}"
+    CORPUSOPS_USE_VENV="${CORPUSOPS_USE_VENV-}"
     ANSIBLE_URL="${ANSIBLE_URL-}"
     ANSIBLE_BRANCH="${ANSIBLE_BRANCH-}"
     PYTESTRPM="${PYTESTRPM:-python-test-2.7.5-48.el7.x86_64.rpm}"
@@ -607,6 +635,7 @@ set_vars() {
         EXTRA_PACKAGES=""
     fi
     VENV_PATH="${VENV_PATH:-"${W}/venv"}"
+    PIP=${PIP:-pip}
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
     if [ "x${QUIET}" = "x" ]; then
@@ -620,6 +649,7 @@ set_vars() {
     export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE
     #
     export CORPUSOPS_ORGA_URL CORPUSOPS_URL CORPUSOPS_BRANCH
+    export CORPUSOPS_USE_VENV
     #
     export ANSIBLE_URL ANSIBLE_BRANCH
     #
@@ -646,14 +676,23 @@ set_vars() {
     export VENV_PATH PIP_CACHE W
 }
 
+get_cops_python() {
+    echo ${COPS_PYTHON:-$(get_python2)}
+}
+
 check_py_modules() {
     # test if salt binaries are there & working
-    bin="${VENV_PATH}/bin/python"
+    if corpusops_use_venv;then
+        bin="${VENV_PATH}/bin/python"
+    else
+        bin=$(get_cops_python)
+    fi
     "${bin}" << EOF
 import six
 import corpusops
 import ansible
 import dns
+import enum
 import docker
 import chardet
 import OpenSSL
@@ -677,6 +716,9 @@ recap_(){
     bs_yellow_log " CORPUSOPS BOOTSTRAP"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${NORMAL}"
+    if ! corpusops_use_venv;then
+        bs_yellow_log "   use venv: ${RED}no${NORMAL}"
+    fi
     bs_yellow_log "----------------------------------------------------------"
     bs_log "DATE: ${CHRONO}"
     bs_log "W: ${W}"
@@ -716,7 +758,7 @@ recap() {
 
 install_prerequisites_() {
     _PACKAGES=${BASE_PACKAGES}
-    if [[ -n ${FORCE_PACKAGES_INSTALL-} ]] || ! is_virtualenv_complete;then
+    if [[ -n ${FORCE_PACKAGES_INSTALL-} ]] || ! is_python_install_complete;then
         log "Virtualenv not complete, installing also system dev packages"
         _PACKAGES="${_PACKAGES} ${DEV_PACKAGES}"
     else
@@ -776,12 +818,12 @@ checkouter_() {
 
 upgrade_ansible() {
     w="$(pwd)"
-    if [ ! -e  "${VENV_PATH}/src/ansible/.git" ] && [ -e "${VENV_PATH}/src/ansible/lib" ];then
+    if [ ! -e  "$(get_eggs_src_dir)/ansible/.git" ] && [ -e "$(get_eggs_src_dir)/ansible/lib" ];then
         warn "Ansible is not a checkout but seems there, bypassing"
         return 0
     fi
-    upgrade_wd_to_br $(get_ansible_branch) "${VENV_PATH}/src/ansible" &&\
-        cd "${VENV_PATH}/src/ansible" &&\
+    upgrade_wd_to_br $(get_ansible_branch) "$(get_eggs_src_dir)/ansible" &&\
+        cd "$(get_eggs_src_dir)/ansible" &&\
         ensure_ansible_is_usable
     ret=$?
     cd "$w"
@@ -789,73 +831,95 @@ upgrade_ansible() {
 }
 
 checkout_code() {
-    if "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 >/dev/null;then
-        cd "${W}" &&\
-            TO_CHECKOUT=""
-            if [ "x$DO_SYNC_ANSIBLE" != "xno" ];then
-                if [ -e "${VENV_PATH}/src/ansible" ] && ! upgrade_ansible;then
-                    die "Upgrading ansible failed"
-                fi
-            fi
-            if [ "x$DO_SYNC_CORE" != "xno" ];then
-                TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
-            fi
-            if [ "x$DO_SYNC_ROLES" != "xno" ];then
-                TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
-            fi
-            for co in $TO_CHECKOUT;do
-                local retries=1
+    if corpusops_use_venv;then
+        if ! ( test_ansible_state );then
+            bs_yellow_log "Cant sync code, bootstrap core is not done"
+            return 1
+        fi
+    fi
+    cd "${W}"
+    TO_CHECKOUT=""
+    if [ "x$DO_SYNC_ANSIBLE" != "xno" ];then
+        if [ -e "$(get_eggs_src_dir)/ansible" ] && ! upgrade_ansible;then
+            die "Upgrading ansible failed"
+        fi
+    fi
+    if [ "x$DO_SYNC_CORE" != "xno" ];then
+        TO_CHECKOUT="${TO_CHECKOUT} checkouts_core.yml"
+    fi
+    if [ "x$DO_SYNC_ROLES" != "xno" ];then
+        TO_CHECKOUT="${TO_CHECKOUT} checkouts_roles.yml"
+    fi
+    for co in $TO_CHECKOUT;do
+        local retries=1
+        if [ "x${co}" = "xcheckouts_core.yml" ];then
+            retries=2
+        fi
+        local ret=1
+        while [ ${retries} -gt 0 ];do
+            retries=$(($retries - 1))
+            if ! (\
+                SILENT=${SILENT_CHECKOUT-${SILENT-1}} vv\
+                checkouter "requirements/${co}" );then
+                bs_log "Code failed to update for <$co>"
+                ret=2
                 if [ "x${co}" = "xcheckouts_core.yml" ];then
-                    retries=2
+                    vv reconfigure || die "Reconfigure while updating failed"
                 fi
-                local ret=1
-                while [ ${retries} -gt 0 ];do
-                    retries=$(($retries - 1))
-                    if ! (\
-                        SILENT=${SILENT_CHECKOUT-${SILENT-1}} vv\
-                        checkouter "requirements/${co}" );then
-                        bs_log "Code failed to update for <$co>"
-                        ret=2
-                        if [ "x${co}" = "xcheckouts_core.yml" ];then
-                            vv reconfigure || die "Reconfigure while updating failed"
-                        fi
-                    else
-                        if [ "x${QUIET}" = "x" ]; then
-                            bs_log "Code updated for <$co>"
-                            ret=0
-                            break
-                        fi
-                    fi
-                done
-                if [ "x${ret}" != "x0" ];then
-                    return ${ret}
+            else
+                if [ "x${QUIET}" = "x" ]; then
+                    bs_log "Code updated for <$co>"
+                    ret=0
+                    break
                 fi
-            done
-    else
-        bs_yellow_log "Cant sync code, bootstrap core is not done"
-        return 1
+            fi
+        done
+        if [ "x${ret}" != "x0" ];then
+            return ${ret}
+        fi
+    done
+}
+
+may_activate_venv() {
+    if corpusops_use_venv;then
+        if [ -e "${VENV_PATH}/bin/activate" ];then
+            if [ "x${QUIET}" = "x" ]; then
+                bs_log "Activating virtualenv in ${VENV_PATH}"
+            fi
+            . "${VENV_PATH}/bin/activate"
+        else
+            export PATH="${VENV_PATH}/bin:${PATH}"
+        fi
     fi
 }
 
 test_ansible_state() {
-    "${VENV_PATH}/bin/ansible-playbook" --help 2>&1 &&\
-        "${VENV_PATH}/bin/ansible" --help 2>&1
+    ( QUIET=y may_activate_venv;\
+      ansible-playbook --help >/dev/null 2>&1 &&\
+      ansible --help >/dev/null 2>&1 )
+}
 
+
+get_cops_pip() {
+    local pip="${VENV_PATH}/bin/pip"
+    if ! corpusops_use_venv;then pip=pip;fi
+    echo $pip
 }
 
 reinstall_egg_path() {
     ( cd "$1" && \
-        vv "${VENV_PATH}/bin/pip" install -U --force-reinstall --no-deps -e . )
+        vv "$(get_cops_pip)" install -U --force-reinstall --no-deps -e . )
 }
 
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
+    local pip="$(get_cops_pip)"
     if ( test_ansible_state| grep -iq pkg_resources.DistributionNotFound ) &&
-        [ -e "${VENV_PATH}/src/ansible/.git" ] && \
-        [ -e "${VENV_PATH}/bin/pip" ];then
+        [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
+        [ -e "$pip" ];then
         bs_log "Try to reinstall ansible egg"
         pwd
-        vv reinstall_egg_path "${VENV_PATH}/src/ansible"
+        vv reinstall_egg_path "$(get_eggs_src_dir)/ansible"
         pwd
     fi
 }
@@ -864,7 +928,7 @@ ensure_ansible_is_usable() {
     if ! ( test_ansible_state >/dev/null );then
         bs_log "Error trying to call ansible, will try to fix install"
         try_fix_ansible
-        if ! test_ansible_state;then
+        if ! ( test_ansible_state );then
             die "ansible is unusable"
         fi
     fi
@@ -905,14 +969,14 @@ ensure_has_virtualenv() {
     fi
 }
 
-is_virtualenv_complete() {
-    if [ ! -e "${VENV_PATH}/bin/activate" ];then
+is_python_install_complete() {
+    if corpusops_use_venv && [ ! -e "${VENV_PATH}/bin/activate" ];then
         return 1
     fi
-    if ! check_py_modules;then
+    if ! ( check_py_modules );then
         return 2
     fi
-    if ! ensure_ansible_is_usable;then
+    if ! ( ensure_ansible_is_usable );then
         return 3
     fi
     return 0
@@ -926,50 +990,78 @@ setup_virtualenv_() {
         return 0
     fi
     make_virtualenv
-    # virtualenv is present, activate it
-    if [ -e "${VENV_PATH}/bin/activate" ]; then
-        if [ "x${QUIET}" = "x" ]; then
-            bs_log "Activating virtualenv in ${VENV_PATH}"
-        fi
-        . "${VENV_PATH}/bin/activate"
+}
+
+setup_virtualenv() {
+    if ! corpusops_use_venv;then
+        warn "corpusops wont be isolated inside a virtualenv"
+        return 0
     fi
+    ( deactivate >/dev/null 2>&1;\
+        set_lang C && setup_virtualenv_; )
+    die_in_error "virtualenv setup failed"
+}
+
+install_python_libs_() {
+    uflag=""
+    local PIP=$(get_cops_pip)
     # install requirements
     cd "${W}"
+    # virtualenv is present, activate it
+    may_activate_venv
     install_git=""
     for i in ${EGGS_GIT_DIRS};do
-        if [ ! -e "${VENV_PATH}/src/${i}" ]; then
+        if [ ! -e "$(get_eggs_src_dir)/${i}" ]; then
             install_git="x"
         fi
     done
-    uflag=""
-    if check_py_modules; then
+    if [[ -z "$(get_cops_python)" ]];then
+        die "Python not found"
+    fi
+    if false && check_py_modules; then
         if [ "x${QUIET}" = "x" ]; then
             bs_log "Pip install in place"
         fi
     else
         bs_log "Python install incomplete"
-        if pip --help | grep -q download-cache; then
-            copt="--download-cache"
-        else
-            copt="--cache-dir"
+        local pip=$(get_cops_pip)
+        if ! ( corpusops_use_venv ) && \
+            ! ( $pip --version >/dev/null 2>&1 ) && \
+            ( has_command easy_install );then
+            log "Installing pip through setuptools"
+            easy_install pip
         fi
-        ensure_last_python_requirement pip setuptools six
-        pip install -U $copt "${PIP_CACHE}" -r requirements/python_requirements.txt
+        local pip=$(get_cops_pip)
+        if ! ( $pip --version );then
+            die "pip not found"
+        fi
+        PIP="$pip" ensure_last_python_requirement pip &&
+            PIP="$pip" ensure_last_python_requirement setuptools &&
+            PIP="$pip" ensure_last_python_requirement six
+        die_in_error "base pip python pkgs failed install"
+        if $(get_cops_python) --version 2>&1| egrep -iq "python 2\.";then
+            PIP="$pip" ensure_last_python_requirement enum34
+            die_in_error "installing enum on python2"
+        fi
+        PIP="$pip" ensure_last_python_requirement \
+            -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
-        pip install -U $copt "${PIP_CACHE}" --no-deps -e .
+        PIP="$pip" ensure_last_python_requirement --no-deps -e .
         die_in_error "corpusops egg doesn't install"
         if [ "x${install_git}" != "x" ]; then
             # ansible, salt & docker had bad history for
             # their deps in setup.py we ignore them and manage that ourselves
-            pip install -U $copt "${PIP_CACHE}" --no-deps \
-                -r requirements/python_git_requirements.txt
+            PIP="$pip" ensure_last_python_requirement \
+                --no-deps -r requirements/python_git_requirements.txt
             die_in_error "requirements/python_git_requirements.txt doesn't install"
         else
             cwd="${PWD}"
             for i in ${EGGS_GIT_DIRS};do
-                if [ -e "${VENV_PATH}/src/${i}" ]; then
-                    cd "${VENV_PATH}/src/${i}"
-                    pip install --no-deps -e .
+                if [ -e "$(get_eggs_src_dir)/${i}" ]; then
+                    cd "$(get_eggs_src_dir)/${i}"
+                    PIP="$pip" ensure_last_python_requirement \
+                        --no-deps -e .
+                    die_in_error "requirements/src eggs doesn't install"
                 fi
             done
             cd "${cwd}"
@@ -977,12 +1069,11 @@ setup_virtualenv_() {
     fi
 }
 
-setup_virtualenv() {
+install_python_libs() {
     ( deactivate >/dev/null 2>&1;\
-        set_lang C && setup_virtualenv_; )
-    die_in_error "virtualenv setup failed"
-    ensure_ansible_is_usable
+        set_lang C && install_python_libs_; )
 }
+
 
 reconfigure() {
     for i in ${W}/requirements/*.in;do
@@ -991,6 +1082,7 @@ reconfigure() {
             -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
             -e "s#__CORPUSOPS_URL__#$(get_corpusops_url)#g" \
             -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
+            -e "s#__CORPUSOPS_USE_VENV__#$(get_corpusops_use_venv)#g" \
             -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
             -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
             "${i}" > "${W}/requirements/$(basename "${i}" .in)"
@@ -1081,10 +1173,11 @@ usage() {
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
     echo
     bs_log "  General settings"
-    bs_help "    --corpusops-orga_url <url>" "corpusops orga  fork git url" \
+    bs_help "    --orga_url <url>" "corpusops orga  fork git url" \
         "$(get_corpusops_orga_url)" y
-    bs_help "    --corpusops-url <url>" "corpusops orga fork git url" "$(get_corpusops_url)" y
-    bs_help "    -b|--corpusops-branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
+    bs_help "    --url <url>" "corpusops orga fork git url" "$(get_corpusops_url)" y
+    bs_help "    -b|--branch <branch>" "corpusops fork git branch" "$(get_corpusops_branch)" y
+    bs_help "    -u|--use-venv yes/no" "do we use venv" "$(get_corpusops_use_venv)" y
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
@@ -1164,13 +1257,16 @@ parse_cli_opts() {
             DO_SETUP_VIRTUALENV="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--corpusops-orga-url" ]; then
+        if [ "x${1}" = "x--orga-url" ] || [ "x${1}" = "x--corpusops-orga-url" ]; then
             CORPUSOPS_ORGA_URL="${2}";sh="2";argmatch="1"
         fi
-        if [ "x${1}" = "x--corpusops-url" ]; then
+        if [ "x${1}" = "x--url" ] || [ "x${1}" = "x--corpusops-url" ]; then
             CORPUSOPS_URL="${2}";sh="2";argmatch="1"
         fi
-        if [ "x${1}" = "x-b" ] || [ "x${1}" = "x--corpusops-branch" ]; then
+        if [ "x${1}" = "x-u" ] || [ "x${1}" = "x--use-venv" ]; then
+            CORPUSOPS_USE_VENV="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--branch" ] || [ "x${1}" = "x-b" ] || [ "x${1}" = "x--corpusops-branch" ]; then
             CORPUSOPS_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--ansible-url" ]; then
@@ -1218,6 +1314,8 @@ main() {
     else
         install_prerequisites || die "install_prerequisites failed"
         setup_virtualenv || die "setup_virtualenv failed"
+        install_python_libs || die "python libs incomplete install"
+        ensure_ansible_is_usable
         synchronize_code || die "synchronize_code failed"
     fi
     if [ "x${QUIET}" = "x" ]; then
