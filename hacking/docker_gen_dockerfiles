@@ -185,15 +185,22 @@ output_in_error_post() {
 test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
 test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
 silent_run_() {
-    (LOG=${SILENT_LOG:-${LOG}};NO_OUTPUT=${NO_OUTPUT-};\
+    (LOG=${SILENT_LOG:-${LOG}};
+     NO_OUTPUT=${NO_OUTPUT-};\
      if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";)
 }
-silent_run() { ( silent_run_ "${@}" ; ); }
-run_silent() { SILENT=${SILENT-1} silent_run "${@}"; }
-vvv() { debug "${@}";silent_run "${@}"; }
-vv() { log "${@}";silent_run "${@}";}
-silent_vv() { SILENT_LOG=${SILENT_LOG-} SILENT=${SILENT-1} vv "${@}"; }
-quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;silent_run "${@}";}
+srun_silentilent_run() { ( silent_run_ "${@}" ; ); }
+run_silent() {
+    (
+    DEFAULT_RUN_SILENT=1;
+    if [[ -n ${NO_SILENT-} ]];then DEFAULT_RUN_SILENT=;fi;
+    SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
+    )
+}
+vvv() { debug "${@}";run_silent "${@}"; }
+vv() { log "${@}";run_silent "${@}"; }
+silent_vv() { SILENT=${SILENT-1} vv "${@}"; }
+quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;run_silent "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
