@@ -137,7 +137,7 @@ do_ssh() {
 
 
 get_cops_installer() {
-    for i in ./ ../bin ../../bin;do
+    for i in $COPS_VAGRANT_DIR ./ ../bin ../../bin;do
         installer="$i/cops_pkgmgr_install.sh"
         if [ -e "$installer" ];then
             echo $installer
