@@ -8,6 +8,8 @@ GIT_SHALLOW=${GIT_SHALLOW-}
 NO_IMAGE_STRIP=${NO_IMAGE_STRIP-$SOFT_STRIP}
 NO_YUM_CLEANUP=${NO_YUM_CLEANUP-}
 NO_ANSIBLE_STRIP=${NO_ANSIBLE_STRIP-}
+NO_GIT_DESTROY=${NO_GIT_DESTROY-1}
+NO_ANSIBLE_GIT_DESTROY=${NO_ANSIBLE_GIT_DESTROY-${NO_GIT_DESTROY}}
 NO_PYC_STRIP=${NO_PYC_STRIP-}
 NO_DOC_STRIP=${NO_DOC_STRIP-$SOFT_STRIP}
 NO_GCC_STRIP=${NO_GCC_STRIP-$SOFT_STRIP}
@@ -72,6 +74,24 @@ strip_git() {
         rm -rf $corpusopsgit
         cd ..
     fi
+}
+deb_filter_pkg_in_cache() {
+    local pkgs=
+    for i in $@;do
+        if apt-cache show $i >/dev/null 2>&1;then
+            pkgs="$pkgs $i"
+        fi
+    done
+    echo $pkgs
+}
+rh_filter_pkg_in_cache() {
+    local pkgs=
+    for i in $@;do
+        if yum info $i >/dev/null 2>&1;then
+            pkgs="$pkgs $i"
+        fi
+    done
+    echo $pkgs
 }
 detect_os
 MAN_DIRS=${MAN_DIRS:-"
@@ -164,30 +184,14 @@ if [[ -z $NO_IMAGE_STRIP ]];then
             done
         done
     fi
-    strip_git $COPS_ROOT/roles/corpusops.roles/.git
-    strip_git $COPS_ROOT/.git
+    if [[ -z $NO_GIT_DESTROY ]];then
+        strip_git $COPS_ROOT/roles/corpusops.roles/.git
+        strip_git $COPS_ROOT/.git
+    fi
 fi
 if [[ -z $NO_GIT_PACK ]] && [[ -e $COPS_ROOT/bin/git_pack ]];then
     vv $COPS_ROOT/bin/git_pack /
 fi
-deb_filter_pkg_in_cache() {
-    local pkgs=
-    for i in $@;do
-        if apt-cache show $i >/dev/null 2>&1;then
-            pkgs="$pkgs $i"
-        fi
-    done
-    echo $pkgs
-}
-rh_filter_pkg_in_cache() {
-    local pkgs=
-    for i in $@;do
-        if yum info $i >/dev/null 2>&1;then
-            pkgs="$pkgs $i"
-        fi
-    done
-    echo $pkgs
-}
 if [[ -z $NO_IMAGE_STRIP ]];then
     if echo $DISTRIB_ID|egrep -iq "redhat|red-hat|ol|centos";then
         # remove dev pkgs
