@@ -752,6 +752,20 @@ recap_(){
 
 }
 
+reconfigure() {
+    for i in ${W}/requirements/*.in;do
+        ${SED} -r \
+            -e "s#^\# (-e.*__(ANSIBLE))#\1#g" \
+            -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
+            -e "s#__CORPUSOPS_URL__#$(get_corpusops_url)#g" \
+            -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
+            -e "s#__CORPUSOPS_USE_VENV__#$(get_corpusops_use_venv)#g" \
+            -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
+            -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
+            "${i}" > "${W}/requirements/$(basename "${i}" .in)"
+    done
+}
+
 recap() {
     will_do_recap="x"
     if [ "x${QUIET}" != "x" ]; then
@@ -1079,21 +1093,6 @@ install_python_libs_() {
 install_python_libs() {
     ( deactivate >/dev/null 2>&1;\
         set_lang C && install_python_libs_; )
-}
-
-
-reconfigure() {
-    for i in ${W}/requirements/*.in;do
-        ${SED} -r \
-            -e "s#^\# (-e.*__(ANSIBLE))#\1#g" \
-            -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
-            -e "s#__CORPUSOPS_URL__#$(get_corpusops_url)#g" \
-            -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
-            -e "s#__CORPUSOPS_USE_VENV__#$(get_corpusops_use_venv)#g" \
-            -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
-            -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
-            "${i}" > "${W}/requirements/$(basename "${i}" .in)"
-    done
 }
 
 link_dir() {
