@@ -189,7 +189,7 @@ silent_run_() {
      NO_OUTPUT=${NO_OUTPUT-};\
      if test_silent;then NO_OUTPUT=y;fi;output_in_error "$@";)
 }
-srun_silentilent_run() { ( silent_run_ "${@}" ; ); }
+silent_run() { ( silent_run_ "${@}" ; ); }
 run_silent() {
     (
     DEFAULT_RUN_SILENT=1;
