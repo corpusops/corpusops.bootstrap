@@ -38,7 +38,12 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh'
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh;'
+
+# Base debian image have stripped systemd from images
+RUN bash -c '\
+    : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
+    if echo $DISTRIB_ID|egrep -iq debian;then apt-get install -y systemd systemd-sysv;fi'
 
 ARG USE_VENV=no
 # 2/ configure python & isolate virtualenv contruction
@@ -84,13 +89,13 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
     done < <(ls -d /usr/lib*/python2* 2>/dev/null);\
     cd ${COPS_ROOT};\
     if [ "x$USE_VENV" != "xno" ];then \
-     $_s virtualenv --system-site-packages --unzip-setuptools venv;\
+     VERBOSE=y $_s virtualenv --python=python2 --system-site-packages --unzip-setuptools $(pwd)/venv;\
      . venv/bin/activate;\
      :;\
      $_s python -c "from test import test_support";\
-     $_s pip install -U pip;\
-     $_s pip install -U -r requirements/python_requirements.txt; \
-   fi'
+     VERBOSE=y $_s $COPS_PYTHON $(which pip) install -U pip;\
+     VERBOSE=y $_s $COPS_PYTHON $(which pip) install -U -r requirements/python_requirements.txt; \
+    fi'
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
@@ -109,10 +114,10 @@ COPY roles ${COPS_ROOT}/roles
 COPY hacking/container_rootfs/ $COPS_ROOT/hacking/container_rootfs/
 COPY hacking/sync_files $COPS_ROOT/hacking/
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
-    $_s $COPS_ROOT/hacking/sync_files;\
-    $_s rsync -a hacking/container_rootfs/ /;\
-    $_s /sbin/cops_container_activate_core_services.sh;\
-    $_s /sbin/cops_container_disable_networkifacesscripts.sh;'
+    VERBOSE=y $_s $COPS_ROOT/hacking/sync_files;\
+    VERBOSE=y $_s rsync -a hacking/container_rootfs/ /;\
+    VERBOSE=y $_s /sbin/cops_container_activate_core_services.sh;\
+    VERBOSE=y $_s /sbin/cops_container_disable_networkifacesscripts.sh;'
 
 # 4/ Bring in all rest of reepository
 COPY .git ${COPS_ROOT}/.git

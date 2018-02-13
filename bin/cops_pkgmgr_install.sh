@@ -23,10 +23,23 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
 BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
+EXP_PREPROVISION_IMAGES=""
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES archlinux:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:stretch_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:jessie_preprovision"
+EXP_CORE_IMAGES=""
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:jessie"
+EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
 #
 # colors
 RED="\\e[0;31m"
@@ -78,6 +91,7 @@ die_in_error_() {
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
 die_() { NO_HEADER=y die_in_error_ $@; }
+sdie() { NO_HEADER=y die $@; }
 parse_cli() { parse_cli_common "${@}"; }
 parse_cli_common() {
     USAGE=
@@ -197,17 +211,18 @@ run_silent() {
     SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
     )
 }
-vvv() { debug "${@}";run_silent "${@}"; }
-vv() { log "${@}";run_silent "${@}"; }
+vvv() { debug "${@}";silent_run "${@}"; }
+vv() { log "${@}";silent_run "${@}"; }
 silent_vv() { SILENT=${SILENT-1} vv "${@}"; }
 quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;run_silent "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
-is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux"; }
+is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
-is_redhat_like() { echo $DISTRIB_ID | egrep -iq "fedora|centos|redhat|red-hat"; }
+is_redhat_like() { echo $DISTRIB_ID \
+        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
 detect_os() {
     # this function should be copiable in other scripts, dont use adjacent functions
@@ -390,7 +405,7 @@ upgrade_wd_to_br() {
         fi
     )
 }
-get_python2_() {
+get_python2() {
     local py2=
     for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
         local lpy=$(get_command $i 2>/dev/null)
@@ -401,7 +416,6 @@ get_python2_() {
     done
     echo $py2
 }
-get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
@@ -448,21 +462,24 @@ make_virtualenv() {
 }
 ensure_last_python_requirement() {
     local PIP=${PIP:-pip}
+    local COPS_PYTHON=${COPS_PYTHON:-python}
     local i=
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
     # inside the for loop as at first pip can not have the opts
     # but can be upgraded to have them after
     local copt=
-    if $PIP --help | grep -q download-cache; then
+    if "$py" "$PIP" --help | grep -q download-cache; then
         copt="--download-cache"
     elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
     log "Installing last version of $@"
     if [[ -n "$copt" ]];then
-        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
     else
-        $PIP install --src "$(get_eggs_src_dir)" -U $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $@
     fi
 }
 usage() { die 128 "No usage found"; }
@@ -477,11 +494,11 @@ OS SUPPORT: debian(& ubuntu) / archlinux / red-hat (centos/rh/fedora)
 [WANTED_EXTRA_PACKAGES="vim"] \
 [WANTED_EXTRA_PACKAGES="nano"] \
 [DO_SETUP=y] [SKIP_SETUP=y] \
-[DO_UPGRADE=y] [SKIP_UPGRADE=y] \
+[DO_UPDATE=y] [SKIP_UPDATE=y] \
 [DO_UPGRADE=y] [SKIP_UPGRADE=y] \
 [DO_INSTALL=y] [SKIP_INSTALL=y] \
 [DEBUG=y"] \
-    '"${0}"' [--help] [packagea] [packageb]'
+    '"${0}"' [--check-os] [--help] [packagea] [packageb]'
 }
 
 APT_CONF_FILE="/etc/apt/apt.conf.d/01buildconfig"
@@ -491,39 +508,54 @@ SKIP_SETUP=${SKIP_SETUP-}
 SKIP_INSTALL=${SKIP_INSTALL-}
 SKIP_UPDATE=${SKIP_UPDATE-}
 SKIP_UPGRADE=${SKIP_UPGRADE-}
+DO_SETUP=${DO_SETUP-default}
 DO_UPGRADE=${DO_UPGRADE-}
 DO_UPDATE=${DO_UPDATE-default}
-DO_SETUP=${DO_SETUP-default}
 DO_INSTALL=${DO_INSTALL-default}
+CHECK_OS=${CHECK_OS-}
 container=${container-}
 
 ###
 i_y() {
     if [[ -n ${NONINTERACTIVE} ]]; then
-        echo "-y"
+        if is_archlinux_like;then
+            echo "--noconfirm"
+        else
+            echo "-y"
+        fi
     fi
 }
 
 ###
 is_pacman_available() {
-    return 1
+    for i in $@;do
+        if ! ( pacman -Si $(i_y) "$i" >/devnull 2>&1 ||\
+                pacman -Sg $(i_y) "$i" >/devnull 2>&1; );then
+            return 1
+        fi
+    done
+    return 0
 }
 
 is_pacman_installed() {
-    return 1
+    for i in $@;do
+        if ! ( pacman -Qi $(i_y) "$i" >/devnull 2>&1; ); then
+            return 1
+        fi
+    done
+    return 0
 }
 
 pacman_update() {
-    return 1
+    vv pacman -Sy $(i_y)
 }
 
 pacman_upgrade() {
-    return 1
+    vv pacman -Syu $(i_y)
 }
 
 pacman_install() {
-    return 1
-    vvv pacman install $@
+    vvv pacman -S $(i_y) $@
 }
 
 ensure_command() {
@@ -536,7 +568,10 @@ ensure_command() {
 }
 
 pacman_setup() {
-    :
+    ensure_command awk core/gawk
+    ensure_command sort core/coreutils
+    ensure_command egrep core/grep
+    ensure_command which core/which
 }
 
 ###
@@ -725,23 +760,28 @@ parse_cli() {
     WANTED_PACKAGES=${WANTED_PACKAGES-}
     for i in ${@-};do
         case $i in
+            --check-os) CHECK_OS=1;;
             --help|-h) :;;
             *) WANTED_PACKAGES="${WANTED_PACKAGES} ${i}";;
         esac
     done
-    if echo ${DISTRIB_ID} | egrep -iq "ubuntu|debian|linuxmint";then
+    if ( is_debian_like; );then
         INSTALLER=aptget
-    elif echo ${DISTRIB_ID} | egrep -iq "archlinux";then
+    elif ( is_archlinux_like; );then
         INSTALLER=pacman
-    elif echo ${DISTRIB_ID} | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)";then
+    elif ( is_redhat_like; );then
         INSTALLER=yum
         if has_command dnf;then
             INSTALLER=dnf
         fi
     else
-        die "Not supported os ${DISTRIB_ID}"
+        sdie "Not supported os: ${DISTRIB_ID}"
     fi
     debug "INSTALLER: ${INSTALLER}"
+    if [[ -n $CHECK_OS ]];then
+        warn "OS is supported"
+        exit 0
+    fi
 }
 
 update() {
@@ -814,7 +854,7 @@ prepare_install() {
                     if is_${INSTALLER}_available ${i}; then
                         candidates="${candidates} ${i}"
                     else
-                        die "Package '${i}' not found"
+                        sdie "Package '${i}' not found"
                     fi
                 else
                     debug "PostPackage '${i}' found"

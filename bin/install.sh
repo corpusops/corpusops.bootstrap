@@ -28,10 +28,23 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
 BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
+EXP_PREPROVISION_IMAGES=""
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES archlinux:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:stretch_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:jessie_preprovision"
+EXP_CORE_IMAGES=""
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:jessie"
+EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
 #
 # colors
 RED="\\e[0;31m"
@@ -83,6 +96,7 @@ die_in_error_() {
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
 die_() { NO_HEADER=y die_in_error_ $@; }
+sdie() { NO_HEADER=y die $@; }
 parse_cli() { parse_cli_common "${@}"; }
 parse_cli_common() {
     USAGE=
@@ -202,17 +216,18 @@ run_silent() {
     SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
     )
 }
-vvv() { debug "${@}";run_silent "${@}"; }
-vv() { log "${@}";run_silent "${@}"; }
+vvv() { debug "${@}";silent_run "${@}"; }
+vv() { log "${@}";silent_run "${@}"; }
 silent_vv() { SILENT=${SILENT-1} vv "${@}"; }
 quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;run_silent "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
-is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux"; }
+is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
-is_redhat_like() { echo $DISTRIB_ID | egrep -iq "fedora|centos|redhat|red-hat"; }
+is_redhat_like() { echo $DISTRIB_ID \
+        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
 detect_os() {
     # this function should be copiable in other scripts, dont use adjacent functions
@@ -395,7 +410,7 @@ upgrade_wd_to_br() {
         fi
     )
 }
-get_python2_() {
+get_python2() {
     local py2=
     for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
         local lpy=$(get_command $i 2>/dev/null)
@@ -406,7 +421,6 @@ get_python2_() {
     done
     echo $py2
 }
-get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
@@ -453,21 +467,24 @@ make_virtualenv() {
 }
 ensure_last_python_requirement() {
     local PIP=${PIP:-pip}
+    local COPS_PYTHON=${COPS_PYTHON:-python}
     local i=
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
     # inside the for loop as at first pip can not have the opts
     # but can be upgraded to have them after
     local copt=
-    if $PIP --help | grep -q download-cache; then
+    if "$py" "$PIP" --help | grep -q download-cache; then
         copt="--download-cache"
     elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
     log "Installing last version of $@"
     if [[ -n "$copt" ]];then
-        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
     else
-        $PIP install --src "$(get_eggs_src_dir)" -U $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $@
     fi
 }
 usage() { die 128 "No usage found"; }
@@ -477,18 +494,27 @@ CORPUSOPS_VERSION="1.0"
 THIS="$(readlink -f "${0}")"
 LAUNCH_ARGS=${@}
 
+get_cops_pip() {
+    pip=$(get_command $(basename ${PIP:-pip2}))
+    if [[ -z $pip ]]; then
+        pip=$(get_command $(basename ${PIP:-pip}))
+    fi
+    echo $pip
+}
+
 ensure_last_virtualenv() {
     venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
-    pip=$(get_command $(basename ${PIP:-pip}))
+    py=$(get_cops_orig_python)
+    pip=$(get_cops_pip)
     ez=$(get_command $(basename ${EASY_INSTALL:-easy_install}))
     if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
          || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
         if version_lt "$($venv --version)" "15.1.0"; then
             log "Installing last version of virtualenv"
             if [[ -n $pip ]];then
-                $(may_sudo) "$pip" install --upgrade virtualenv
+                $(may_sudo) "$py" "$pip" install --upgrade virtualenv
             elif [[ -n $ez ]];then
-                $(may_sudo) "$ez" -U virtualenv
+                $(may_sudo) "$py" "$ez" -U virtualenv
             fi
         fi
     fi
@@ -642,7 +668,6 @@ set_vars() {
         EXTRA_PACKAGES=""
     fi
     VENV_PATH="${VENV_PATH:-"${W}/venv"}"
-    PIP=${PIP:-pip}
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
     if [ "x${QUIET}" = "x" ]; then
@@ -683,16 +708,27 @@ set_vars() {
     export VENV_PATH PIP_CACHE W
 }
 
+get_cops_orig_python() {
+    local default_py=$(
+        deactivate 2>/dev/null || :;
+        get_python2
+        )
+    echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
+}
+
 get_cops_python() {
-    echo ${COPS_PYTHON:-$(get_python2)}
+    local default_py=$(get_cops_orig_python)
+    if ( corpusops_use_venv; );then
+        default_py="$VENV_PATH/bin/python"
+    fi
+    echo ${COPS_PYTHON:-$default_py}
 }
 
 check_py_modules() {
     # test if salt binaries are there & working
-    if corpusops_use_venv;then
-        bin="${VENV_PATH}/bin/python"
-    else
-        bin=$(get_cops_python)
+    bin="$(get_cops_python)"
+    if [[ -z $bin ]];then
+        sdie "No python2 interpreter found"
     fi
     "${bin}" << EOF
 import six
@@ -778,6 +814,11 @@ recap() {
 }
 
 install_prerequisites_() {
+    if ! ( $(may_sudo) $W/bin/cops_pkgmgr_install.sh \
+                --check-os >/dev/null 2>&1; );then
+        warn "Untested OS, assuming everything is in place"
+        return 0
+    fi
     _PACKAGES=${BASE_PACKAGES}
     if [[ -n ${FORCE_PACKAGES_INSTALL-} ]] || ! is_python_install_complete;then
         log "Virtualenv not complete, installing also system dev packages"
@@ -787,7 +828,7 @@ install_prerequisites_() {
     fi
     local pkgs="$(echo $EXTRA_PACKAGES $_PACKAGES)"
     if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
-        bs_log "prerequisites setup skipped"
+        log "prerequisites setup skipped"
         return 0
     fi
 
@@ -802,12 +843,24 @@ install_prerequisites_() {
         fi
     fi
     debug "Ensuring system packages are installed: ${pkgs}"
-    SKIP_UPDATE=y\
-    SKIP_UPGRADE=y\
+    SKIP_UPDATE=y SKIP_UPGRADE=y\
         WANTED_EXTRA_PACKAGES="$(echo ${EXTRA_PACKAGES})" \
         WANTED_PACKAGES="$(echo ${_PACKAGES})" \
         vv $(may_sudo) $W/bin/cops_pkgmgr_install.sh 2>&1\
-        || die " [bs] Failed install prerequisites"
+        || sdie "-> Failed install prerequisites"
+    # we need either python-software-properties or
+    # its software-properties-common replacement
+    if is_debian_like;then
+        log "installing python pkgs (python-software-properties or software-properties-common)"
+        if ! ( SKIP_UPDATE=y SKIP_UPGRADE=y\
+            WANTED_PACKAGES="python-software-properties" \
+            $(may_sudo) $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 );then
+                SKIP_UPDATE=y SKIP_UPGRADE=y\
+                    WANTED_PACKAGES="software-properties-common" \
+                    vv $(may_sudo) $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
+                    || sdie "-> Failed install python apt pkgs"
+        fi
+    fi
 }
 
 install_prerequisites() {
@@ -862,7 +915,7 @@ checkout_code() {
     TO_CHECKOUT=""
     if [ "x$DO_SYNC_ANSIBLE" != "xno" ];then
         if [ -e "$(get_eggs_src_dir)/ansible" ] && ! upgrade_ansible;then
-            die "Upgrading ansible failed"
+            sdie "Upgrading ansible failed"
         fi
     fi
     if [ "x$DO_SYNC_CORE" != "xno" ];then
@@ -885,7 +938,7 @@ checkout_code() {
                 bs_log "Code failed to update for <$co>"
                 ret=2
                 if [ "x${co}" = "xcheckouts_core.yml" ];then
-                    vv reconfigure || die "Reconfigure while updating failed"
+                    vv reconfigure || sdie "Reconfigure while updating failed"
                 fi
             else
                 if [ "x${QUIET}" = "x" ]; then
@@ -920,16 +973,11 @@ test_ansible_state() {
       ansible --help >/dev/null 2>&1 )
 }
 
-
-get_cops_pip() {
-    local pip="${VENV_PATH}/bin/pip"
-    if ! corpusops_use_venv;then pip=pip;fi
-    echo $pip
-}
-
 reinstall_egg_path() {
     ( cd "$1" && \
-        vv "$(get_cops_pip)" install -U --force-reinstall --no-deps -e . )
+        if corpusops_use_venv;then export PATH=$VENV_PATH/bin:$PATH;fi; \
+        vv "$(get_cops_python)" "$(get_cops_pip)" \
+               install -U --force-reinstall --no-deps -e . )
 }
 
 try_fix_ansible()  {
@@ -939,9 +987,7 @@ try_fix_ansible()  {
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         [ -e "$pip" ];then
         bs_log "Try to reinstall ansible egg"
-        pwd
         vv reinstall_egg_path "$(get_eggs_src_dir)/ansible"
-        pwd
     fi
 }
 
@@ -985,7 +1031,7 @@ ensure_has_virtualenv() {
                 || die " [bs] Failed install virtualenv extra pkgs"
         fi
         if ! has_command virtualenv;then
-            die "virtualenv command not found !"
+            sdie "virtualenv command not found !"
         fi
     fi
 }
@@ -1010,11 +1056,11 @@ setup_virtualenv_() {
         bs_log "virtualenv setup skipped"
         return 0
     fi
-    make_virtualenv
+    make_virtualenv $(get_cops_orig_python)
 }
 
 setup_virtualenv() {
-    if ! corpusops_use_venv;then
+    if ! ( corpusops_use_venv; );then
         warn "corpusops wont be isolated inside a virtualenv"
         return 0
     fi
@@ -1037,15 +1083,16 @@ install_python_libs_() {
         fi
     done
     if [[ -z "$(get_cops_python)" ]];then
-        die "Python not found"
+        sdie "Python not found (missing python2 interpreter)"
     fi
-    if false && check_py_modules; then
+    if check_py_modules; then
         if [ "x${QUIET}" = "x" ]; then
             bs_log "Pip install in place"
         fi
     else
         bs_log "Python install incomplete"
         local pip=$(get_cops_pip)
+        local py=$(get_cops_python)
         if ! ( corpusops_use_venv ) && \
             ! ( $pip --version >/dev/null 2>&1 ) && \
             ( has_command easy_install );then
@@ -1054,25 +1101,26 @@ install_python_libs_() {
         fi
         local pip=$(get_cops_pip)
         if ! ( $pip --version );then
-            die "pip not found"
+            sdie "pip not found"
         fi
-        PIP="$pip" ensure_last_python_requirement pip &&
-            PIP="$pip" ensure_last_python_requirement setuptools &&
-            PIP="$pip" ensure_last_python_requirement six
+        COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement pip &&
+            COPS_PYTHON="$py" PIP="$pip" \
+               ensure_last_python_requirement setuptools &&
+            COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement six
         die_in_error "base pip python pkgs failed install"
         if $(get_cops_python) --version 2>&1| egrep -iq "python 2\.";then
-            PIP="$pip" ensure_last_python_requirement enum34
+            COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement enum34
             die_in_error "installing enum on python2"
         fi
-        PIP="$pip" ensure_last_python_requirement \
+        COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement \
             -r requirements/python_requirements.txt
         die_in_error "requirements/python_requirements.txt doesn't install"
-        PIP="$pip" ensure_last_python_requirement --no-deps -e .
+        COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement --no-deps -e .
         die_in_error "corpusops egg doesn't install"
         if [ "x${install_git}" != "x" ]; then
             # ansible, salt & docker had bad history for
             # their deps in setup.py we ignore them and manage that ourselves
-            PIP="$pip" ensure_last_python_requirement \
+            COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement \
                 --no-deps -r requirements/python_git_requirements.txt
             die_in_error "requirements/python_git_requirements.txt doesn't install"
         else
@@ -1080,7 +1128,7 @@ install_python_libs_() {
             for i in ${EGGS_GIT_DIRS};do
                 if [ -e "$(get_eggs_src_dir)/${i}" ]; then
                     cd "$(get_eggs_src_dir)/${i}"
-                    PIP="$pip" ensure_last_python_requirement \
+                    COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement \
                         --no-deps -e .
                     die_in_error "requirements/src eggs doesn't install"
                 fi
@@ -1122,7 +1170,7 @@ link_dir() {
         fi
         if [ "x${do_link}" != "x" ]; then
             ln -sfv "${origin}" "${destination}" ||
-                die "ln ${origin} -> ${destination} failed"
+                sdie "ln ${origin} -> ${destination} failed"
         fi
     done
 }
@@ -1318,7 +1366,7 @@ main() {
     if [ "x${DO_ONLY_SYNC_CODE}" != "x" ]; then
         synchronize_code || die "synchronize_code failed"
     else
-        install_prerequisites || die "install_prerequisites failed"
+        install_prerequisites || die "System prerequisites failed"
         setup_virtualenv || die "setup_virtualenv failed"
         install_python_libs || die "python libs incomplete install"
         ensure_ansible_is_usable
@@ -1340,4 +1388,4 @@ if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
     main
 fi
 exit $?
-## vim:set et sts=5 ts=4 tw=0:
+s## vim:set et sts=5 ts=4 tw=0:

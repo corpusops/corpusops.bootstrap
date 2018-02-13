@@ -1,0 +1,13 @@
+autoconf
+base-devel
+m4
+automake
+libffi
+gmp
+libsigc++
+openssl
+python
+swig
+pkg-config
+libtool
+groff

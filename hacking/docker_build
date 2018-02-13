@@ -31,10 +31,23 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
 BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
+EXP_PREPROVISION_IMAGES=""
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES archlinux:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:stretch_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:jessie_preprovision"
+EXP_CORE_IMAGES=""
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:jessie"
+EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
 #
 # colors
 RED="\\e[0;31m"
@@ -86,6 +99,7 @@ die_in_error_() {
 }
 die_in_error() { die_in_error_ "${?}" "${@}"; }
 die_() { NO_HEADER=y die_in_error_ $@; }
+sdie() { NO_HEADER=y die $@; }
 parse_cli() { parse_cli_common "${@}"; }
 parse_cli_common() {
     USAGE=
@@ -205,17 +219,18 @@ run_silent() {
     SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
     )
 }
-vvv() { debug "${@}";run_silent "${@}"; }
-vv() { log "${@}";run_silent "${@}"; }
+vvv() { debug "${@}";silent_run "${@}"; }
+vv() { log "${@}";silent_run "${@}"; }
 silent_vv() { SILENT=${SILENT-1} vv "${@}"; }
 quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;run_silent "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
-is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux"; }
+is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
-is_redhat_like() { echo $DISTRIB_ID | egrep -iq "fedora|centos|redhat|red-hat"; }
+is_redhat_like() { echo $DISTRIB_ID \
+        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
 detect_os() {
     # this function should be copiable in other scripts, dont use adjacent functions
@@ -398,7 +413,7 @@ upgrade_wd_to_br() {
         fi
     )
 }
-get_python2_() {
+get_python2() {
     local py2=
     for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
         local lpy=$(get_command $i 2>/dev/null)
@@ -409,7 +424,6 @@ get_python2_() {
     done
     echo $py2
 }
-get_python2() { ( deactivate 2>/dev/null;get_python2_; ) }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
@@ -456,21 +470,24 @@ make_virtualenv() {
 }
 ensure_last_python_requirement() {
     local PIP=${PIP:-pip}
+    local COPS_PYTHON=${COPS_PYTHON:-python}
     local i=
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
     # inside the for loop as at first pip can not have the opts
     # but can be upgraded to have them after
     local copt=
-    if $PIP --help | grep -q download-cache; then
+    if "$py" "$PIP" --help | grep -q download-cache; then
         copt="--download-cache"
     elif $PIP --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
     log "Installing last version of $@"
     if [[ -n "$copt" ]];then
-        $PIP install --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
     else
-        $PIP install --src "$(get_eggs_src_dir)" -U $@
+        vvv "$COPS_PYTHON" "$PIP" install \
+            --src "$(get_eggs_src_dir)" -U $@
     fi
 }
 usage() { die 128 "No usage found"; }
