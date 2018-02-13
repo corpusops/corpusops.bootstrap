@@ -13,6 +13,18 @@ env:
       TEST_IMAGES="corpusops/ubuntu:latest_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest"
     - >
+      TEST_IMAGES="corpusops/archlinux:latest_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/archlinux:latest_preprovision"
+    - >
+      TEST_IMAGES="corpusops/debian:latest_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/debian:latest"
+    - >
+      TEST_IMAGES="corpusops/debian:stretch_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/debian:stretch"
+    - >
+      TEST_IMAGES="corpusops/debian:jessie_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/debian:jessie"
+    - >
       TEST_IMAGES="corpusops/centos:7_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/centos:7"
 language: python
