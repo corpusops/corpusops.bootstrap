@@ -7,7 +7,7 @@
 ## projects specific notes
 
 ### Drupal
-- [Install the cluster](zope.md#install_cluster)
+- [Install the cluster](drupal.md#install_cluster)
 - [Update the cluster](drupal.md#update_cluster)
 - [Get admin password](drupal.md#password)
 - [Go inside the site (admin user)](drupal.md#duli)
