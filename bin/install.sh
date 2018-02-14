@@ -362,17 +362,22 @@ do_tmp_cleanup() {
         fi
     done
 }
+may_autoadd_git_author() {
+    if [ "x$(git config user.email)" = "x" ];then 
+        echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops"
+    fi
+}
 update_wd_to_br() {
     (
         local wd="${2:-$(pwd)}"
         local up_branch="${1}"
         cd "${wd}" || die "${wd} does not exists"
-        if ! git diff --exit-code -q;then
-            git stash
+        if ! git diff --quiet;then
+            vvv git $(may_autoadd_git_author) stash
+            die_in_error "${wd}: changes can't be stashed"
         fi &&\
-        vv git pull origin "${up_branch}"
+            vv git $(may_autoadd_git_author) pull origin "${up_branch}"
     )
-
 }
 upgrade_wd_to_br() {
     (
