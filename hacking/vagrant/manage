@@ -212,6 +212,9 @@ do_sshgen() {
 activate_arcfour() {
     local h=$1
     local scfg=/etc/ssh/sshd_config
+    if [ ! -e .vagrant/cops-sshconfig-$h ];then
+        do_sshgen $h
+    fi
     do_ssh_ /bin/true
     die_in_error "$h ssh connection failed"
     if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
