@@ -182,12 +182,49 @@ set_hosts_args() {
 }
 
 
+select_ciphers() {
+    local scipher=
+    if [[ -z ${NO_DEFAULT_CIPHER-} ]];then
+        for cipher in $ORDERED_SSH_CIPHERS;do
+            if echo "$SSH_CIPHERS" | grep -iq $cipher;then
+                if [[ -n $scipher ]];then
+                    scipher="$cipher $scipher"
+                else
+                    scipher="$cipher"
+                fi
+            fi
+        done
+    fi
+    if [[ -n $scipher ]];then
+        echo $scipher
+    fi
+}
+
+
+select_negociated_cipher() {
+    local remote_ciphers=$(do_ssh ssh -Q cipher)
+    local selected_cipher=""
+    for c in $(select_ciphers);do
+        if echo "$remote_ciphers"|grep -iq $c;then
+            selected_cipher=$c
+            break
+        fi
+    done
+    if [[ -n $selected_cipher ]];then
+        echo "$selected_cipher"
+    fi
+}
+
+
 do_sshgen() {
     hosts=${@}
-    local ciphers=$(echo $SSH_CIPERS|sed "s/ /,/g")
+    local ciphers=$(echo $SSH_CIPHERS|sed "s/ /,/g")
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
-    if echo "$ciphers" | grep -q arcfour;then
-        ciphers="arcfour,$ciphers"
+    selected_ciphers=$(select_ciphers|sed "s/ /,/g")
+    if [[ -n $selected_ciphers ]];then
+        selected_ciphers="$selected_ciphers,$ciphers"
+    else
+        selected_ciphers="$ciphers"
     fi
     for h in $hosts;do
         if [ ! -e .vagrant ];then mkdir .vagrant;fi
@@ -195,9 +232,9 @@ do_sshgen() {
         COPS_DEBUG= vagrant ssh-config $h | sed \
             -e "s/User .*/User root/g" \
             -e "s/Host .*/Host vagrant/g" > "$scfg"
+        #sed -i -e '/Port.*/ { a Ciphers arcfour;a Compression no; a\ ;}' "$scfg"
+        sed -i -e '/Port.*/ a\  Ciphers '"$selected_ciphers" "$scfg"
         if echo "$COPS_SSHFS_OPTS" | grep -qi arcfour;then
-            #sed -i -e '/Port.*/ { a Ciphers arcfour;a Compression no; a\ ;}' "$scfg"
-            sed -i -e '/Port.*/ a\  Ciphers '"$ciphers" "$scfg"
             sed -i -e '/Compression/d'  "$scfg"
             sed -i -e '/Port.*/ a\  Compression no' "$scfg"
         fi
@@ -245,7 +282,12 @@ do_mount() {
             die_in_error "Error while activating arcfour on $h"
             do_sshgen $h
             die_in_error "sshgen $h"
+            remote_ciphers=$(do_ssh ssh -Q cipher)
+            local selected_cipher="$(select_negociated_cipher)"
             vv sshfs $COPS_SSHFS_OPTS \
+                $( if [[ -n $selected_ciphers ]];then
+                    echo "-o Cipher=$selected_cipher"
+                   fi )\
                 -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
                 vagrant:/ "${VM_MOUNTPOINT}"
             die_in_error "Error while mounting $h"
@@ -534,7 +576,15 @@ parse_usage() {
 }
 
 set_ssh_vars() {
-    SSH_CIPERS=$(ssh -Q cipher 2>/dev/null)
+    ORDERED_SSH_CIPHERS=${ORDERED_SSH_CIPHERS-}
+    if [[ -z $ORDERED_SSH_CIPHERS ]];then
+        ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes192-ctr aes256-ctr aes128-ctr"
+        ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes256-cbc aes192-cbc aes128-cbc"
+        ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes128-gcm@openssh.com"
+        ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes256-gcm@openssh.com"
+        ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS arcfour"
+    fi
+    SSH_CIPHERS=$(ssh -Q cipher 2>/dev/null)
     SSHFS_HELP="$(sshfs --help 2>&1)"
     DEFAULT_COPS_SSHFS_OPTS=""
     DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Compression=no"
@@ -549,9 +599,6 @@ set_ssh_vars() {
     done
     if echo "$SSHFS_HELP" | grep -iq "all workarounds";then
         DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -C -o workaround=all"
-    fi
-    if ( echo "$SSH_CIPERS" | grep -iq arcfour );then
-        DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
     fi
     COPS_SSHFS_OPTS="${COPS_SSHFS_OPTS:-"$DEFAULT_COPS_SSHFS_OPTS"}"
 }
