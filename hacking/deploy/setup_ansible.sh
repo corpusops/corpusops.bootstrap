@@ -21,6 +21,6 @@ Wrapper to call in this order:
 
 parse_cli $@
 
-NONINTERACTIVE=1 vv "$COPS_SCRIPTS_DIR/setup_corpusops.sh"
+NONINTERACTIVE=${NONINTERACTIVE-1} vv "$COPS_SCRIPTS_DIR/setup_corpusops.sh"
 vv "$COPS_SCRIPTS_DIR/setup_core_variables.sh"
 vv "$COPS_SCRIPTS_DIR/setup_vaults.sh"
