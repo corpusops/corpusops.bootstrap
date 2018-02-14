@@ -578,7 +578,6 @@ parse_usage() {
 set_ssh_vars() {
     ORDERED_SSH_CIPHERS=${ORDERED_SSH_CIPHERS-}
     if [[ -z $ORDERED_SSH_CIPHERS ]];then
-
         ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes256-gcm@openssh.com"
         ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes128-gcm@openssh.com"
         ORDERED_SSH_CIPHERS="$ORDERED_SSH_CIPHERS aes256-cbc"
