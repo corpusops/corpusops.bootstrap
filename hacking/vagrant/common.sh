@@ -510,7 +510,9 @@ usage() { die 128 "No usage found"; }
 W=$OW
 DEFAULT_COPS_SSHFS_OPTS="-o cache=yes -o kernel_cache"
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o large_read"
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
+if ( ssh -Q cipher 2>/dev/null | grep -iq arcfour );then
+    DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
+fi
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Compression=no"
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o ServerAliveCountMax=3 -o ServerAliveInterval=15"
 DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o reconnect"
