@@ -363,7 +363,7 @@ do_tmp_cleanup() {
     done
 }
 may_autoadd_git_author() {
-    if [ "x$(git config user.email)" = "x" ];then 
+    if [ "x$(git config user.email)" = "x" ];then
         echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops"
     fi
 }
