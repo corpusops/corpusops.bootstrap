@@ -184,7 +184,7 @@ set_hosts_args() {
 
 do_sshgen() {
     hosts=${@}
-    local ciphers=$(echo $(ssh -Q cipher)|sed "s/ /,/g")
+    local ciphers=$(echo $SSH_CIPERS|sed "s/ /,/g")
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
     if echo "$ciphers" | grep -q arcfour;then
         ciphers="arcfour,$ciphers"
@@ -533,11 +533,39 @@ parse_usage() {
     done
 }
 
+set_ssh_vars() {
+    SSH_CIPERS=$(ssh -Q cipher 2>/dev/null)
+    SSHFS_HELP="$(sshfs --help 2>&1)"
+    DEFAULT_COPS_SSHFS_OPTS=""
+    DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Compression=no"
+    DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o ServerAliveCountMax=3 -o ServerAliveInterval=15"
+    if echo "$SSHFS_HELP" | grep -iq "cache=";then
+        DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o cache=yes"
+    fi
+    for i in large_read kernel_cache reconnect;do
+        if echo "$SSHFS_HELP" | grep -iq $i;then
+            DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o $i"
+        fi
+    done
+    if echo "$SSHFS_HELP" | grep -iq "all workarounds";then
+        DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -C -o workaround=all"
+    fi
+    if ( echo "$SSH_CIPERS" | grep -iq arcfour );then
+        DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
+    fi
+    COPS_SSHFS_OPTS="${COPS_SSHFS_OPTS:-"$DEFAULT_COPS_SSHFS_OPTS"}"
+}
 
 main() {
     action=$1
     shift
     parse_usage $action $1
+    for i in sshfs ssh vagrant;do
+        if ! has_command $i;then
+            die "install $i"
+        fi
+    done
+    set_ssh_vars
     case $action in
         halt|stop|down) do_down ${@};;
         start|up|fire) do_up ${@};;
