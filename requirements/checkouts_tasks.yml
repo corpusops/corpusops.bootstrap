@@ -79,8 +79,9 @@
 - name: Stash any ongoing changes
   shell: |
     vv() { echo "${@}" >&2;"${@}"; }
+    gargs=$(if [ "x$(git config user.email)" = "x" ];then echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops";fi)
     if ! git diff --quiet; then
-      vv git stash
+      vv git $gargs stash
       ret=${?}
       if [ "x${ret}" != "x0" ];then
         retry="";
@@ -96,7 +97,7 @@
           fi
         done
         if [ "x${retry}" != "x" ];then
-          vv git stash
+          vv git $gargs stash
           ret=${?}
         fi
       fi
@@ -181,6 +182,7 @@
   shell: |
     set -e
     vv() { echo "${@}" >&2;"${@}"; }
+    gargs=$(if [ "x$(git config user.email)" = "x" ];then echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops";fi)
     get_git_branch() {
        ( cd "${1:-$(pwd)}" &&\
          git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
@@ -190,7 +192,7 @@
     curbr=$(get_git_branch)
     merge="remotes/origin$(if [ "x${curbr}" != "x" ];then echo "/${curbr}";fi)"
     vv git branch -a
-    vv git merge --ff-only $merge
+    vv git $gargs merge --ff-only $merge
 
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_merge
@@ -204,8 +206,9 @@
   shell: |
     set -e
     vv() { echo "${@}" >&2;"${@}"; }
-    vv git stash apply
-    vv git stash drop
+    gargs=$(if [ "x$(git config user.email)" = "x" ];then echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops";fi)
+    vv git $gargs stash apply
+    vv git $gargs stash drop
   args: {chdir: '{{checkout_item.dest}}'}
   register: stashed_reapply
   when: "((not (checkouted_merge | skipped) or not ( checkouted_changeset | skipped ))
