@@ -216,7 +216,7 @@ activate_arcfour() {
         do_sshgen $h
     fi
     do_ssh_ /bin/true
-    die_in_error "$h ssh connection failed"
+    die_in_error "$h ssh connection failed (for: activate arcfour)"
     if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
         ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
         if [[ -n $ciphers ]];then
