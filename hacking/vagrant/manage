@@ -186,7 +186,9 @@ do_sshgen() {
     hosts=${@}
     local ciphers=$(echo $(ssh -Q cipher)|sed "s/ /,/g")
     if [[ -z $1 ]];then hosts=$(default_to_first_host);fi
-    ciphers="arcfour,$ciphers"
+    if echo "$ciphers" | grep -q arcfour;then
+        ciphers="arcfour,$ciphers"
+    fi
     for h in $hosts;do
         if [ ! -e .vagrant ];then mkdir .vagrant;fi
         local scfg=.vagrant/cops-sshconfig-$h
