@@ -508,16 +508,6 @@ usage() { die 128 "No usage found"; }
 # END: corpusops common glue
 
 W=$OW
-DEFAULT_COPS_SSHFS_OPTS="-o cache=yes -o kernel_cache"
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o large_read"
-if ( ssh -Q cipher 2>/dev/null | grep -iq arcfour );then
-    DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Ciphers=arcfour"
-fi
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o Compression=no"
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o ServerAliveCountMax=3 -o ServerAliveInterval=15"
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -o reconnect"
-DEFAULT_COPS_SSHFS_OPTS="$DEFAULT_COPS_SSHFS_OPTS -C -o workaround=all"
-COPS_SSHFS_OPTS="${COPS_SSHFS_OPTS:-"$DEFAULT_COPS_SSHFS_OPTS"}"
 DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
 DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap.git"
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
