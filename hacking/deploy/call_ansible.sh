@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 COPS_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -e "$COPS_SCRIPTS_DIR/ansible_deploy_env" ];then
@@ -68,4 +67,7 @@ else
     quiet_vv $A_LAUNCH_CMD
 fi
 ret=$?
+if [[ -z ${NO_SILENT} ]] && [[ -z $QUIET ]] && [[ "$ret" != "0" ]];then
+    warn "Not zero exit code: $ret"
+fi
 exit $ret
