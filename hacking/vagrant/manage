@@ -246,22 +246,35 @@ do_sshgen() {
 }
 
 
+test_ssh_link() {
+    local h="" hosts="${hosts-}" i=""
+    set_hosts_args ${@}
+    for h in $hosts;do
+        for i in $(seq ${ssh_connection_retries:-2});do
+            if ssh_host=$h do_ssh_ /bin/true;then
+                return 0
+            fi
+            do_sshgen $h || die "sshgen for $h failed"
+        done
+    done
+    die_in_error "$h ssh connection failed"
+}
+
+
 activate_arcfour() {
     local h=$1
     local scfg=/etc/ssh/sshd_config
     if [ ! -e .vagrant/cops-sshconfig-$h ];then
         do_sshgen $h
     fi
-    do_ssh_ /bin/true
-    die_in_error "$h ssh connection failed (for: activate arcfour)"
-    if ! ( do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
-        ciphers=$(do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
+    if ! ( ssh_host=$h do_ssh_ egrep -q "^Ciphers.*arcfour" $scfg; );then
+        ciphers=$(ssh_host=$h do_ssh_ "ssh -Q cipher localhost | paste -d , -s")
         if [[ -n $ciphers ]];then
             cmd="sed -i '/^Ciphers /d' $scfg"
             cmd="$cmd && printf \"\n\nCiphers $ciphers\n\n\""
             cmd="$cmd >>$scfg"
             cmd="$cmd && service ssh restart"
-            do_ssh_ "$cmd" || die "reconfigure sshd ciphers for $h"
+            ssh_host=$h do_ssh_ "$cmd" || die "reconfigure sshd ciphers for $h"
         fi
     fi
 }
