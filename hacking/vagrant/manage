@@ -607,15 +607,26 @@ set_ssh_vars() {
     COPS_SSHFS_OPTS="${COPS_SSHFS_OPTS:-"$DEFAULT_COPS_SSHFS_OPTS"}"
 }
 
+ensure_host_utils() {
+    local nocheck=${NO_HOST_CHECK_UTILS-}
+    case $action in
+        install_python) nocheck=1;;
+    esac
+    if [[ -z $nocheck ]];then
+        for i in sshfs ssh vagrant;do
+            if ! has_command $i;then
+                die "install $i"
+            fi
+        done
+    fi
+}
+
+
 main() {
     action=$1
     shift
     parse_usage $action $1
-    for i in sshfs ssh vagrant;do
-        if ! has_command $i;then
-            die "install $i"
-        fi
-    done
+    ensure_host_utils
     set_ssh_vars
     case $action in
         halt|stop|down) do_down ${@};;
