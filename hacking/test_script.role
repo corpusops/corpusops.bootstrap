@@ -133,7 +133,7 @@ pipe_return() {
 }
 output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
                       output_in_error_ "${@}" ; ); }
-output_in_error_(){
+output_in_error_() {
     if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
     if is_ci;then
         DEFAULT_CI_BUILD=y
@@ -176,13 +176,18 @@ output_in_error_(){
           done;\
           if [[ -n $VERBOSE ]];then log "done: ${@}";fi; ) &
     fi
+    # unset NO_OUTPUT= LOG= to prevent output_in_error children to be silent
+    # at first
+    reset_env="NO_OUTPUT LOG"
     if [[ -n $NO_OUTPUT ]];then
-        "${@}" >>"$LOG" 2>&1;ret=$?
+        ( unset $reset_env;"${@}" ) >>"$LOG" 2>&1;ret=$?
     else
         if [[ -n $LOG ]] && has_command tee;then
-            pipe_return "tee -a $LOG" "${@}";ret=$?
+            ( unset $reset_env; pipe_return "tee -a $tlog" "${@}"; )
+            ret=$?
         else
-            "${@}";ret=$?
+            ( unset $reset_env; "${@}"; )
+            ret=$?
         fi
     fi
     if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
