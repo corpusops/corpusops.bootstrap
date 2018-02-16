@@ -51,6 +51,15 @@ NORMAL="\\e[0;0m"
 NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
 LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
+uniquify_string() {
+    local pattern=$1
+    shift
+    echo "$@" \
+        | sed -e "s/${pattern}/\n/g" \
+        | awk '!seen[$0]++' \
+        | tr "\n" "${pattern}" \
+        | sed -e "s/^${pattern}\|${pattern}$//g"
+}
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
 is_ci() {
