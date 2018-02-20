@@ -713,7 +713,7 @@ if [[ -n "${A_INVENTORY_FILE}" ]];then
 fi
 A_INVENTORY="${A_INVENTORY-${DEFAULT_A_INVENTORY}}"
 # Do not set inventory if redefined in $@
-if echo $@ | egrep -iq -- "(( ?-i +)|(--(inventory-file|inventory)(=| )))";then
+if echo $@ | egrep -iq -- "(( ?-i( +|localhost))|(--(inventory-file|inventory)(=| )))";then
     debug "Inventory CLI switch detected, removing default one"
     A_INVENTORY=""
 fi
