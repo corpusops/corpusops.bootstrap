@@ -31,15 +31,11 @@ VAGRANTFILE_API_VERSION = "2"
 ## alternate dns
 # DNS_SERVERS: "8.8.8.8"
 ## INSTALL knobs
-# SKIP_SYNC: 1
-# SKIP_INSTALL: 1
 # SKIP_INSTALL_SSHFS: 1
 # SKIP_ROOTSSHKEYS_SYNC: 1
 # SKIP_PLAY_PLAYBOOKS: 1
 # SKIP_MOTD: 1
 # FORCE_MOTD: 1
-# FORCE_SYNC: 1
-# FORCE_INSTALL: 1
 # FORCE_INSTALL_SSHFS: 1
 # FORCE_ROOTSSHKEYS_SYNC: 1
 # FORCE_PLAY_PLAYBOOKS: 1
@@ -154,6 +150,7 @@ end
 
 def cops_inject_playbooks(opts)
     opts = opts.nil? {} || opts
+    opts.setdefault(:type, "PLAYBOOKS")  # one of POST_PLAYBOOKS/PLAYBOOKS
     cfg = opts[:cfg]
     playbooks = opts[:playbooks]
     machine_nums = opts.fetch(:machine_nums, opts[:machine_num])
@@ -172,9 +169,9 @@ def cops_inject_playbooks(opts)
     end
     # install rancher server only on first box
     machine_nums.each do |mnum|
-      machine_playbooks = cfg['MACHINES_CFG'][mnum]['PLAYBOOKS']
+      machine_playbooks = cfg['MACHINES_CFG'][mnum][opts[:type]]
       playbooks.each do |playbook|
-          machine_playbooks.insert(-1, deepcopy(playbook))
+          machine_playbooks.push(deepcopy(playbook))
       end
     end
     return cfg
@@ -196,21 +193,9 @@ def ansible_setup(ansible, cfg, machine_cfg, *args)
         ra.concat args[0][:raw_arguments]
       end
     end
-    # supereditor is used in some playbooks to allow some users outside
-    # the vm to write in well known locations
-    if use_defaults
-        ra.push("-e")
-        ra.push("cops_supereditors='#{Etc.getpwuid.uid}'")
-        ra.push("-e")
-        ra.push("cops_cwd='#{cfg['CWD']}'")
-        ra.push("-e")
-        ra.push("cops_path='#{cfg['COPS_ROOT']}'")
-        ra.push("-e")
-        ra.push("cops_playbooks='#{cfg['COPS_PLAYBOOKS']}'")
-    end
     ansible.raw_arguments = ra
     ansible.verbose  = true
-    ansible.playbook_command = "#{cfg['COPS_ROOT']}/bin/ansible-playbook"
+    ansible.playbook_command = "#{cfg['PLAYBOOK_COMMAND']}"
     ansible.config_file = "#{cfg['COPS_VAGRANT_DIR']}/ansible.cfg"
     if [nil, "auto"].include? ansible.compatibility_mode
       ansible.compatibility_mode = '2.0'
@@ -250,53 +235,6 @@ def debug(message)
         puts message
     end
 end
-
-
-def cops_sync(cfg)
-    if cfg['SKIP__SYNC']
-        debug 'Skipping corpusops sync'
-        return cfg
-    end
-    if cfg['SKIP_SYNC'].nil?
-        cfg['SKIP_SYNC'] = true
-        ["#{cfg['COPS_ROOT']}/roles/corpusops.roles",
-         "#{cfg['COPS_ROOT']}/venv/src/ansible",
-         "#{cfg['COPS_ROOT']}/venv/bin/ansible"].each do |f|
-             if !File.exists?(f)
-                 cfg['SKIP_SYNC'] = false
-             end
-         end
-    end
-    if cfg['SKIP_SYNC']
-        debug 'Skipping corpusops sync'
-        return cfg
-    end
-    puts "Syncing corpusops.local to #{cfg['COPS_ROOT']}\n"
-    cexec("#{cfg["COPS_SYNCER"]}", "Syncing corpusops failed")
-    return cfg
-end
-
-
-def cops_install(cfg)
-    if cfg['SKIP__INSTALL']
-        debug 'Skipping corpusops install'
-        return cfg
-    end
-    if (File.exists? "#{cfg['COPS_ROOT']}/venv/bin/ansible" and
-        cfg['SKIP_INSTALL'].nil?)
-        cfg['SKIP_INSTALL'] = true
-    end
-    if cfg['SKIP_INSTALL']
-        debug 'Skipping corpusops install'
-        return cfg
-    end
-    puts "Installing corpusops.local to #{cfg['COPS_ROOT']}\n"
-    cexec("#{cfg["COPS_INSTALLER"]}",
-          "Installing corpusops.local failed")
-    cfg = cops_sync(cfg)
-    return cfg
-end
-
 
 # Check entries in the configuration zone for variables available.
 # --- Start Load optional config file ---------------
@@ -339,7 +277,6 @@ def cops_init(opts)
     #
     cfg.setdefault('UNAME', `uname`.strip)
     #
-    cfg.setdefault('SKIP_INSTALL', nil)
     cfg.setdefault('DEBUG', !ENV.fetch("COPS_DEBUG", "").empty?)
     cfg.setdefault('SKIP_CONFIGURE_NET', nil)
     cfg.setdefault('SKIP_SYNC', nil)
@@ -386,6 +323,8 @@ def cops_init(opts)
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sync_sshkeys.yml" => {
                 :raw_arguments => ["--flush-cache"]}},
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/sshfs.yml" => {}},
+        ],
+        "post_default" => [
             {"#{cfg['COPS_REL_PLAYBOOKS']}/provision/vagrant/cleanup.yml" => {}},
         ]
     }
@@ -447,6 +386,13 @@ def cops_init(opts)
     # SHARED FOLDERS
     cfg.setdefault('mountpoints', {cfg['CWD'] => cfg['HOST_MOUNTPOINT']})
     cfg.setdefault('PRIVATE_IP_START', cfg['MACHINE_NUM_START'])
+    if File.exists? ".ansible/scripts/call_ansible.sh"
+        playbook_command = ".ansible/scripts/call_ansible.sh"
+    else
+        playbook_command = "#{cfg['COPS_ROOT']}/hacking/deploy/call_ansible.sh"
+    end
+
+    cfg.setdefault("PLAYBOOK_COMMAND", playbook_command)
     # save back config to yaml (mainly for persiting corpusops)
     File.open("#{yaml_config}", 'w') {|f| f.write localcfg.to_yaml }
     # Generate each machine configuration mappings
@@ -466,6 +412,9 @@ def cops_init(opts)
         machine_config(cfg, machine_num, 'PLAYBOOKS',
                        cfg['PLAYBOOKS'].fetch(
                          machine_num, cfg['PLAYBOOKS']['default']))
+        machine_config(cfg, machine_num, 'POST_PLAYBOOKS',
+                       cfg['PLAYBOOKS'].fetch(
+                         "#{machine_num}_post", cfg['PLAYBOOKS']['post_default']))
         machine_config(cfg, machine_num, 'HOSTNAME', "#{cfg['HOSTNAME_PRE']}-#{machine_num}")
         machine_config(cfg, machine_num, 'FQDN', "#{machine_cfg['HOSTNAME']}.#{machine_cfg['DOMAIN']}")
         machine_config(cfg, machine_num, 'VB_NAME',
@@ -583,6 +532,7 @@ def cops_configure(cfg)
                 ]
                 if !machine_cfg['SKIP_PLAY_PLAYBOOKS']
                     playbooksdef.push(*machine_cfg['PLAYBOOKS'])
+                    playbooksdef.push(*machine_cfg['POST_PLAYBOOKS'])
                 end
                 # flush cache facts each time vagrant runs
                 sub.vm.provision "ansible" do |ansible|
@@ -612,11 +562,11 @@ end
 def cops_dance(opts)
     # load config
     cfg = cops_init(opts)
-    # install corpusops on localhost (a pre-packaged ansible)
-    cfg = cops_install(cfg)
-    cfg = cops_sync(cfg)
     # add here post pre modification like names, subnet, etc
     cfg = cops_configure(cfg)
+    if ! ENV.has_key? "NONINTERACTIVE"
+        ENV["NONINTERACTIVE"] = "1"
+    end
     cfg
 end
 # vim: set ft=ruby ts=4 et sts=4 tw=0 ai:
