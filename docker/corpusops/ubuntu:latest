@@ -24,16 +24,16 @@ ADD docker/    $COPS_ROOT/docker/
 ADD roles/     $COPS_ROOT/roles/
 
 # Be sure that system python is capable of SSL SNI connections
-RUN bash -c 'step_rev=6;set -e;\
-    $_sar ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
+RUN bash -c 'step_rev=2;set -ex;\
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
 
 # Install docker client for dind(sibling via docker socket) workflows
 RUN bash -c 'step_rev=2;set -e;\
-    $_sar ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml'
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml'
 
 # Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
-    $_sar ${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml'
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml'
 
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
