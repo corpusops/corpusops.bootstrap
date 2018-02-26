@@ -2,17 +2,29 @@
 # and their requisites; together with docker cache
 
 FROM debian:latest
+ENV container docker
 
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ARG NO_OUTPUT=y
+ARG USE_VENV=no
 ARG PYTHONUNBUFFERED=1
-
-ENV container docker
+ARG NONINTERACTIVE="y"
+ARG DEFAULT_A_VERBOSITY="-vvvvv -e cops_vars_debug=true"
+ARG DEFAULT_A_INVENTORY="localhost,"
+ARG DEFAULT_A_ENV_NAME="docker"
+ENV ANSIBLE_FORCE_COLOR=true
+ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED
+ENV NONINTERACTIVE=$NONINTERACTIVE
 ENV COPS_ROOT $COPS_ROOT
+ENV A_VERBOSITY="$DEFAULT_A_VERBOSITY"
+ENV A_INVENTORY=$DEFAULT_A_INVENTORY
+ENV A_ENV_NAME=$DEFAULT_A_ENV_NAME
 ENV _cops_ar "$COPS_ROOT/bin/cops_apply_role"
-ENV _sar "$COPS_ROOT/bin/silent_run $_cops_ar -vvvvv -ecops_vars_debug=y"
-ENV _ar "$_cops_ar -vvvvv -ecops_vars_debug=y"
-ENV _s "$COPS_ROOT/bin/silent_run"
+ENV _sapply_role "$COPS_ROOT/bin/silent_run $_cops_ar $A_VERBOSITY"
+ENV _apply_role "$_cops_ar $A_VERBOSITY"
+ENV _silent_run "$COPS_ROOT/bin/silent_run"
+ENV _call_ansible=".ansible/scripts/call_ansible.sh $A_VERBOSITY"
+ENV _call_roles=".ansible/scripts/call_roles.sh     $A_VERBOSITY"
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
@@ -45,7 +57,6 @@ RUN bash -c '\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
     if echo $DISTRIB_ID|egrep -iq debian;then apt-get install -y systemd systemd-sysv;fi'
 
-ARG USE_VENV=no
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
 COPY hacking/patches/python*.diff \
@@ -89,12 +100,12 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
     done < <(ls -d /usr/lib*/python2* 2>/dev/null);\
     cd ${COPS_ROOT};\
     if [ "x$USE_VENV" != "xno" ];then \
-     VERBOSE=y $_s virtualenv --python=python2 --system-site-packages --unzip-setuptools $(pwd)/venv;\
+     VERBOSE=y $_silent_run virtualenv --python=python2 --system-site-packages --unzip-setuptools $(pwd)/venv;\
      . venv/bin/activate;\
      :;\
-     $_s python -c "from test import test_support";\
-     VERBOSE=y $_s $COPS_PYTHON $(which pip) install -U pip;\
-     VERBOSE=y $_s $COPS_PYTHON $(which pip) install -U -r requirements/python_requirements.txt; \
+     $_silent_run python -c "from test import test_support";\
+     VERBOSE=y $_silent_run $COPS_PYTHON $(which pip) install -U pip;\
+     VERBOSE=y $_silent_run $COPS_PYTHON $(which pip) install -U -r requirements/python_requirements.txt; \
     fi'
 
 # 3/ Run install script to finish installation
@@ -114,10 +125,10 @@ COPY roles ${COPS_ROOT}/roles
 COPY hacking/container_rootfs/ $COPS_ROOT/hacking/container_rootfs/
 COPY hacking/sync_files $COPS_ROOT/hacking/
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
-    VERBOSE=y $_s $COPS_ROOT/hacking/sync_files;\
-    VERBOSE=y $_s rsync -a hacking/container_rootfs/ /;\
-    VERBOSE=y $_s /sbin/cops_container_activate_core_services.sh;\
-    VERBOSE=y $_s /sbin/cops_container_disable_networkifacesscripts.sh;'
+    VERBOSE=y $_silent_run $COPS_ROOT/hacking/sync_files;\
+    VERBOSE=y $_silent_run rsync -a hacking/container_rootfs/ /;\
+    VERBOSE=y $_silent_run /sbin/cops_container_activate_core_services.sh;\
+    VERBOSE=y $_silent_run /sbin/cops_container_disable_networkifacesscripts.sh;'
 
 # 4/ Bring in all rest of reepository
 COPY .git ${COPS_ROOT}/.git
@@ -142,8 +153,6 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     NO_IMAGE_STRIP= \
         /sbin/cops_container_strip.sh'
 
-ENV ANSIBLE_FORCE_COLOR=true
-ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED
 STOPSIGNAL SIGRTMIN+3
 # You have to mount -v /sys/fs/cgroup:/sys/fs/cgroup:ro
 CMD ["/entry_point"]

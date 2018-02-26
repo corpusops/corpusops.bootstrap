@@ -718,7 +718,10 @@ if echo $@ | egrep -iq -- "(( ?-i( +|localhost))|(--(inventory-file|inventory)(=
     debug "Inventory CLI switch detected, removing default one"
     A_INVENTORY=""
 fi
-export A_INVENTORY
+ANSIBLE_CONNECTION="${ANSIBLE_CONNECTION-}"
+if [ "x${ANSIBLE_CONNECTION}" = "x" ] && [ "x${A_INVENTORY}" = "xlocalhost," ];then
+    export ANSIBLE_CONNECTION="-c local"
+fi
 #
 DEFAULT_SECRET_VAULTS=""
 DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
@@ -775,7 +778,8 @@ set_vaultpwfiles
 DEFAULT_A_LAUNCH_CMD="$run_verbose $A_CALLED_BIN $vaultpwfiles\
 ${A_CUSTOM_ARGS-} \
 ${PLAYBOOK_PRE_ARGS} ${PLAYBOOK_PRE_CUSTOM_ARGS} \
-${A_INVENTORY} \
+$( [[ -n ${A_INVENTORY} ]] && echo "-i ${A_INVENTORY}" ) \
+${ANSIBLE_CONNECTION} \
 $PLAYBOOK \
 ${PLAYBOOK_POST_ARGS} ${PLAYBOOK_POST_CUSTOM_ARGS}"
 #
