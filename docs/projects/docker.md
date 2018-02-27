@@ -31,3 +31,8 @@
     * ``.ansible/scripts/docker_build_stages.sh 0 1 ``
     * ``.ansible/scripts/docker_build_stages.sh 4``script will also build the other stages.
 * If you use the **corpusops.bootstrap deploy scripts** (those inside **.ansible/scripts**, they will initialize the image name to ``$A_GIT_NAMESPACE/$A_GIT_PROJECT``.
+
+## Notes
+* We can't use docker ``multi-stages`` because:
+    * we cant start back from a specific stage directly without rebuilding ancestors
+    * they wont inherit (with ``COPY --from``) filesystem permissions nor image metadatas (ENV, CMD, etc)
