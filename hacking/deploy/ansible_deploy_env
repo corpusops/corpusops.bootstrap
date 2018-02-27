@@ -775,10 +775,18 @@ export PATH="$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH"
 run_verbose=
 if [[ -z "$NO_SILENT" ]];then run_verbose="output_in_error";fi
 set_vaultpwfiles
+A_INVENTORY_SLUG=
+if [[ -n ${A_INVENTORY} ]];then
+    if echo $A_INVENTORY | egrep -iq -- "(( ?-i)|(--(inventory-file|inventory)(=| )))";then
+        A_INVENTORY_SLUG="$A_INVENTORY"
+    else
+        A_INVENTORY_SLUG="-i $A_INVENTORY"
+    fi
+fi
 DEFAULT_A_LAUNCH_CMD="$run_verbose $A_CALLED_BIN $vaultpwfiles\
 ${A_CUSTOM_ARGS-} \
 ${PLAYBOOK_PRE_ARGS} ${PLAYBOOK_PRE_CUSTOM_ARGS} \
-$( [[ -n ${A_INVENTORY} ]] && echo "-i ${A_INVENTORY}" ) \
+${A_INVENTORY_SLUG} \
 ${ANSIBLE_CONNECTION} \
 $PLAYBOOK \
 ${PLAYBOOK_POST_ARGS} ${PLAYBOOK_POST_CUSTOM_ARGS}"
