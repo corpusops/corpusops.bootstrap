@@ -15,8 +15,9 @@
     * ``.docker/Dockerfile.stage2``: code injection + APP level packages (virtualenv, composer, bundler)
     * ``.docker/Dockerfile.stage3`` (**final**): code injection + app setup.
     * ``.docker/Dockerfile.stage4`` (**post final**): Cleanup
-* Generally as a developper, you generally have only to use any of the Dockerfiles, <br/>
-  only the main, and already generated Dockerfile file will interrest you.
+* Generally as a developper, you generally have only to use the main ``Dockerile``, <br/>
+  and any of the other generated Dockerfiles are only needed to rebuild a subpart of the image, <br/>
+  In other words, only the main, and already generated Dockerfile file will interrest you.
 
 ## Code organisation to use stages generation
 * The idea is to build : **mycorp/myproject:<tag>** image
