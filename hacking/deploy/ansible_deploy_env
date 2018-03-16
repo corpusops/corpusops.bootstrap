@@ -624,7 +624,7 @@ set_base_vars() {
     fi
     export A_ENV_NAME
     export COPS_CWD="${COPS_CWD:-${cops_cwd:-$(pwd)}}"
-    export COPS_SCRIPTS_DIR="${COPS_SCRIPTS_DIR:-$COPS_CWD/.ansible/scripts}"
+    export COPS_SCRIPTS_DIR="${LOCAL_COPS_SCRIPTS_DIR:-$COPS_CWD/.ansible/scripts}"
     export COPS_LOCAL_FOLDER="${COPS_LOCAL_FOLDER:-$COPS_CWD/local}"
     export REUSE_ENV="${REUSE_ENV-}"
 }
