@@ -100,6 +100,7 @@ Deploying corpusops based projects manually
 - The vagrant and docker envs are resp. **vagrant** & **docker**.
 - For details on how to edit variables, see [modify variables](usage.md#varswherehow)
 
+
 ### <a name="setupvault"/>Vault passwords setup
 - For each environment, setup first the ``vault password file`` that contains your vault password.
 
@@ -112,22 +113,20 @@ Deploying corpusops based projects manually
     .ansible/scripts/setup_vaults.sh"
     ```
 
-### <a name="sshkeygen"/>create env ssh key if needed
-- To generate a ssh keypair if not present of you want to change it
-
-    ```sh
-    cd $COPS_CWD/local
-    export A_ENV_NAME=staging
-    ssh-keygen -t rsa -b 2048 -N '' -C $A_ENV_NAME -f $A_ENV_NAME
-    ls <env_name>*
-    ```
-
 ### <a name="sshkeyvaultsetup"/>Configure ssh keys in vault
 - Add it then to your crypted vault (``toto.pub`` file content in public, and the other in private)
 
+    ```sh
+    # export A_ENV_NAME=<env>
+    .ansible/scripts/edit_vault.sh
+    ```
+
+- will open a terminal with your vault
+
     ```yaml
     cops_deploy_ssh_key_paths:
-      clientstaging:
+      # replace by your env id
+      staging:
         path: "{{'local/.ssh/deploy_<ENV>'|copsf_abspath}}"
         pub: |-
           ssh-rsa xxx
@@ -135,6 +134,15 @@ Deploying corpusops based projects manually
           -----BEGIN RSA PRIVATE KEY-----
           xxx
           -----END RSA PRIVATE KEY-----
+    ```
+
+- To <a name="sshkeygen"/> generate a ssh keypair if not present inside your secret vault of you want to change it
+
+    ```sh
+    cd $COPS_CWD/local
+    export A_ENV_NAME=staging
+    ssh-keygen -t rsa -b 2048 -N '' -C $A_ENV_NAME -f $A_ENV_NAME
+    ls <env_name>*
     ```
 
 ### <a name="managevault"/>Create/Edit/Review crypted vault
