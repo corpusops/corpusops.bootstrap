@@ -84,7 +84,7 @@ Deploying corpusops based projects manually
 - [Setup the environment password](./deploy.md#setupvault)
 - [Create the private vault](./deploy.md#managevault) if not done
 - <a name="allvarsenv"/> Copy &/or edit the (default or any) inventory to adapt to your env<br/>
-   (eg: ``.ansible/inventory_<env>`` && ``.ansible/env*.yml``)<br/>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCo6o6ETFReU5FYUlWEbyPQBut5Vi0Pa1nPlT+MOkVP1fufyUWY4yMHwMSKJEWJfU6DwQ3GaKICmnBRVhFcvfgih1PvaYHRKGytnG/uwjj0cuLE/elXJedA443D8g4yJd16wAKOJ4l/JQsIJXxacmVtzIe7aBizAfTIc4tK7w6j73noO7W1URuSfdwQhzEFqzI48nW7AZsYz5rETd1tPyLheQA3xNkjBTzXjDCoBBRn43C8LfGv9zUJ+mhRC0eYoj+/yjAGeDFZVzR04u8VvaUKRwdKMxpU4bfMydP0onK3b4cvYp4cjRMlWie9SI7xUR3aURiz9AkXUMUDLo9w7D+B kiorky@forestguard
+   (eg: ``.ansible/inventory_<env>`` && ``.ansible/env*.yml``)<br/>
 
    and if you copy, do not forget to adapt variables.
     - If your environment does not exists, inspire from: ``.ansible/inventory_staging``
