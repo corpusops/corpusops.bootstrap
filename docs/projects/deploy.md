@@ -125,7 +125,7 @@ Deploying corpusops based projects manually
 
     ```yaml
     cops_deploy_ssh_key_paths:
-      # replace by your env id
+      # replace by your env id used in the host definition inside your former inventory
       staging:
         path: "{{'local/.ssh/deploy_<ENV>'|copsf_abspath}}"
         pub: |-
