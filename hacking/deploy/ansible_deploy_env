@@ -628,7 +628,8 @@ set_base_vars() {
     export COPS_LOCAL_FOLDER="${COPS_LOCAL_FOLDER:-$COPS_CWD/local}"
     export REUSE_ENV="${REUSE_ENV-}"
 }
-call_cops_installer() { output_in_error "$COPS_INSTALLER" $@; }
+call_cops_installer() { ( export NONINTERACTIVE=1; \
+    output_in_error "$COPS_INSTALLER" $@; ); }
 #
 set_base_vars $@
 do_unset
