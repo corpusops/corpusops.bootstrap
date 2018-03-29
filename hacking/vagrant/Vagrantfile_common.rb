@@ -299,8 +299,8 @@ def cops_init(opts)
     # Per Machine resources quotas
     cfg.setdefault('DOMAIN', 'vbox.local')
     cfg.setdefault('MEMORY', 3096)
-    cfg.setdefault('CPUS', 2)
-    cfg.setdefault('MAX_CPU_USAGE_PERCENT', 50)
+    cfg.setdefault('CPUS', 1)
+    cfg.setdefault('MAX_CPU_USAGE_PERCENT', 97)
     cfg.setdefault('AUTO_UPDATE_VBOXGUEST_ADD', true)
     # OS
     cfg.setdefault('OS', 'Ubuntu')
