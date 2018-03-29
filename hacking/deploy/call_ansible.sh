@@ -52,7 +52,7 @@ if [[ -n "${A_DRY_RUN}" ]];then
     die_ 0 "Would have run $launchlog"
 else
     if [[ -z $NONINTERACTIVE ]];then
-        printf "Do you really want to launch: $launchlog\n[Y/N] ?" >&2
+        printf "Do you really want to launch: $launchlog\n[Y/N] ?\nexport NONINTERACTIVE=1  # to skip check\n >" >&2
         while read i;do
             if echo $i | egrep -iq "^(y|yes|oui|o)"
             then break
