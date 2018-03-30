@@ -311,10 +311,17 @@ It should most of the times contain the names, remember that it's then not `127.
 - See "**cops_supereditors**, this indicate that from outside the VM, with your
   favourite editor, you should be able to edit files from **supereditor_paths** (the code is in those paths by default)
 
+### <a name="show_only_steps"/>Show ansible deploy steps: ``only_steps``
+- Look your App steps: ``.ansible/playbooks/roles/*_step/tasks/main.yml``
+- You should then use a combination of a playbook, ``only_steps=true`` and a ``playbook.yml`` to view all steps that you can select
+    ```sh
+    .ansible/scripts/call_ansible.sh -v \
+     .ansible/playbooks/site*vag*l \
+     -e "{cops_vars_debug: true, only_steps: true}"
+    ```
+ 
 ### <a name="only_steps"/>Launch ansible commands, & deploy step by step: ``only_steps``
 - Look your App steps: ``.ansible/playbooks/tasks/app_steps.yml``
-- You should then use a combination of a playbook, ``only_steps=true`` for your to select which
-  deployment steps to execute and not to relaunch the whole thing.
 - Eg, to redo on the project ``xxx``, the steps ``zzz`` && ``yyy``:
 
     ```sh
