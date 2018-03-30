@@ -19,8 +19,6 @@ Setup ansible vault password files based on environment variables
 
 parse_cli $@
 
-ensure_ansible_env
-
 debug "VAULT_PASSWORD_VARIABLES_PREFIX: $VAULT_PASSWORD_VARIABLES_PREFIX"
 if [[ -n ${SKIP_VAULT_PASSWORD_FILES_SETUP-} ]];then
     echo "-> Skip ansible vault password files setup" >&2
@@ -44,7 +42,7 @@ for vault_var in $VAULT_VARS;do
         | awk -F "${VAULT_PASSWORD_VARIABLES_PREFIX}" '{print $2}')"
     val="$(eval "echo \$$vault_var")"
     f="$SECRET_VAULT_PREFIX.$vault_name"
-    echo "setup $vault_name vault: ($f)"
+    echo "setup $vault_name vault password file: ($f)"
     if [[ -n "$val" ]];then
         echo "$val" > "$f"
         chmod 600 "$f"
