@@ -522,6 +522,14 @@ parse_cli() {
 cd "$(dirname "${0}")/.."
 parse_cli "$@"
 cd $W
+rm hacking/deploy.links/*
+for i in hacking/deploy/*;do
+    ln -sfv cops_wrapper.sh hacking/deploy.links/$(basename $i)
+done
+for i in cops_wrapper.sh download_corpusops.sh;do
+    rm -f hacking/deploy.links/$i
+    cp -f hacking/deploy/$i hacking/deploy.links/$i
+done
 for i in bin/cops_reset_passwords.sh;do
     cp $i hacking/container_rootfs/sbin
 done
