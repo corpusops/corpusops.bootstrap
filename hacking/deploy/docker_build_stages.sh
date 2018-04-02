@@ -46,10 +46,10 @@ while read f;do
         cat "$f" >> "Dockerfile.stage$j"
     fi
     jprev=$j
-    ((++j))
+    ((j++))
 done <<< "$STAGES"
 if [[ -z $STAGES_TO_BUILD ]];then
-    STAGES_TO_BUILD=$(seq 0 $j)
+    STAGES_TO_BUILD=$(seq 0 $jprev)
 fi
 if [[ -z "${NO_STAGES_BUILD-}" ]];then
     for i in $STAGES_TO_BUILD;do
@@ -64,7 +64,7 @@ if [[ -z "${NO_STAGES_BUILD-}" ]];then
         fi
     done
 fi
-if [[ -z "${NO_FULL_BUILD-}" ]] && [[ -z $STAGES_TO_BUILD ]];then
+if [[ -z "${NO_FULL_BUILD-}" ]] && [[ -z ${@-} ]];then
     vv docker build \
         -t "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}" \
         $( [[ -n ${A_ENV_NAME-} ]] && echo "--build-arg=APP_ENV_NAME=$A_ENV_NAME" ) \
