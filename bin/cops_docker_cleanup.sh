@@ -17,6 +17,11 @@ $( \
     | grep '"bash"'\
     | egrep -v "$DATA_FILTER"\
     | awk '{print $1}' )
+$(\
+    docker ps -a  --no-trunc|egrep 'Exited'\
+    |egrep "(ROLES=.*call|rm -f local/corpusops.bootstrap|_call_ansible|.ansible/scripts/(download_corpusops.sh|setup_core_variables.sh|setup_ansible.sh))" \
+    | awk '{print $1}' )
+
 "
 
 # remove old images
@@ -41,4 +46,4 @@ while read i;do
         docker rmi $i >/dev/null
     fi
 done < <(echo ${imgids}|xargs -n1|sort -u)
-# vim:set et sts=4 ts=4 tw=80:
+# vim:set et sts=4 ts=4 tw=0:
