@@ -32,6 +32,13 @@ RUN bash -c 'step_rev=2;set -ex;\
 RUN bash -c 'step_rev=2;set -e;\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml'
 
+# Disable docker service in base image
+RUN bash -c 'rm -vf \
+  /etc/rc*.d/*docker \
+  /lib/systemd/*/*wants/docker* \
+  /etc/systemd/*/*wants/docker* \
+  && if [ -e /etc/init ];then echo manual > /etc/init/docker.override;fi'
+
 # Make the docker image a preconfigured-for-production image
 RUN bash -c 'step_rev=2;set -e;\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml'
