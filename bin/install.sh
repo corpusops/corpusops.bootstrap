@@ -751,6 +751,7 @@ check_py_modules() {
     fi
     "${bin}" << EOF
 import six
+import mitogen
 import corpusops
 import ansible
 import dns
