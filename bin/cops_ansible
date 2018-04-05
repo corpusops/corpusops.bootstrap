@@ -594,7 +594,20 @@ else
     amsg="$amsg fallback to system ansible: $EXEC_SCRIPT"
     warn $amsg
 fi
-
+if [[ -z "${DISABLE-MITOGEN}" ]] && ( python -c "import ansible_mitogen" 1>/dev/null 2>&1 );then
+    debug "Activating mitogen, set ANSIBLE_STRATEGY=linear to disable"
+    py="from __future__ import print_function"
+    py="$py;import ansible_mitogen;print(ansible_mitogen.__path__[0])"
+    stpath="$(python -c "$py")"
+    export ANSIBLE_STRATEGY=${ANSIBLE_STRATEGY:-mitogen_linear}
+    if [[ -n "$stpath" ]] && [[ -e "$stpath" ]];then
+        if [[ -n "${ANSIBLE_STRATEGY_PLUGINS-}" ]];then
+            export ANSIBLE_STRATEGY_PLUGINS="${ANSIBLE_STRATEGY_PLUGINS}:$stpath"
+        else
+            export ANSIBLE_STRATEGY_PLUGINS="$stpath"
+        fi
+    fi
+fi
 while IFS=: read -a pss;do
     for p in ${pss[@]};do
         if [ -e "${p}" ];then

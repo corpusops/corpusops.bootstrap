@@ -45,6 +45,9 @@ futures >= 3.0.5
 # CLOUD
 docker-py >= 1.7.0
 
+# mitogen
+-e git+https://github.com/dw/mitogen.git@d503956493ec6429ce6e0331632cb70a405527bc#egg=mitogen
+
 # Remote/Forking Debugging (install manually, do not work on docker/centos)
 #epdb
 pdb_clone
