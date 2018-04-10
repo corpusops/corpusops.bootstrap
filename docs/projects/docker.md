@@ -1,4 +1,7 @@
-# Docker images provision & usage
+# docker
+
+## Docker images provision & usage
+
 * All of our projects consider docker as a first class citizen but:
     * We still provision images with ansible: at this time **NO SECRET**, we only build general purpose images.
     * We reconfigure them upon the container (re)start also with ansible, and we generally use ``systemd`` as the process supervisor.
@@ -36,3 +39,31 @@
     2. build: **mycorp/myproject:<dev>** image
         *  the build or to speed up developpment and dont redo everything from the beginning
     3. Build any env specific image (test, prodenv, etc).
+
+
+## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
+Rancher2 will help you managing stacks, its the glue between the images, docker compose and kubernetes
+
+## In dev and prod: rancher2
+- Initiate a cluster controller:
+
+    ```
+    sudo docker run -d --restart=unless-stopped -p 9080:80 -p 9443:443 \
+        -v /var/lib/rancher:/var/lib/rancher --name=rancherserverp  rancher/server:preview
+    ```
+- Choose an IP address or a DNS alias for the controller (add it for example in your ``/etc/hosts``  of any host controller by rancher, or in a central DNS server)
+- Firewall the ports ``9080`` & ``9443`` and choose a complex and appriopriate admin password.
+- Rancher is a thin layer to kuberneges which has 3 plantes: data; control; compute.
+    - Each member of a plane should see and contact the other members and the controller on it's relative service ports.
+- Add cluster:
+    - type: custom
+    - name: localdev
+    - version: certainly the highest of each
+    - docker version: Allow unsupported versions
+- Select the roles that you want on each node of your cluster and run the appriopriate and given join command.
+    - This mean that on a dev laptop, you certainly want all the roles (3 atm: etcd, control, worker).
+
+## FAQ
+### File not updating in container after edit
+* In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
+  you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
