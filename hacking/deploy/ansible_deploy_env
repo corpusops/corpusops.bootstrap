@@ -584,9 +584,8 @@ set_core_variables() {
     if [[ -n "${SKIP_SET_CORE_VARIABLES-}" ]];then
         die_ 0 "\$SKIP_SET_CORE_VARIABLES set, skip generating $COREVARS_VAULT"
     fi
-
-    if [ ! -e local ];then mkdir local;fi
-
+    cvfolder="$(dirname $COREVARS_VAULT)"
+    if [ ! -e "$cvfolder" ];then mkdir "$cvfolder";fi
     cat > "$COREVARS_VAULT" << EOF
 ---
 cops_path: "$LOCAL_COPS_ROOT"
@@ -693,6 +692,8 @@ export A_GIT_URL="${A_GIT_URL:-$DEFAULT_A_GIT_URL}"
 export A_VAULT_NAME="${A_VAULT_NAME-${A_ENV_NAME}}"
 DEFAULT_A_VAULTS_FOLDER="$COPS_CWD/.ansible/vaults"
 export A_VAULTS_FOLDER="${A_VAULTS_FOLDER-${DEFAULT_A_VAULTS_FOLDER}}"
+DEFAULT_A_VAULTS_FOLDERS="$A_VAULTS_FOLDER $COPS_LOCAL_FOLDER"
+export A_VAULTS_FOLDERS="${A_VAULTS_FOLDERS-$DEFAULT_A_VAULTS_FOLDERS}"
 DEFAULT_A_CRYPTED_VAULTS="$A_VAULTS_FOLDER/${A_ENV_NAME}.yml"
 export A_CRYPTED_VAULTS="${A_CRYPTED_VAULTS-${DEFAULT_A_CRYPTED_VAULTS}}"
 DEFAULT_A_INVENTORY_FILE=""
@@ -742,28 +743,32 @@ export PLAYBOOK_POST_CUSTOM_ARGS="${PLAYBOOK_POST_CUSTOM_ARGS-}"
 export SECRET_VAULTS="${SECRET_VAULTS-$DEFAULT_SECRET_VAULTS}"
 export SECRET_VAULT_PREFIX="${SECRET_VAULT_PREFIX-${DEFAULT_SECRET_VAULT_PREFIX}}"
 export VAULT_PASSWORD_VARIABLES_PREFIX=${VAULT_PASSWORD_VARIABLES_PREFIX:-CORPUSOPS_VAULT_PASSWORD_}
-export COREVARS_VAULT="${CORE_VAULT:-"${COPS_LOCAL_FOLDER}/corevars.yml"}"
-DEFAULT_LOCAL_VAULTS=
-if [[ -z "${LOCALVARS_VAULT-}" ]];then
-    DEFAULT_LOCAL_VAULTS="${COPS_LOCAL_FOLDER}/local.yml ${COPS_LOCAL_FOLDER}/$A_ENV_NAME.local.yml"
-fi
-export LOCALVARS_VAULTS="${LOCAL_VAULTS:-"$DEFAULT_LOCAL_VAULTS"}"
-export CUSTOM_VAULTS="${CUSTOM_VAULTS-}"
+DEFAULT_A_VAULTS="corevars.yml default.yml app.yml $A_VAULT_NAME.clear.yml $A_VAULT_NAME.yml local.yml $A_ENV_NAME.local.yml"
+export A_VAULTS="${A_VAULTS-$DEFAULT_A_VAULTS}"
+export A_EXTRA_VAULTS="${A_EXTRA_VAULTS-}"
+export COREVARS_VAULT="${COREVARS_VAULT:-"${COPS_LOCAL_FOLDER}/corevars.yml"}"
+set_core_variables
 #
 DEFAULT_PLAYBOOK_PRE_ARGS="${A_VERBOSITY}"
 DEFAULT_PLAYBOOK_PRE_CUSTOM_ARGS=""
 if [[ -z "$NO_DEFAULT_VAULTS" ]];then
-    for i in \
-        "$COREVARS_VAULT" \
-        "$A_VAULTS_FOLDER/default.yml" \
-        "$A_VAULTS_FOLDER/app.yml" \
-        "$A_VAULTS_FOLDER/$A_VAULT_NAME.clear.yml" \
-        "$A_VAULTS_FOLDER/$A_VAULT_NAME.yml" \
-        "$LOCALVARS_VAULTS" \
-        $CUSTOM_VAULS
+    for i in $A_VAULTS $A_EXTRA_VAULTS
     do
+        f=""
         if [ -e "$i" ];then
-            DEFAULT_PLAYBOOK_PRE_ARGS="$DEFAULT_PLAYBOOK_PRE_ARGS -e@$i"
+            f="$i"
+        else
+            for d in $A_VAULTS_FOLDERS;do
+                if [ -e "$d/$i" ];then
+                    f="$d/$i"
+                fi
+                if [[ -n "$f" ]];then
+                    break
+                fi
+            done
+        fi
+        if [[ -n $f ]];then
+            DEFAULT_PLAYBOOK_PRE_ARGS="$DEFAULT_PLAYBOOK_PRE_ARGS -e@$f"
         fi
     done
 fi
