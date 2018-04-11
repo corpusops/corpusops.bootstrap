@@ -98,18 +98,18 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
 
 ### <a name="scratch"/>From scratch
 - You can build in order the regular (``:latest``) tag then after, the development (``:dev``) tag of your project image.
-- 1.
+1.
 
-    ```sh
-    docker build --squash -t corpusops/yourproject     . -f Dockerfile\
-        [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
-    ```
-- 2.
+  ```sh
+  docker build --squash -t corpusops/yourproject     . -f Dockerfile\
+      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
+  ```
+2.
 
-    ```sh
-    docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
-        [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
-    ```
+  ```sh
+  docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
+      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
+  ```
 
 ## FAQ
 ### <a name="vmhosts"/>Access the VM websites
