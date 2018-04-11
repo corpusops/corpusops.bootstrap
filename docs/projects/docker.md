@@ -1,4 +1,4 @@
-# docker
+ docker
 
 ## Docker images provision & usage
 * All of our projects consider docker as a first class citizen but:
@@ -64,6 +64,8 @@
     cd $COPS_CWD
     git submodule init
     git submodule update --recursive
+    # if you dont have the image locally
+    rsync -azv $FTP_URL "./local/$(basename "$FTP_URL")"
     ```
 ### <a name="prebacked"/> With the prebacked VM, development mode
 If someone does have already build an image for this project,
@@ -75,12 +77,14 @@ docker load <the_image_tarball>
 # if the image is compressed, you can do something like that:
 # bzip2 -kdc corpusops-yourproject-dev.tar.bz2|docker load
 SUPEREDITORS=$(id -u) docker-compose \
-  -f d*-compose.yml -f d*-compose-dev.yml up -d [--force-recreate] -t 0 yourproject;\
+  -f d*-compose.yml -f d*-compose-dev.yml up -d --no-recreate -t 0 yourproject;\
   docker logs -f setupsyourprojectproject_yourproject_1
 ```
 
-You may want to omit ``--force-recreate`` to keep using your container, day after day,
+You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image.
 without creating after each ``docker-compose`` call.
+
+Well, it is ``docker-compose`` basic usage, idea is to use the docker image as-a-VM, recreating or reusing a container along is beyond the scope of this documentation.
 
 Below on the doc, on the chapter [Access to the VM](#vmhosts), you have the commands
 to extract the IP of the VM, copy/paste the IP in you /etc/hosts:
