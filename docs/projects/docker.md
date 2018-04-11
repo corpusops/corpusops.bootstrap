@@ -152,7 +152,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
     ```sh
     docker exec -ti <container> bash
     .ansible/scripts/call_ansible.sh -v \
-     .ansible/playbooks/site*vag*l \
+     .ansible/playbooks/site.yml \
      -e "{cops_vars_debug: true, only_steps: true}"
     ```
 
@@ -163,7 +163,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
     ```sh
     docker exec -ti <container> bash
     .ansible/scripts/call_ansible.sh -v \
-     .ansible/playbooks/site*vag*l \
+     .ansible/playbooks/site.yml \
      --skip-tags play_db \
      -e "{only_steps: True, \
           cops_xxx_s_setup_yyy: true, \
