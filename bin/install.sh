@@ -440,6 +440,20 @@ get_python2() {
     done
     echo $py2
 }
+upgrade_pip() {
+    local py="${1:-python}"
+    local pip="${2:-pip}"
+    local pipc="$(get_command $pip)"
+	local dpip="$(dirname $pipc)"
+	local pipo=""
+    log "ReInstalling pip ($pipc) for $py"
+	# force reinstalling pip in same place where it is (not /usr/local but /usr)
+	if ( echo "$dpip" | egrep -q  "^/" );then
+		pipo="--install-option=--install-scripts=$dpip"
+	fi
+    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall setuptools &&\
+    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall pip
+}
 make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
@@ -479,8 +493,7 @@ make_virtualenv() {
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
-      "${venv_path}/bin/easy_install" -U setuptools &&\
-      "${venv_path}/bin/pip" install -U pip &&\
+      upgrade_pip "${venv_path}/bin/python" "${venv_path}/bin/pip" &&\
       deactivate; )
     fi
 }
@@ -1116,16 +1129,13 @@ install_python_libs_() {
         if ! ( corpusops_use_venv ) && \
             ! ( $pip --version >/dev/null 2>&1 ) && \
             ( has_command easy_install );then
-            log "Installing pip through setuptools"
-            easy_install pip
+            upgrade_pip "$py" "$pip"
         fi
         local pip=$(get_cops_pip)
         if ! ( $pip --version );then
             sdie "pip not found"
         fi
-        COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement pip &&
-            COPS_PYTHON="$py" PIP="$pip" \
-               ensure_last_python_requirement setuptools &&
+        upgrade_pip "$py" "$pip" &&\
             COPS_PYTHON="$py" PIP="$pip" ensure_last_python_requirement six
         die_in_error "base pip python pkgs failed install"
         if $(get_cops_python) --version 2>&1| egrep -iq "python 2\.";then
