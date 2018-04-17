@@ -638,9 +638,8 @@ while IFS=: read -a pss;do
                         eval 'val=$'"${var}"
                         if [[ -z ${val-} ]]; then
                             subpaths="${testdir}"
-                            eval ${var}'="'${testdir}'"'
                         else
-                            subpaths="${testdir}:${subpaths}"
+                            subpaths="${testdir}:${val}"
                         fi
                         eval export ${var}'="'${subpaths}'"'
                     fi
