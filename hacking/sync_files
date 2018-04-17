@@ -439,6 +439,20 @@ get_python2() {
     done
     echo $py2
 }
+upgrade_pip() {
+    local py="${1:-python}"
+    local pip="${2:-pip}"
+    local pipc="$(get_command $pip)"
+	local dpip="$(dirname $pipc)"
+	local pipo=""
+    log "ReInstalling pip ($pipc) for $py"
+	# force reinstalling pip in same place where it is (not /usr/local but /usr)
+	if ( echo "$dpip" | egrep -q  "^/" );then
+		pipo="--install-option=--install-scripts=$dpip"
+	fi
+    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall setuptools &&\
+    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall pip
+}
 make_virtualenv() {
     local py=${1:-$(get_python2)}
     local DEFAULT_VENV_PATH=$SCRIPT_ROOT/venv
@@ -478,8 +492,7 @@ make_virtualenv() {
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
-      "${venv_path}/bin/easy_install" -U setuptools &&\
-      "${venv_path}/bin/pip" install -U pip &&\
+      upgrade_pip "${venv_path}/bin/python" "${venv_path}/bin/pip" &&\
       deactivate; )
     fi
 }
