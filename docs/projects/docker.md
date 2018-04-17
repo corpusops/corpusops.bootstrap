@@ -41,7 +41,7 @@
 
 * At runtime, we launch the image which reconfigure itself through either enviromnent variables (A_RECONFIGURE/A_POSTCONFIGURE) or via the /setup/reconfigure|/setup/postconfigure.yml files, maybe the vault password injected in the env via the 'CORPUSOPS_VAULT_PASSWORD_<env>' envar.
 
-## Detailed example
+## Detailed example of installing a development enviroment based on docker
 ### <a name="variables"/>Setup variables
 
 - Core variables
@@ -49,13 +49,9 @@
   export A_GIT_URL="git@gitlab.x-x.net:foo/bar.git"
   export COPS_CWD="$HOME/devel/<your project>"  # where you want to checkout the code
   # If you know that a vm is avaiable for download (rsync) (See the project's README)
-  export FTP_URL=<tri>@ftp.x-x.net:/srv/projects/*/data/*/nobackup/vm_bar/*-*.tar
+  export FTP_URL=<tri>@ftp.x-x.net:/srv/projects/*/data/*/nobackup/vm_bar/
   ```
 
-### <a name="install"/>Install docker and corpusops
-- Install docker and docker-compose at their most recent versions.
-- We provide disposable dev environments provisioned
-  via the corpusops framework [corpusops](https://github.com/corpusops/corpusops.bootstrap.git)
 - First thing you need is to clone recursivly your project
   code inside a dedicated folder which will host the vm.
 
@@ -65,19 +61,58 @@
     git submodule init
     git submodule update --recursive
     # if you dont have the image locally
-    rsync -azv $FTP_URL "./local/$(basename "$FTP_URL")"
+    rsync -azv $FTP_URL/ "./local/image/"
     ```
-### <a name="prebacked"/> With the prebacked VM, development mode
-If someone does have already build an image for this project,
-you should start from there and it will save you precious minutes.
 
+### <a name="install"/>Install docker and corpusops
+- Install docker and docker-compose (eg: engine:17.07.0-ce / compose:1.20.1).<br/>
+  You can do this manually, or if you are on ubuntu/debian/centos,
+  you can install locally corpusops.bootstrap and run the docker role.
+    - install corpusops
+
+        ```sh
+        .ansible/scripts/download_corpusops.sh
+        .ansible/scripts/setup_corpusops.sh
+        ```
+    - install docker & compose
+
+        ```sh
+        local/corpusops.bootstrap/bin/cops_apply_role --sudo -vvvv \
+            local/corpusops.bootstrap/roles/corpusops.roles/localsettings_dockercompose/role.yml \
+            local/corpusops.bootstrap/roles/corpusops.roles/services_virt_docker/role.yml
+        ```
+
+
+### <a name="datapopulate"/> Volumes pre-init
+- Populate volumes inside ``local/`` (generally ``local/data`` & ``local/setup``).<br/>
+  Do this steps if you have volumes with the image and want to extract them
+  (if you have for example not initialazed any database)
+
+    ```sh
+    bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+    sudo tar xzpvf local/image/${bn}-volumes.tgz
+    ```
+
+### <a name="load"/> Load the dockers
+- If someone does have already build an image for this project,
+
+    ```sh
+    bn=$(. .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+    gzip -dc local/image/${bn}.gz | docker load
+    ```
+
+### <a name="prebacked"/>Launch the image
+- For reference if the image is systemD based, the workflow is as-is:
+    - ansible reconfigure the image before systemd run
+    - systemd launch image with services
+        - ansible reconfigure again the image with post procedure
+          that needs services to be up (like for creating databases and users)
 EG:
 ```sh
-docker load <the_image_tarball>
 # if the image is compressed, you can do something like that:
 # bzip2 -kdc corpusops-yourproject-dev.tar.bz2|docker load
 SUPEREDITORS=$(id -u) docker-compose \
-  -f d*-compose.yml -f d*-compose-dev.yml up -d --no-recreate -t 0 yourproject;\
+  -f d*-compose.yml -f d*-compose-dev.yml up -d --no-recreate -t 0;\
   docker logs -f setupsyourprojectproject_yourproject_1
 ```
 
@@ -90,6 +125,8 @@ Below on the doc, on the chapter [Access to the VM](#vmhosts), you have the comm
 to extract the IP of the VM, copy/paste the IP in you /etc/hosts:
 
 ```sh
+docker exec setupsdjangoproject_django_1 ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
+
 echo "192.168.XX.X corpusopsXX-X.corpusops.local <project>.corpusops.local" | sudo tee -a /etc/hosts
 ```
 
@@ -120,7 +157,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
 - Add a line in your `/etc/hosts`, which depends of the Docker IP Address:
 
     ```sh
-    # docker exec <yourcontainer> ip addr show dev eth0|egrep ".*\..*\..*\."|awk '{print $2}'|sed -re "s|/.*||g"
+    docker exec setupsyourprojectproject_yourproject_1 ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
     172.19.102.2
     ```
 
@@ -204,7 +241,19 @@ Rancher2 will help you managing stacks, its the glue between the images, docker 
 - Select the roles that you want on each node of your cluster and run the appriopriate and given join command.
     - This mean that on a dev laptop, you certainly want all the roles (3 atm: etcd, control, worker).
 
+
 ## FAQ
 ### File not updating in container after edit
 * In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
+
+
+### Export and distribute the images (dev & root)
+```sh
+bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT})
+bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+if [ ! -e local/image ];then mkdir -p local/image;fi
+sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
+sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
+rsync -azvP local/image/ $FTP_URL/
+```
