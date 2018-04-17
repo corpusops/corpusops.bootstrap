@@ -180,8 +180,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
     ```sh
     docker exec -ti <container> bash
     .ansible/scripts/call_ansible.sh -v \
-     -e@.ansible/vaults/vagrant.yml \
-     local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
+         local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
 - See the **-e@FILE** cli switchs, those files contain variables to be applied to your environment.
 - See "**cops_supereditors**, this indicate that from outside the VM, with your
