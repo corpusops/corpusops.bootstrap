@@ -461,6 +461,21 @@ upgrade_pip() {
     local py="${1:-python}"
     local pip="${2:-pip}"
     local pipc="$(get_command $pip)"
+    if [[ -z "$pipc" ]];then
+        local PIP_URL="https://bootstrap.pypa.io/get-pip.py"
+        local GET_PIP="${GET_PIP-$PIP_URL}"
+        local PIP_INST="$(mktemp)"
+        if ! ( "$py" -c "import urllib; print urllib.urlopen('$GET_PIP').read()" > "$PIP_INST" );then
+            log "Error downloading pip installer"
+            return 1
+        fi
+        "$py" "$PIP_INST"
+        local pipc="$(get_command $pip)"
+        if [[ -z "$pipc" ]];then
+            log "pip not found"
+            return 1
+        fi
+    fi
 	local dpip="$(dirname $pipc)"
 	local pipo=""
     log "ReInstalling pip ($pipc) for $py"
@@ -468,8 +483,8 @@ upgrade_pip() {
 	if ( echo "$dpip" | egrep -q  "^/" );then
 		pipo="--install-option=--install-scripts=$dpip"
 	fi
-    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall setuptools &&\
-    "${py}" "${pip}" install -U $pipo --ignore-installed --force-reinstall pip
+    "${py}" "${pipc}" install -U $pipo --ignore-installed --force-reinstall setuptools &&\
+    "${py}" "${pipc}" install -U $pipo --ignore-installed --force-reinstall pip
 }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
