@@ -29,6 +29,7 @@ ENV _call_roles=".ansible/scripts/call_roles.sh     $A_VERBOSITY"
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
 COPY requirements/os_* $COPS_ROOT/requirements/
+COPY hacking/docker_toggle_pm $COPS_ROOT/hacking/
 COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
 RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
@@ -55,7 +56,9 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh;'
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh; \
+    : "Disable services from being started during apt-gets"; \
+    $COPS_ROOT/hacking/docker_toggle_pm rc_on'
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)

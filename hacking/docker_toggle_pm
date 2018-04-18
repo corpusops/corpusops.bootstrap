@@ -547,80 +547,64 @@ cd "$OW"
 
 parse_cli() {
     parse_cli_common "${@}"
-    tag=${1:-myimg:latest}
-    dockerfile=${2:-Dockerfile}
-    wd=${3:-.}
-    tag=$1
-    dockerfile=${2-}
-    wd=${3:-$OW}
-    if [[ -z ${3-} ]];then
-        # test if 2nd arg is a wd or a file (Dockerfile, in this case)
-        if [[ -d ${2-} ]];then
-            dockerfile=""
-            wd=${2}
-        fi
-    fi
-    local dockerfiles
-    declare -a dockerfiles
-    if [[ -n "${dockerfile}" ]];then
-        dockerfiles=("$dockerfile" "$wd/$dockerfile")
-    else
-        dockerfiles=("Dockerfile.${tag}"
-                     "$wd/Dockerfile.${tag}"
-                     "Dockerfile"
-                     "$wd/Dockerfile")
-    fi
-    for dfile in ${dockerfiles[@]};do
-        if [ -e "${dfile}" ];then
-            dockerfile="${dfile}"
-            break
-        fi
-    done
-    if [[ -z "${dockerfile}" ]];then
-        die 4 "No dockerfile providen"
-    fi
-    if [ ! -e "${dockerfile}" ];then
-        die 4 "Dockerfile $dockerfile does not exists"
-    fi
-    if [[ -z ${tag} ]];then
-        die 5 "No tag providen"
-    fi
-    debug "Dockerfile: $dockerfile"
-    debug "Tag: $tag"
-    debug "WD: $wd"
 }
 
 usage() {
     NO_HEADER=y die '
 Activate or deactivate process manager
 Mainly used during docker build to divert packages from using init scripts
-'$0' on | off
+'$0' on | off | rc_on | rc_off
+
+on: divert upstart and/or systemd to /bin/true
+off: restore back systemd and/or upstart if diverted
+rc_on: divert any update-rc.d policy (exit 101)
+rc_off: remove any update-rc.d policy
 '
 }
 
 parse_cli "$@"
 
+rc_do_deactivate() {
+    log "Divert policy-rc.d (no start)"
+    printf "exit 101">/usr/sbin/policy-rc.d \
+        && chmod +x /usr/sbin/policy-rc.d
+}
+
+rc_do_activate() {
+    if [ -e /usr/sbin/policy-rc.d ];then
+        log "Remove divertion: pollicy-rc.d"
+        rm -fv /usr/sbin/policy-rc.d
+    fi
+}
+
 do_deactivate() {
-  log "Divert update-rc.d & systemctll" \
-      && printf "exit 101">/usr/sbin/policy-rc.d \
-      && chmod +x /usr/sbin/policy-rc.d \
-      && for i in /sbin/initctl /bin/systemctl;do \
-      if [ ! -e $i.bak ];then cp -vf $i $i.bak;fi; \
-          rm -fv $i;ln -sfv /bin/true $i;done
+    log "Divert systemctll"
+    for j in initctl systemctl;do i=$(get_command $j);\
+        if [[ -n $i ]] && [ ! -e $i.bak ];then
+            cp -vf $i $i.bak \
+            && rm -fv $i \
+            && ln -sfv /bin/true $i
+        fi
+    done
 }
 
 do_activate() {
-    log "Remove divertion: update-rc.d & systemctl"
-    rm -f /usr/sbin/policy-rc.d \
-        && for i in /sbin/initctl /bin/systemctl;do \
-        if [ -e $i.bak ];then rm -f $i;cp -vf $i.bak $i;fi;done
+    for j in initctl systemctl;do i=$(get_command $j);\
+        if [[ -n $i ]] && [ -e $i.bak ];then
+            log "Remove divertion: $i"
+            rm -f $i && cp -vf $i.bak $i
+        fi
+    done
 }
 
-
-case $1 in
-    on) do_deactivate;;
-    *) do_activate;;
-esac
+for i in $@;do
+    case $i in
+        on) do_deactivate;;
+        off) do_activate;;
+        rc_on) rc_do_deactivate;;
+        rc_off) rc_do_activate;;
+    esac
+done
 ret=$?
 exit ${ret}
 # vim:set et sts=4 ts=4 tw=80:
