@@ -48,7 +48,7 @@
     * Generally we use systemd, and <br/>
       we reconfigure some things before systemd starts,<br/>
       and some other after, when services are available (eg to configure databases & users)
-    * ``A_RECONFIGURE`` / A_``POSTCONFIGURE`` env vars (via ``docker -e`` or ``docker-compose / service:environment``
+    * ``A_RECONFIGURE`` / ``A_POSTCONFIGURE`` env vars (via ``docker -e`` or ``docker-compose / service:environment``
     * ``/setup/reconfigure.yml`` / ``/setup/postconfigure.yml`` files
 
 ## Detailed example of installing a development enviroment based on docker
