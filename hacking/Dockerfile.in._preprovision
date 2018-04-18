@@ -42,9 +42,9 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
     if ((which which && which systemd) \
        ||  command -v systemd )>/dev/null 2>&1 \
-       || [ -e /lib/systemd/system ] \
        || ( echo $DISTRIB_ID|egrep -iq debian ) \
-       || [ -e /lib/systemd/systemd ];then \
+       || ( [ -e /lib/systemd/system ]  && [ ! -e /lib/init/upstart-job ]; ) \
+       || ( [ -e /lib/systemd/systemd ] && [ ! -e /lib/init/upstart-job ]; ) ;then \
       WANTED_PACKAGES="systemd dbus ${WANTED_PACKAGES}";\
       if  ( echo $DISTRIB_ID|egrep -iq "debian|ubuntu|mint"; );then \
         WANTED_PACKAGES="systemd-sysv ${WANTED_PACKAGES}"; \
