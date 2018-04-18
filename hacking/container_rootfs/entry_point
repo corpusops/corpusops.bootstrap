@@ -31,7 +31,7 @@ else
     if [[ -n $IMG_DEBUG ]];then
         exec strace -f /lib/systemd/systemd $SYSTEMD_ARGS
     else
-        /lib/systemd/systemd $SYSTEMD_ARGS
+        exec /lib/systemd/systemd $SYSTEMD_ARGS
     fi
 fi
 # vim:set et sts=4 ts=4 tw=80:
