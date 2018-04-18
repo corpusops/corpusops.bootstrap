@@ -3,9 +3,13 @@
     {
       "tag": "corpusops/ubuntu:14.04_preprovision",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
-    },
+    }, 
     {
       "tag": "corpusops/ubuntu:16.04_preprovision",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    }, 
+    {
+      "tag": "corpusops/ubuntu:18.04_preprovision",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
     },
     {
@@ -19,9 +23,13 @@
     {
       "tag": "corpusops/ubuntu:14.04",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
-    },
+    }, 
     {
       "tag": "corpusops/ubuntu:16.04",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:18.04",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
     },
     {

@@ -2,7 +2,10 @@
 sudo: required
 dist: trusty
 env:
-  matrix:
+  matrix: 
+    - >
+      TEST_IMAGES="corpusops/ubuntu:18.04_preprovision"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04"
     - >
       TEST_IMAGES="corpusops/ubuntu:16.04_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04"
