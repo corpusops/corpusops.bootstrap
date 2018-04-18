@@ -39,7 +39,17 @@
         * the build or to speed up developpment and dosen't redo everything from the beginning
     3. Build any env specific image (test, prodenv, etc).
 
-* At runtime, we launch the image which reconfigure itself through either enviromnent variables (A_RECONFIGURE/A_POSTCONFIGURE) or via the /setup/reconfigure|/setup/postconfigure.yml files, maybe the vault password injected in the env via the 'CORPUSOPS_VAULT_PASSWORD_<env>' envar.
+### Specifying variables and secrets
+* There is multiple way to intruct docker to inject ansible collection of variables.
+    * ``A_ENV_NAME`` build_arg/env_var can be used to specify a specific vault at ``build`` stage or  ``runtime`` stage
+    * ``CORPUSOPS_VAULT_PASSWORD_<ENV>"`` env var at runtime to inject the vault decryption passwords, **AT RUNTIME ONLY**.
+* At runtime, we launch the image which reconfigure itself through either enviromnent variables and/or files
+    * The provision is done by rerunning the ansible provision, with well placed variables that redo specific parts of the provision
+    * Generally we use systemd, and <br/>
+      we reconfigure some things before systemd starts,<br/>
+      and some other after, when services are available (eg to configure databases & users)
+    * ``A_RECONFIGURE`` / A_``POSTCONFIGURE`` env vars (via ``docker -e`` or ``docker-compose / service:environment``
+    * ``/setup/reconfigure.yml`` / ``/setup/postconfigure.yml`` files
 
 ## Detailed example of installing a development enviroment based on docker
 ### <a name="variables"/>Setup variables
@@ -82,7 +92,6 @@
             local/corpusops.bootstrap/roles/corpusops.roles/services_virt_docker/role.yml
         ```
 
-
 ### <a name="datapopulate"/> Volumes pre-init
 - Populate volumes inside ``local/`` (generally ``local/data`` & ``local/setup``).<br/>
   Do this steps if you have volumes with the image and want to extract them
@@ -100,6 +109,7 @@
     bn=$(. .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
     gzip -dc local/image/${bn}.gz | docker load
     ```
+
 
 ### <a name="prebacked"/>Launch the image
 - For reference if the image is systemD based, the workflow is as-is:
@@ -170,10 +180,6 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
 #### <a name="ansiblehand"/>Launch ansible commands by hand
 - When we do `docker-compose up`, we can see long ``ansible`` command lines,
   you can copy/paste them and adapt to replay deploy parts, it will work.
-- You should in any case execute ansible from the top folder
-  of the project from outside the VM (directly from localhost)
-- vagrant should run once for the inventory file to be
-  available
 - Instead of copy pasting what's vagrant generate, you can
   also use our ansible wrappers, which are simpler:
 
