@@ -40,10 +40,11 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
-    if ((which which && which systemd) || \
-         command -v systemd )>/dev/null 2>&1 \
+    if ((which which && which systemd) \
+       ||  command -v systemd )>/dev/null 2>&1 \
+       || [ -e /lib/systemd/system ] \
        || [ -e /lib/systemd/systemd ];then \
-      WANTED_PACKAGES="systemd dbus ${WANTED_PACKAGES}";\
+      WANTED_PACKAGES="systemd systemd-sysv dbus ${WANTED_PACKAGES}";\
     fi;\
     :;\
     WANTED_PACKAGES="${WANTED_PACKAGES} ${WANTED_DOCKER_PACKAGES}";\
