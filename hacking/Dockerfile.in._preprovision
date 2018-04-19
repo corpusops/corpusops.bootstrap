@@ -149,6 +149,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
     cd "$COPS_ROOT";\
+    rm -f /etc/systemd/system/getty.target.wants/getty@tty1.service;\
     PKGS_REMOVES="gcc \
         $(cat req*/os_packages_dev.${DISTRIB_ID} \
           2>/dev/null | xargs -n1)" \
