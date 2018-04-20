@@ -119,8 +119,6 @@
           that needs services to be up (like for creating databases and users)
 EG:
 ```sh
-# if the image is compressed, you can do something like that:
-# bzip2 -kdc corpusops-yourproject-dev.tar.bz2|docker load
 SUPEREDITORS=$(id -u) docker-compose \
   -f d*-compose.yml -f d*-compose-dev.yml \
   -f d*-compose-project.yml -f d*-compose-project-dev.yml\
