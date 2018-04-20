@@ -84,7 +84,7 @@
         .ansible/scripts/download_corpusops.sh
         .ansible/scripts/setup_corpusops.sh
         ```
-    - install docker & compose
+    - install docker & compose (debian, ubuntu, mint & redhat)
 
         ```sh
         local/corpusops.bootstrap/bin/cops_apply_role --sudo -vvvv \
