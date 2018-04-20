@@ -122,7 +122,9 @@ EG:
 # if the image is compressed, you can do something like that:
 # bzip2 -kdc corpusops-yourproject-dev.tar.bz2|docker load
 SUPEREDITORS=$(id -u) docker-compose \
-  -f d*-compose.yml -f d*-compose-dev.yml up -d --no-recreate -t 0;\
+  -f d*-compose.yml -f d*-compose-dev.yml \
+  -f d*-compose-project.yml -f d*-compose-project-dev.yml\
+  up -d --no-recreate -t 0;\
   docker logs -f setupsyourprojectproject_yourproject_1
 ```
 
