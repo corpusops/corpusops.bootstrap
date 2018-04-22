@@ -260,5 +260,7 @@ bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
 if [ ! -e local/image ];then mkdir -p local/image;fi
 sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
 sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
+# ! drupal variant !
+sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup lib vendor
 rsync -azvP local/image/ $FTP_URL/
 ```
