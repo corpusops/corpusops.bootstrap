@@ -30,7 +30,7 @@
     ```
 * In case you are debugging a build and want to speed up things:
     * You can copy/paste the Dockerfile and uncomment and read the part about ``corpusops.boostrap bind mount``<br/>
-      if you are hacking yourself corpusops.bootstrap and want to load live modififications inside the build environment.
+      if you are hacking yourself corpusops.bootstrap and want to load live edits inside the build environment.
     * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
       adapt the desired ansible call to use ``{only_steps: true, your_step: true}``
 * Build order:
