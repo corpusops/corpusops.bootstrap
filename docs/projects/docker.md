@@ -34,9 +34,9 @@
     * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
       adapt the desired ansible call to use ``{only_steps: true, your_step: true}``
 * Build order:
-    1. Build first: **mycorp/myproject:<tag>** image
-    2. build: **mycorp/myproject:<dev>** image
-        * the build or to speed up developpment and dosen't redo everything from the beginning
+    1. Build first: ``mycorp/myproject:latest`` image
+    2. build: ``mycorp/myproject:<dev>`` image
+        * the build of the dev tag is meant to speed up developpment and won't  redo everything from the beginning
     3. Build any env specific image (test, prodenv, etc).
 
 ### Specifying variables and secrets
