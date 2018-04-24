@@ -51,7 +51,7 @@
     * ``A_RECONFIGURE`` / ``A_POSTCONFIGURE`` env vars (via ``docker -e`` or ``docker-compose / service:environment``
     * ``/setup/reconfigure.yml`` / ``/setup/postconfigure.yml`` files
 
-## Detailed example of installing a development enviroment based on docker
+## Detailed example of installing a docker based development environment
 ### <a name="variables"/>Setup variables
 
 - Core variables
