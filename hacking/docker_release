@@ -536,6 +536,22 @@ ensure_last_python_requirement() {
 usage() { die 128 "No usage found"; }
 # END: corpusops common glue
 
+usage() {
+    NO_HEADER=y die '
+Release images to docker
+
+ [OUTPUT_IN_ERROR=] \
+ [FORCE_RELEASE=] \
+ [DOCKER_RELEASER=xxx] \
+ [DOCKER_PASSWORD=xxx] \
+ [RELEASABLE_BRANCHES=xxx] \
+ [DOCKER_USER=xxx] \
+ [NOCOLOR=y] \
+ [DEBUG=y] \
+    '"$0"' WORKING_DIR <image> <image1>
+ '
+}
+
 
 parse_cli() {
     parse_cli_common "${@}";
