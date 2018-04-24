@@ -6,8 +6,8 @@ R=$W/hacking/container_rootfs
 IMG_DEBUG=${IMG_DEBUG-}
 IMG_NOQUIET=${IMG_NOQUIET-${IMG_DEBUG}}
 IMG_QUIET=${IMG_QUIET}
-DEFAULT_SYSTEMD_LOGTARGET=journal
-DEFAULT_SYSTEMD_LOGLEVEL=err
+DEFAULT_SYSTEMD_LOGTARGET=console
+DEFAULT_SYSTEMD_LOGLEVEL=info
 if [[ -n ${IMG_NOQUIET} ]];then
     DEFAULT_SYSTEMD_LOGLEVEL=debug
 fi
@@ -31,7 +31,7 @@ else
     if [[ -n $IMG_DEBUG ]];then
         exec strace -f /lib/systemd/systemd $SYSTEMD_ARGS
     else
-        exec /lib/systemd/systemd $SYSTEMD_ARGS
+        /lib/systemd/systemd $SYSTEMD_ARGS
     fi
 fi
 # vim:set et sts=4 ts=4 tw=80:
