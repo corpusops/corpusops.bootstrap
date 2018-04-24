@@ -36,7 +36,7 @@
 * Build order:
     1. Build first: ``mycorp/myproject:latest`` image
     2. build: ``mycorp/myproject:<dev>`` image
-        * the build of the dev tag is meant to speed up developpment and won't  redo everything from the beginning
+        * the build of the dev tag is meant to speed up development and won't  redo everything from the beginning
     3. Build any env specific image (test, prodenv, etc).
 
 ### Specifying variables and secrets
