@@ -40,7 +40,7 @@
     3. Build any env specific image (test, prodenv, etc).
 
 ### Specifying variables and secrets
-* There is multiple way to intruct docker to inject ansible collection of variables.
+* There is multiple ways to instruct docker to inject ansible collection of variables.
     * ``A_ENV_NAME`` build_arg/env_var can be used to specify a specific vault at ``build`` stage or  ``runtime`` stage
     * ``CORPUSOPS_VAULT_PASSWORD_<ENV>"`` env var at runtime to inject the vault decryption passwords, **AT RUNTIME ONLY**.
 * At runtime, we launch the image which reconfigure itself through either enviromnent variables and/or files
