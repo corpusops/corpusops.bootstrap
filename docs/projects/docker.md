@@ -87,7 +87,7 @@
     - install docker & compose (debian, ubuntu, mint & redhat)
 
         ```sh
-        local/corpusops.bootstrap/bin/cops_apply_role --sudo -vvvv \
+        local/corpusops.bootstrap/bin/cops_apply_role --ask-sudo-pass --sudo -vvvv \
             local/corpusops.bootstrap/roles/corpusops.roles/localsettings_dockercompose/role.yml \
             local/corpusops.bootstrap/roles/corpusops.roles/services_virt_docker/role.yml
         ```
