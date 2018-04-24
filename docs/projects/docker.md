@@ -120,8 +120,8 @@
 EG:
 ```sh
 SUPEREDITORS=$(id -u) docker-compose \
-  -f d*-compose.yml -f d*-compose-dev.yml \
-  -f d*-compose-project.yml -f d*-compose-project-dev.yml\
+  -f docker-compose.yml -f docker-compose-dev.yml \
+  -f docker-compose-project.yml -f docker-compose-project-dev.yml\
   up -d --no-recreate -t 0;\
   docker logs -f setupsyourprojectproject_yourproject_1
 ```
