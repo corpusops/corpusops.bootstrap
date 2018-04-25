@@ -223,7 +223,7 @@ sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
 sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
 # ! drupal variant !
 sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup lib vendor
-rsync -azvP local/image/ $FTP_URL/
+rsync -avP local/image/ $FTP_URL/
 ```
 
 ## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
