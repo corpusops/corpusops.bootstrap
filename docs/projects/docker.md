@@ -125,19 +125,20 @@ EG:
 SUPEREDITORS=$(id -u) docker-compose \
   -f docker-compose.yml -f docker-compose-dev.yml \
   -f docker-compose-project.yml -f docker-compose-project-dev.yml\
-  up -d --no-recreate -t 0;\
+  up -d --no-recreate -t 0
 ```
 
 ### <a name="inspect"/>Inspect status
 To view the start up proccess (you ll see the first/initial reconfiguration)
 ```sh
-docker logs -f setupsyourprojectproject_yourproject_1
+docker ps -a  # => get your contrainer id/name
+docker logs -f <container>
 ```
 
 And from within the container, if it is systemd based, you may have a ``post-unit`` also doing reconfiguration, you can check with ``journald`` the status
 
 ```
-docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES solibre_drupal_1 bash
+docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
 systemctl -a|grep post-start
   post-start-php7.1-fpm.service
 journalctl -xu post-start-php7.1-fpm.service
