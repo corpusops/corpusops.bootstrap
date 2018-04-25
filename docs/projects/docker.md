@@ -18,7 +18,7 @@
     * ``docker-compose-dev.yml``: Docker compose file sample to launch the ``dev``
     * ``docker-compose-project.yml``: (opt) Docker compose file with project overrides.
     * ``docker-compose-dev-project.yml``: (opt)  Docker compose file with project overrides for dev.
-* You can specify the ``vault`` set you want via the ``APP_ENV_NAME=<vault>`` build arg.
+* You can specify the ``vault`` set you want via the ``APP_ENV_NAME=<vault>`` build arg or environment variable.
 
 ### Specifying variables and secrets
 * There is multiple ways to instruct docker to inject ansible collection of variables.
