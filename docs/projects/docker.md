@@ -54,8 +54,9 @@
     ```
 
 ### <a name="install"/>Install docker
-- You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1)
-  - You can do this manually
+You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1)
+
+- You can do this manually
     - Edit docker conf to use (either via ``/etc/default/docker`` or ``/etc/docker/daemon.json`` depending on your install):
         - log rotation settings
         - ``overlay2`` as [graph driver](https://docs.docker.com/storage/storagedriver/select-storage-driver)
@@ -74,6 +75,7 @@
 			}
 			```
         - sample ``/etc/default/docker``
+
 			```sh
 			export DOCKER_LOG_OPTIONS="--log-opt max-file=10 --log-opt max-size=10m --experimental"
 			export DOCKER_STORAGE_OPTIONS="--storage-driver=overlay2"
@@ -85,13 +87,13 @@
 			export DOCKER_OPTS="${DOCKER_OPTS} ${DOCKER_LOG_OPTIONS}"
 			export DOCKER_OPTS="${DOCKER_OPTS}"
 			```
-  - or if you are on ubuntu/mint/debian/centos/fedora, you can install and configure it via corpuops
+- or if you are on ubuntu/mint/debian/centos/fedora, you can install and configure it via corpuops
 
-        ```sh
-        local/corpusops.bootstrap/bin/cops_apply_role --ask-sudo-pass --sudo -vvvv \
-            local/corpusops.bootstrap/roles/corpusops.roles/localsettings_dockercompose/role.yml \
-            local/corpusops.bootstrap/roles/corpusops.roles/services_virt_docker/role.yml
-        ```
+	```sh
+	local/corpusops.bootstrap/bin/cops_apply_role --ask-sudo-pass --sudo -vvvv \
+	    local/corpusops.bootstrap/roles/corpusops.roles/localsettings_dockercompose/role.yml \
+	    local/corpusops.bootstrap/roles/corpusops.roles/services_virt_docker/role.yml
+	```
 
 ### <a name="datapopulate"/> Volumes pre-init
 - Populate volumes inside ``local/`` (generally ``local/data`` & ``local/setup``).<br/>
