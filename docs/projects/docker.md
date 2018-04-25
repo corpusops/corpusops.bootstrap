@@ -42,7 +42,7 @@
     git submodule init
     git submodule update --recursive
     # if you dont have the image locally
-    rsync -azv $FTP_URL/ "./local/image/"
+    rsync -avP $FTP_URL/ "./local/image/"
     ```
 
 ### <a name="bcops"/>Bootstrap corpusops glue
