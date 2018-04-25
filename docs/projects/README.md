@@ -3,7 +3,6 @@
 # Deploying projects
 - See [deploy/variables](deploy.md#variables) before everything else
 
-
 ## projects specific notes
 
 ### Drupal
@@ -25,6 +24,57 @@
 - [Variables registries](usage.md#variables)
 - [Changing a template file (eg: nginx vhost)](usage.md#variables)
 
+## Docker
+- [Docker images provision & usage](docker.md#ddesc)
+- [Specifying variables and secrets](docker.md#dsecrets)
+- [Bootstrap corpusops glue](docker.md#bcops)
+- [Install docker](docker.md#install)
+- [Volumes pre-init](docker.md#datapopulate)
+- [Load the dockers](docker.md#load)
+- [Launch the image](docker.md#launch)
+- FAQ
+	- [Inspect status](docker.md#inspect)
+	- [Attach a shell connected to the container](docker.md#enter)
+	- [Access the VM websites](docker.md#vmhosts)
+	- [Launch ansible commands by hand](docker.md#ansiblehand)
+	- [Show ansible deploy steps: ``only_steps``](docker.md#show_only_steps)
+	- [Launch ansible commands, & deploy step by step: ``only_steps``](docker.md#only_steps)
+	- [(Re)Build from scratch](docker.md#scratch)
+	- [override nginx templates](docker.md#enginx)
+	- [File not updating in container after edit](docker.md#fedit)
+	- [Export and distribute the images (dev & root](docker.md#dist)
+
+## Generic managment
+- [Generic deploy doc](deploy.md)
+- [Localhost setup](deploy.md#prepare)
+- [Inventory setup](deploy.md#inventory)
+- [Servers preparation](deploy.md#prepareservers)
+- [Inventory setup](deploy.md#inventory)
+- [Install procedure](deploy.md#install_cluster)
+- [Update procedure](deploy.md#update_cluster)
+
+# corpusops based projects & quickstarters
+- Non exhaustive list of corpusops based projects & quickstarters
+    - django
+        - [project branch](https://github.com/corpusops/setups.django/tree/project)
+        - [deploy branch](https://github.com/corpusops/setups.django/)
+    - zope
+        - [project branch](https://github.com/corpusops/setups.zope/tree/project)
+        - [deploy branch](https://github.com/corpusops/setups.zope/)
+    - drupal 8
+        - [project branch](https://github.com/corpusops/setups.drupal/tree/D8_project)
+        - [deploy branch](https://github.com/corpusops/setups.drupal/tree/D8)
+- Services oriented
+    - [elasticsearch](https://github.com/corpusops/setups.elasticsearch)
+    - [postgresql](https://github.com/corpusops/setups.elasticsearch)
+    - [dbsmartbackup](https://github.com/corpusops/setups.elasticsearch)
+    - [more generally](https://github.com/corpusops?utf8=✓&q=setups.)
+
+- Environments:
+    - [Rancher](https://github.com/corpusops/setups.rancher)
+
+- Many of the repositories have a ``project`` branch, and it's from this branch, if it exists, that you should initiate a new project, see below.
+
 ## Vagrant
 - [Setup variables ](/vagrant.md#variables)
 - [Install vagrant and corpusops](vagrant.md#install)
@@ -45,34 +95,6 @@
     - [Launch ansible commands by hand](vagrant.md#ansiblehand)
     - [Launch ansible commands, & deploy step by step only_steps](vagrant.md#only_steps)
     - [Override default templates](vagrant.md#override-default-templates)
-
-## Generic managment
-- [Generic deploy doc](deploy.md)
-- [Localhost setup](deploy.md#prepare)
-- [Inventory setup](deploy.md#inventory)
-- [Servers preparation](deploy.md#prepareservers)
-- [Inventory setup](deploy.md#inventory)
-- [Install procedure](deploy.md#install_cluster)
-- [Update procedure](deploy.md#update_cluster)
-
-# corpusops based projects & quickstarters
-- Non exhaustive list of corpusops based projects & quickstarters
-    - zope
-        - [project branch](https://github.com/corpusops/setups.zope/tree/project)
-        - [deploy branch](https://github.com/corpusops/setups.zope/)
-    - drupal 8
-        - [project branch](https://github.com/corpusops/setups.drupal/tree/D8_project)
-        - [deploy branch](https://github.com/corpusops/setups.drupal/tree/D8)
-- Services oriented
-    - [elasticsearch](https://github.com/corpusops/setups.elasticsearch)
-    - [postgresql](https://github.com/corpusops/setups.elasticsearch)
-    - [dbsmartbackup](https://github.com/corpusops/setups.elasticsearch)
-    - [more generally](https://github.com/corpusops?utf8=✓&q=setups.)
-
-- Environments:
-    - [Rancher](https://github.com/corpusops/setups.rancher)
-
-- Many of the repositories have a ``project`` branch, and it's from this branch, if it exists, that you should initiate a new project, see below.
 
 ## Initiate a project
 - [here](start.md)

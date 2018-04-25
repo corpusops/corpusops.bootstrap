@@ -1,6 +1,6 @@
 # docker
 
-## Docker images provision & usage
+## <a name="ddesc"/>Docker images provision & usage
 * We generally use this convention for the application Dockerfiles:
     * ``Dockerfile``: base image suitable for prod (``systemd``) + code injection
     * ``Dockerfile.dev``: image (child of base image) that is suitable in dev (dev tools, and suitable for mounting source folder as volumes inside
@@ -10,7 +10,7 @@
     * ``docker-compose-project.yml``: (opt) Docker compose file with project overrides.
     * ``docker-compose-dev-project.yml``: (opt)  Docker compose file with project overrides for dev.
 
-### Specifying variables and secrets
+### <a name="dsecrets">Specifying variables and secrets
 * There is multiple ways to instruct docker to inject ansible collection of variables.
     * ``A_ENV_NAME`` build_arg/env_var can be used to specify a specific vault at ``build`` stage or  ``runtime`` stage
     * ``CORPUSOPS_VAULT_PASSWORD_<ENV>`` env var at runtime to inject the vault decryption passwords, **AT RUNTIME ONLY**.
@@ -128,6 +128,7 @@ SUPEREDITORS=$(id -u) docker-compose \
   up -d --no-recreate -t 0
 ```
 
+## FAQ
 ### <a name="inspect"/>Inspect status
 To view the start up proccess (you ll see the first/initial reconfiguration)
 ```sh
@@ -144,8 +145,6 @@ systemctl -a|grep post-start
 journalctl -xu post-start-php7.1-fpm.service
 ```
 
-
-## FAQ
 ### <a name="enter"/>Attach a shell connected to the container
 To go in the vm (shell), eg for drupal to use console ou drush, it's
 ```sh
@@ -206,10 +205,10 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
           cops_xxx_s_setup_zzz: true}"
     ```
 
-#### override nginx templates
+#### <a name="enginx"/> override nginx templates
 - [modify nginx](./modify.md#nginx)
 
-### File not updating in container after edit
+### <a name="fedit"/>File not updating in container after edit
 * In dev, My edition to a particular file in a container is not refreshing, definitely due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
 
@@ -249,7 +248,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
     * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
       adapt the desired ansible call to use ``{only_steps: true, your_step: true}``
 
-### Export and distribute the images (dev & root)
+### <a name="dist"/>Export and distribute the images (dev & root)
 ```sh
 bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT})
 bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
