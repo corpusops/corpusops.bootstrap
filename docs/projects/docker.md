@@ -1,15 +1,6 @@
- docker
+# docker
 
 ## Docker images provision & usage
-* All of our projects consider docker as a first class citizen but:
-    * We still provision images with ansible: at this time **NO SECRET**, we only build general purpose images.
-    * We reconfigure them upon the container (re)start also with ansible, and we generally use ``systemd`` as the process supervisor.
-    * Here we inject the password to decode and generate configs from secrets.
-* For this, as ansible will generally need a lot of variables to manipulate the deployment <br/>
-  and we need to load alternate build settings to adapt the procedure to a specific env,<br/>
-  we use ``ansible variables yaml files`` inside the ``.ansible/vaults`` folder called vaults, one encrypted and maybe one in clear<br/>
-  eg: ``.ansible/vaults/dockertest.yml`` (encrypted)  and ``.ansible/vaults/docker.clear.yml``. the  ``clear`` favor can me missing.
-  Both file can be encrypted or not, ansible decrypt them via its built-in encryption mecanism, Please see corpusops Vaults managment in documentation.
 * We generally use this convention for the application Dockerfiles:
     * ``Dockerfile``: base image suitable for prod (``systemd``) + code injection
     * ``Dockerfile.dev``: image (child of base image) that is suitable in dev (dev tools, and suitable for mounting source folder as volumes inside
@@ -18,7 +9,6 @@
     * ``docker-compose-dev.yml``: Docker compose file sample to launch the ``dev``
     * ``docker-compose-project.yml``: (opt) Docker compose file with project overrides.
     * ``docker-compose-dev-project.yml``: (opt)  Docker compose file with project overrides for dev.
-* You can specify the ``vault`` set you want via the ``APP_ENV_NAME=<vault>`` build arg or environment variable.
 
 ### Specifying variables and secrets
 * There is multiple ways to instruct docker to inject ansible collection of variables.
@@ -30,7 +20,7 @@
       we reconfigure some things before systemd starts,<br/>
       and some other after, when services are available (eg to configure databases & users)
     * ``A_RECONFIGURE`` / ``A_POSTCONFIGURE`` env vars (via ``docker -e`` or ``docker-compose / service:environment``
-    * ``/setup/reconfigure.yml`` / ``/setup/postconfigure.yml`` files
+    * ``/setup/reconfigure.yml`` / ``/setup/postconfigure.yml`` files (generally bind mounted locally on your host to ``./local/setup``)
 
 ## Detailed example of installing a docker based development environment
 ### <a name="variables"/>Setup variables
@@ -194,6 +184,17 @@ docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
 
 ### <a name="scratch"/>(Re)Build from scratch
+
+* All of our projects consider docker as a first class citizen but:
+    * We still provision images with ansible: at this time **NO SECRET**, we only build general purpose images.
+    * We reconfigure them upon the container (re)start also with ansible, and we generally use ``systemd`` as the process supervisor.
+    * Here we inject the password to decode and generate configs from secrets.
+* For this, as ansible will generally need a lot of variables to manipulate the deployment <br/>
+  and we need to load alternate build settings to adapt the procedure to a specific env,<br/>
+  we use ``ansible variables yaml files`` inside the ``.ansible/vaults`` folder called vaults, one encrypted and maybe one in clear<br/>
+  eg: ``.ansible/vaults/dockertest.yml`` (encrypted)  and ``.ansible/vaults/dockertest.clear.yml``. the  ``clear`` flavor can me missing.
+  Both file can be encrypted or not, ansible decrypt them via its built-in encryption mecanism, Please see corpusops Vaults managment in documentation.
+
 * Build order:
     1. Build first: ``mycorp/myproject:latest`` image
     
@@ -209,8 +210,8 @@ docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
        [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
        ```
     3. Build any env specific image (test, prodenv, etc).
-    
 
+* You can specify the ``vault`` set you want via the ``APP_ENV_NAME=<vault>`` build arg or environment variable.
 * You can tell to not refresh corpusops automatically upon rebuilds via ``SKIP_COPS_UPDATE=y`` docker build_arg.
 * In case you are debugging a build and want to speed up things:
     * You can copy/paste the Dockerfile and uncomment and read the part about ``corpusops.boostrap bind mount``<br/>
