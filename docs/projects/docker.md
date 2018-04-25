@@ -54,7 +54,9 @@
     ```
 
 ### <a name="install"/>Install docker
-You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1)
+You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1).<br/>
+You certainly want to install it via corpusops ;).
+
 
 - You can do this manually
     - Edit docker conf to use (either via ``/etc/default/docker`` or ``/etc/docker/daemon.json`` depending on your install):
