@@ -126,8 +126,7 @@ SUPEREDITORS=$(id -u) docker-compose \
   docker logs -f setupsyourprojectproject_yourproject_1
 ```
 
-You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image.
-without creating after each ``docker-compose`` call.
+You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image, without creating a new container after each ``docker-compose`` call.
 
 Well, it is ``docker-compose`` basic usage, idea is to use the docker image as-a-VM, recreating or reusing a container along is beyond the scope of this documentation.
 
