@@ -123,7 +123,19 @@ SUPEREDITORS=$(id -u) docker-compose \
   -f docker-compose.yml -f docker-compose-dev.yml \
   -f docker-compose-project.yml -f docker-compose-project-dev.yml\
   up -d --no-recreate -t 0;\
-  docker logs -f setupsyourprojectproject_yourproject_1
+```
+To view the start up proccess (you ll see the first/initial reconfiguration)
+```sh
+docker logs -f setupsyourprojectproject_yourproject_1
+```
+
+And from within the container, if it is systemd based, you may have a ``post-unit`` also doing reconfiguration, you can check with ``journald`` the status
+
+```
+docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES solibre_drupal_1 bash
+systemctl -a|grep post-start
+  post-start-php7.1-fpm.service    
+journalctl -xu post-start-php7.1-fpm.service
 ```
 
 You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image, without creating a new container after each ``docker-compose`` call.
@@ -183,7 +195,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
   also use our ansible wrappers, which are simpler:
 
     ```sh
-    docker exec -ti <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
          local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
@@ -195,7 +207,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
 - Look your App steps: ``.ansible/playbooks/roles/*_step/tasks/main.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` and a ``playbook.yml`` to view all steps that you can select
     ```sh
-    docker exec -ti <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
      .ansible/playbooks/site.yml \
      -e "{cops_vars_debug: true, only_steps: true}"
@@ -206,7 +218,7 @@ Look at the **FAQ** chapter or go up to the **From scratch** Section.
 - Eg, to redo on the project ``xxx``, the steps ``zzz`` && ``yyy``:
 
     ```sh
-    docker exec -ti <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
      .ansible/playbooks/site.yml \
      --skip-tags play_db \
