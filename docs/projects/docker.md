@@ -158,7 +158,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 - Add a line in your `/etc/hosts`, which depends of the Docker IP Address:
 
     ```sh
-    docker exec setupsyourprojectproject_yourproject_1 ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
+    docker exec <container> ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
     172.19.102.2
     ```
 - $EDITOR /etc/hosts
