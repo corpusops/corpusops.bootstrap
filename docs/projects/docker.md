@@ -55,7 +55,7 @@
 
 ### <a name="install"/>Install docker
 You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1).<br/>
-You certainly want to install it via corpusops ;).
+You definitely want to install it via corpusops ;).
 
 
 - You can do this manually
@@ -210,7 +210,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 - [modify nginx](./modify.md#nginx)
 
 ### File not updating in container after edit
-* In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
+* In dev, My edition to a particular file in a container is not refreshing, definitely due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
 
 ### <a name="scratch"/>(Re)Build from scratch
@@ -278,7 +278,7 @@ Rancher2 will help you managing stacks, its the glue between the images, docker 
 - Add cluster:
     - type: custom
     - name: localdev
-    - version: certainly the highest of each
+    - version: definitely the highest of each
     - docker version: Allow unsupported versions
 - Select the roles that you want on each node of your cluster and run the appriopriate and given join command.
-    - This mean that on a dev laptop, you certainly want all the roles (3 atm: etcd, control, worker).
+    - This mean that on a dev laptop, you definitely want all the roles (3 atm: etcd, control, worker).
