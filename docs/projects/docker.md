@@ -111,7 +111,7 @@
     ```
 
 
-### <a name="prebacked"/>Launch the image
+### <a name="launch"/>Launch the image
 - For reference if the image is systemD based, the workflow is as-is:
     - ansible reconfigure the image before systemd run
     - systemd launch image with services
@@ -124,6 +124,8 @@ SUPEREDITORS=$(id -u) docker-compose \
   -f docker-compose-project.yml -f docker-compose-project-dev.yml\
   up -d --no-recreate -t 0;\
 ```
+
+### <a name="inspect"/>Inspect status
 To view the start up proccess (you ll see the first/initial reconfiguration)
 ```sh
 docker logs -f setupsyourprojectproject_yourproject_1
@@ -138,50 +140,31 @@ systemctl -a|grep post-start
 journalctl -xu post-start-php7.1-fpm.service
 ```
 
+#### <a name="recreate"/>container preservation
+
 You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image, without creating a new container after each ``docker-compose`` call.
 
 Well, it is ``docker-compose`` basic usage, idea is to use the docker image as-a-VM, recreating or reusing a container along is beyond the scope of this documentation.
 
-Below on the doc, on the chapter [Access to the VM](#vmhosts), you have the commands
-to extract the IP of the VM, copy/paste the IP in you /etc/hosts:
-
-```sh
-docker exec setupsdjangoproject_django_1 ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
-
-echo "192.168.XX.X corpusopsXX-X.corpusops.local <project>.corpusops.local" | sudo tee -a /etc/hosts
-```
-
-Then access vm website on: ``http://<project>.corpusops.local`` /  ``https://<project>.corpusops.local``
-
-To go in the vm (SSH), eg for drupal to use console ou drush, it's `docker exec -ti <container> bash`
-
 Look at the **FAQ** chapter or go up to the **From scratch** Section.
 
 
-### <a name="scratch"/>From scratch
-- You can build in order the regular (``:latest``) tag then after, the development (``:dev``) tag of your project image.
-1.
-
-  ```sh
-  docker build --squash -t corpusops/yourproject     . -f Dockerfile\
-      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
-  ```
-2.
-
-  ```sh
-  docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
-      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
-  ```
-
 ## FAQ
+### <a name="enter"/>
+To go in the vm (shell), eg for drupal to use console ou drush, it's 
+```sh
+docker exec -ti  -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
+```
+
 ### <a name="vmhosts"/>Access the VM websites
+The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts, then access vm website on: ``http://<project>.corpusops.local`` /  ``https://<project>.corpusops.local``
+
 - Add a line in your `/etc/hosts`, which depends of the Docker IP Address:
 
     ```sh
     docker exec setupsyourprojectproject_yourproject_1 ip route get 1 2>&1|head -n1|awk '{print $7;exit;}'
     172.19.102.2
     ```
-
 - $EDITOR /etc/hosts
 
     ```raw
@@ -238,6 +221,41 @@ docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
 ## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
 Rancher2 will help you managing stacks, its the glue between the images, docker compose and kubernetes
 
+### File not updating in container after edit
+* In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
+  you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
+
+
+### <a name="scratch"/>(Re)Build from scratch
+- You can build in order the regular (``:latest``) tag then after, the development (``:dev``) tag of your project image.
+1.
+
+  ```sh
+  docker build --squash -t corpusops/yourproject     . -f Dockerfile\
+      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
+  ```
+2.
+
+  ```sh
+  docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
+      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
+  ```
+
+### Export and distribute the images (dev & root)
+```sh
+bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT})
+bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+if [ ! -e local/image ];then mkdir -p local/image;fi
+sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
+sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
+# ! drupal variant !
+sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup lib vendor
+rsync -azvP local/image/ $FTP_URL/
+```
+
+
+
+
 ## In dev and prod: rancher2
 - Initiate a cluster controller:
 
@@ -257,21 +275,3 @@ Rancher2 will help you managing stacks, its the glue between the images, docker 
 - Select the roles that you want on each node of your cluster and run the appriopriate and given join command.
     - This mean that on a dev laptop, you certainly want all the roles (3 atm: etcd, control, worker).
 
-
-## FAQ
-### File not updating in container after edit
-* In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
-  you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
-
-
-### Export and distribute the images (dev & root)
-```sh
-bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT})
-bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
-if [ ! -e local/image ];then mkdir -p local/image;fi
-sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
-sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
-# ! drupal variant !
-sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup lib vendor
-rsync -azvP local/image/ $FTP_URL/
-```
