@@ -13,7 +13,7 @@
 * We generally use this convention for the application Dockerfiles:
     * ``Dockerfile``: base image suitable for prod (``systemd``) + code injection
     * ``Dockerfile.dev``: image (child of base image) that is suitable in dev (dev tools, and suitable for mounting source folder as volumes inside
-* With thpse companions docker-compose files:
+* With those companions docker-compose files:
     * ``docker-compose.yml``: Docker compose file sample to launch the ``prod`` image
     * ``docker-compose-dev.yml``: Docker compose file sample to launch the ``dev``
     * ``docker-compose-project.yml``: (opt) Docker compose file with project overrides.
