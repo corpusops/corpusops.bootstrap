@@ -174,11 +174,6 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 #### override nginx templates
 - [modify nginx](./modify.md#nginx)
 
-#### Save your image to share it
-```sh
-docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
-```
-
 ### File not updating in container after edit
 * In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
@@ -230,7 +225,6 @@ sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
 sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup lib vendor
 rsync -azvP local/image/ $FTP_URL/
 ```
-
 
 ## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
 Rancher2 will help you managing stacks, its the glue between the images, docker compose and kubernetes
