@@ -13,7 +13,7 @@
 ### Specifying variables and secrets
 * There is multiple ways to instruct docker to inject ansible collection of variables.
     * ``A_ENV_NAME`` build_arg/env_var can be used to specify a specific vault at ``build`` stage or  ``runtime`` stage
-    * ``CORPUSOPS_VAULT_PASSWORD_<ENV>"`` env var at runtime to inject the vault decryption passwords, **AT RUNTIME ONLY**.
+    * ``CORPUSOPS_VAULT_PASSWORD_<ENV>`` env var at runtime to inject the vault decryption passwords, **AT RUNTIME ONLY**.
 * At runtime, we launch the image which reconfigure itself through either enviromnent variables and/or files
     * The provision is done by rerunning the ansible provision, with well placed variables that redo specific parts of the provision
     * Generally we use systemd, and <br/>
@@ -238,7 +238,7 @@ Rancher2 will help you managing stacks, its the glue between the images, docker 
     ```
 - Choose an IP address or a DNS alias for the controller (add it for example in your ``/etc/hosts``  of any host controller by rancher, or in a central DNS server)
 - Firewall the ports ``9080`` & ``9443`` and choose a complex and appriopriate admin password.
-- Rancher is a thin layer to kuberneges which has 3 plantes: data; control; compute.
+- Rancher is a thin layer to kubernetes which has 3 plantes: data; control; compute.
     - Each member of a plane should see and contact the other members and the controller on it's relative service ports.
 - Add cluster:
     - type: custom
