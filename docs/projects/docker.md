@@ -45,17 +45,47 @@
     rsync -azv $FTP_URL/ "./local/image/"
     ```
 
-### <a name="install"/>Install docker and corpusops
-- Install docker and docker-compose (eg: engine:17.07.0-ce / compose:1.20.1).<br/>
-  You can do this manually, or if you are on ubuntu/debian/centos,
-  you can install locally corpusops.bootstrap and run the docker role.
-    - install corpusops
+### <a name="bcops"/>Bootstrap corpusops glue
+- Bootstrap corpusops
 
-        ```sh
-        .ansible/scripts/download_corpusops.sh
-        .ansible/scripts/setup_corpusops.sh
-        ```
-    - install docker & compose (debian, ubuntu, mint & redhat)
+    ```sh
+    ansible/scripts/download_corpusops.sh
+    ansible/scripts/setup_corpusops.sh
+    ```
+
+### <a name="install"/>Install docker and corpusops
+- You need to Install docker and docker-compose (versions at least resp: engine:17.07.0-ce / compose:1.20.1)
+  - You can do this manually
+    - Edit docker conf to use (either via ``/etc/default/docker`` or ``/etc/docker/daemon.json`` depending on your install):
+        - log rotattion settings
+        - ``overlay2`` as [graph driver](https://docs.docker.com/storage/storagedriver/select-storage-driver)
+        - ``experimental`` [flag activated](https://forums.docker.com/t/how-to-switch-on-experimental-features/34342) to enable the ``--squash`` build flag
+        - sample ``/etc/docker/daemon.json``
+
+			```json
+			{
+			  "storage-driver": "overlay2",
+              "experimental": true,
+			  "log-driver": "json-file",
+			  "log-opts": {
+			    "max-size": "10m",
+			    "max-file": "10"
+			  }
+			}
+			```
+        - sample ``/etc/default/docker``
+			```sh
+			export DOCKER_LOG_OPTIONS="--log-opt max-file=10 --log-opt max-size=10m --experimental"
+			export DOCKER_STORAGE_OPTIONS="--storage-driver=overlay2"
+			export DOCKER_NETWORK_OPTIONS="--userland-proxy=true"
+			export BLOCK_REGISTRY=""
+			export INSECURE_REGISTRY=""
+			export DOCKER_OPTS="${DOCKER_OPTS} ${DOCKER_STORAGE_OPTIONS} ${DOCKER_NETWORK_OPTIONS}"
+			export DOCKER_OPTS="${DOCKER_OPTS} ${BLOCK_REGISTRY} ${INSECURE_REGISTRY}"
+			export DOCKER_OPTS="${DOCKER_OPTS} ${DOCKER_LOG_OPTIONS}"
+			export DOCKER_OPTS="${DOCKER_OPTS}"
+			```
+  - or if you are on ubuntu/mint/debian/centos/fedora, you can install and configure it via corpuops
 
         ```sh
         local/corpusops.bootstrap/bin/cops_apply_role --ask-sudo-pass --sudo -vvvv \
@@ -105,14 +135,14 @@ And from within the container, if it is systemd based, you may have a ``post-uni
 ```
 docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES solibre_drupal_1 bash
 systemctl -a|grep post-start
-  post-start-php7.1-fpm.service    
+  post-start-php7.1-fpm.service
 journalctl -xu post-start-php7.1-fpm.service
 ```
 
 
 ## FAQ
 ### <a name="enter"/>Attach a shell connected to the container
-To go in the vm (shell), eg for drupal to use console ou drush, it's 
+To go in the vm (shell), eg for drupal to use console ou drush, it's
 ```sh
 docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
 ```
@@ -192,14 +222,14 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 
 * Build order:
     1. Build first: ``mycorp/myproject:latest`` image
-    
+
         ```sh
         docker build --squash -t corpusops/yourproject     . -f Dockerfile\
         [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
         ```
     2. build: ``mycorp/myproject:<dev>`` image<br/>
        the build of the dev tag is meant to speed up development and won't  redo everything from the beginning
-       
+
        ```sh
        docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
        [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
@@ -212,7 +242,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
     * You can copy/paste the Dockerfile and uncomment and read the part about ``corpusops.boostrap bind mount``<br/>
       if you are hacking yourself corpusops.bootstrap and want to load live edits inside the build environment.
     * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
-      adapt the desired ansible call to use ``{only_steps: true, your_step: true}``    
+      adapt the desired ansible call to use ``{only_steps: true, your_step: true}``
 
 ### Export and distribute the images (dev & root)
 ```sh
