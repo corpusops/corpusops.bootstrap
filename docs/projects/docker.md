@@ -121,7 +121,7 @@ SUPEREDITORS=$(id -u) docker-compose \
   -f docker-compose.yml -f docker-compose-dev.yml \
   -f docker-compose-project.yml -f docker-compose-project-dev.yml\
   up -d --no-recreate -t 0;\
-
+```
 
 ### <a name="inspect"/>Inspect status
 To view the start up proccess (you ll see the first/initial reconfiguration)
