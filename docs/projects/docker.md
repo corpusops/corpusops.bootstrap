@@ -12,32 +12,13 @@
   Both file can be encrypted or not, ansible decrypt them via its built-in encryption mecanism, Please see corpusops Vaults managment in documentation.
 * We generally use this convention for the application Dockerfiles:
     * ``Dockerfile``: base image suitable for prod (``systemd``) + code injection
-    * ``docker-compose.yml``: Docker compose file sample to launch the ``prod`` image
     * ``Dockerfile.dev``: image (child of base image) that is suitable in dev (dev tools, and suitable for mounting source folder as volumes inside
+* With thpse companions docker-compose files:
+    * ``docker-compose.yml``: Docker compose file sample to launch the ``prod`` image
     * ``docker-compose-dev.yml``: Docker compose file sample to launch the ``dev``
+    * ``docker-compose-project.yml``: (opt) Docker compose file with project overrides.
+    * ``docker-compose-dev-project.yml``: (opt)  Docker compose file with project overrides for dev.
 * You can specify the ``vault`` set you want via the ``APP_ENV_NAME=<vault>`` build arg.
-* You can tell to not refresh corpusops automatically upon rebuilds via ``SKIP_COPS_UPDATE=y``
-* eg:
-
-    ```sh
-    docker build --squash  -t corpusops/yourproject:latest . -f Dockerfile \
-        [--build-arg=APP_ENV_NAME=docker] \
-        [--build-arg=SKIP_COPS_UPDATE=y]
-    # or
-    docker build --squash  -t corpusops/yourproject:dev    . -f Dockerfile.dev \
-        [--build-arg=APP_ENV_NAME=dockerdev] \
-        [--build-arg=SKIP_COPS_UPDATE=y]
-    ```
-* In case you are debugging a build and want to speed up things:
-    * You can copy/paste the Dockerfile and uncomment and read the part about ``corpusops.boostrap bind mount``<br/>
-      if you are hacking yourself corpusops.bootstrap and want to load live edits inside the build environment.
-    * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
-      adapt the desired ansible call to use ``{only_steps: true, your_step: true}``
-* Build order:
-    1. Build first: ``mycorp/myproject:latest`` image
-    2. build: ``mycorp/myproject:<dev>`` image
-        * the build of the dev tag is meant to speed up development and won't  redo everything from the beginning
-    3. Build any env specific image (test, prodenv, etc).
 
 ### Specifying variables and secrets
 * There is multiple ways to instruct docker to inject ansible collection of variables.
@@ -212,21 +193,30 @@ docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
 * In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
 
-
 ### <a name="scratch"/>(Re)Build from scratch
-- You can build in order the regular (``:latest``) tag then after, the development (``:dev``) tag of your project image.
-1.
+* Build order:
+    1. Build first: ``mycorp/myproject:latest`` image
+    
+        ```sh
+        docker build --squash -t corpusops/yourproject     . -f Dockerfile\
+        [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
+        ```
+    2. build: ``mycorp/myproject:<dev>`` image<br/>
+       the build of the dev tag is meant to speed up development and won't  redo everything from the beginning
+       
+       ```sh
+       docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
+       [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
+       ```
+    3. Build any env specific image (test, prodenv, etc).
+    
 
-  ```sh
-  docker build --squash -t corpusops/yourproject     . -f Dockerfile\
-      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=docker]
-  ```
-2.
-
-  ```sh
-  docker build --squash -t corpusops/yourproject:dev . -f Dockerfile.dev\
-      [--build-arg=SKIP_COPS_UPDATE=y] [--build-arg=APP_ENV_NAME=dockerdev]
-  ```
+* You can tell to not refresh corpusops automatically upon rebuilds via ``SKIP_COPS_UPDATE=y`` docker build_arg.
+* In case you are debugging a build and want to speed up things:
+    * You can copy/paste the Dockerfile and uncomment and read the part about ``corpusops.boostrap bind mount``<br/>
+      if you are hacking yourself corpusops.bootstrap and want to load live edits inside the build environment.
+    * You can copy paste one dockerfile and adapt the ``FROM`` instruction to use a more appropriate layer, and
+      adapt the desired ansible call to use ``{only_steps: true, your_step: true}``    
 
 ### Export and distribute the images (dev & root)
 ```sh
