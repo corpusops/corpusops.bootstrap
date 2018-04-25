@@ -111,7 +111,7 @@ journalctl -xu post-start-php7.1-fpm.service
 
 
 ## FAQ
-### <a name="enter"/>
+### <a name="enter"/>Enter the container
 To go in the vm (shell), eg for drupal to use console ou drush, it's 
 ```sh
 docker exec -ti  -e TERM=$TERM -e COLUNS=$COLUMNS -e LiNES=$LINES <container> bash
