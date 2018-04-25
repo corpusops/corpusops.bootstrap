@@ -58,9 +58,9 @@ You need to Install docker and docker-compose (versions at least resp: engine:17
 
 - You can do this manually
     - Edit docker conf to use (either via ``/etc/default/docker`` or ``/etc/docker/daemon.json`` depending on your install):
-        - log rotation settings
-        - ``overlay2`` as [graph driver](https://docs.docker.com/storage/storagedriver/select-storage-driver)
-        - ``experimental`` [flag activated](https://forums.docker.com/t/how-to-switch-on-experimental-features/34342) to enable the ``--squash`` build flag
+        - [log rotation settings](https://docs.docker.com/config/containers/logging/configure/),
+          [overlay2 graph driver](https://docs.docker.com/storage/storagedriver/select-storage-driver),
+          [experimental flag activated](https://forums.docker.com/t/how-to-switch-on-experimental-features/34342) to enable the ``--squash`` build flag
         - sample ``/etc/docker/daemon.json``
 
 			```json
