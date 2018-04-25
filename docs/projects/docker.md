@@ -109,8 +109,6 @@
     bn=$(. .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
     gzip -dc local/image/${bn}.gz | docker load
     ```
-
-
 ### <a name="launch"/>Launch the image
 - For reference if the image is systemD based, the workflow is as-is:
     - ansible reconfigure the image before systemd run
@@ -123,7 +121,7 @@ SUPEREDITORS=$(id -u) docker-compose \
   -f docker-compose.yml -f docker-compose-dev.yml \
   -f docker-compose-project.yml -f docker-compose-project-dev.yml\
   up -d --no-recreate -t 0;\
-```
+
 
 ### <a name="inspect"/>Inspect status
 To view the start up proccess (you ll see the first/initial reconfiguration)
@@ -139,14 +137,6 @@ systemctl -a|grep post-start
   post-start-php7.1-fpm.service    
 journalctl -xu post-start-php7.1-fpm.service
 ```
-
-#### <a name="recreate"/>container preservation
-
-You may want to add ``--force-recreate`` instead of ``--no-recreate`` to renew your container, and start fresh, straight from the image, without creating a new container after each ``docker-compose`` call.
-
-Well, it is ``docker-compose`` basic usage, idea is to use the docker image as-a-VM, recreating or reusing a container along is beyond the scope of this documentation.
-
-Look at the **FAQ** chapter or go up to the **From scratch** Section.
 
 
 ## FAQ
@@ -218,9 +208,6 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 docker save corpusops/yourproject:dev|bzip2 > corpusops-yourproject-dev.tar.bz2
 ```
 
-## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
-Rancher2 will help you managing stacks, its the glue between the images, docker compose and kubernetes
-
 ### File not updating in container after edit
 * In dev, My edition to a particular file in a container is not refreshing, certainly due to [moby/#15793](https://github.com/moby/moby/issues/15793),
   you need to configure your editor, eg vim to use atomic saves (eg: ``set noswapfile``)
@@ -254,9 +241,10 @@ rsync -azvP local/image/ $FTP_URL/
 ```
 
 
+## Running docker images in Rancher2 [WIP: Rancher2 will be release in early 08/18!]
+Rancher2 will help you managing stacks, its the glue between the images, docker compose and kubernetes
 
-
-## In dev and prod: rancher2
+### In dev and prod: rancher2
 - Initiate a cluster controller:
 
     ```
@@ -274,4 +262,3 @@ rsync -azvP local/image/ $FTP_URL/
     - docker version: Allow unsupported versions
 - Select the roles that you want on each node of your cluster and run the appriopriate and given join command.
     - This mean that on a dev laptop, you certainly want all the roles (3 atm: etcd, control, worker).
-
