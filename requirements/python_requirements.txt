@@ -43,7 +43,8 @@ snowballstemmer >= 1.2.0
 futures >= 3.0.5
 
 # CLOUD
-https://github.com/corpusops/docker-py/archive/ddcca89aceaaf13c4c74fe81bf9323b8018b004d.zip#egg=docker[tls]
+# https://github.com/corpusops/docker-py/archive/ddcca89aceaaf13c4c74fe81bf9323b8018b004d.zip#egg=docker[tls]
+docker[tls] >= 3.3.0
 
 # mitogen
 -e git+https://github.com/dw/mitogen.git@d503956493ec6429ce6e0331632cb70a405527bc#egg=mitogen
