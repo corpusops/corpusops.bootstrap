@@ -864,7 +864,11 @@ recap() {
 }
 
 install_prerequisites_() {
-    if ! ( $(may_sudo) $W/bin/cops_pkgmgr_install.sh \
+    if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
+        log "prerequisites setup skipped"
+        return 0
+    fi
+    if ! ( $W/bin/cops_pkgmgr_install.sh \
                 --check-os >/dev/null 2>&1; );then
         warn "Untested OS, assuming everything is in place"
         return 0
@@ -877,10 +881,6 @@ install_prerequisites_() {
         log "Virtualenv complete, dev packages won't be installed"
     fi
     local pkgs="$(echo $EXTRA_PACKAGES $_PACKAGES)"
-    if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
-        log "prerequisites setup skipped"
-        return 0
-    fi
 
     if echo ${DISTRIB_ID} | egrep -iq "^ol$";then
         if ! ( rpm -ql python-test 1>/dev/null 2>&1 );then
