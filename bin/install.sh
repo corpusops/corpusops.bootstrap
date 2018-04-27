@@ -552,6 +552,10 @@ get_cops_pip() {
 }
 
 ensure_last_virtualenv() {
+    if [ "x${DO_INSTALL_PREREQUISITES}" != "xy" ]; then
+        log "prerequisites skipped, wont check virtualenv version"
+        return 0
+    fi
     venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     py=$(get_cops_orig_python)
     pip=$(get_cops_pip)
@@ -1074,7 +1078,7 @@ synchronize_code() {
 ensure_has_virtualenv() {
     # handle specially the mess python-virtualenv/virtualenv on Ubuntu
     if ! has_command virtualenv;then
-        if is_debian_like;then
+        if is_debian_like && [ "x${DO_INSTALL_PREREQUISITES}" = "xy" ]; then
             SKIP_UPGRADE=y\
                 WANTED_PACKAGES="virtualenv python-virtualenv" \
                 vv $(may_sudo) "$W/bin/cops_pkgmgr_install.sh" 2>&1\
