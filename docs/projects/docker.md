@@ -139,7 +139,7 @@ docker logs -f <container>
 And from within the container, if it is systemd based, you may have a ``post-unit`` also doing reconfiguration, you can check with ``journald`` the status
 
 ```
-docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LINES=$LINES <container> bash
+docker exec -ti -e TERM=$TERM -e COLUMNS=$COLUMNS -e LINES=$LINES <container> bash
 systemctl -a|grep post-start
   post-start-php7.1-fpm.service
 journalctl -xu post-start-php7.1-fpm.service
@@ -148,7 +148,7 @@ journalctl -xu post-start-php7.1-fpm.service
 ### <a name="enter"/>Attach a shell connected to the container
 To go in the vm (shell), eg for drupal to use console ou drush, it's
 ```sh
-docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LINES=$LINES <container> bash
+docker exec -ti -e TERM=$TERM -e COLUMNS=$COLUMNS -e LINES=$LINES <container> bash
 ```
 
 ### <a name="vmhosts"/>Access the VM websites
@@ -173,7 +173,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
   also use our ansible wrappers, which are simpler:
 
     ```sh
-    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LINES=$LINES <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUMNS=$COLUMNS -e LINES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
          local/corpusops.bootstrap/playbooks/corpusops/provision/vagrant/pkgmgr.yml
     ```
@@ -185,7 +185,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 - Look your App steps: ``.ansible/playbooks/roles/*_step/tasks/main.yml``
 - You should then use a combination of a playbook, ``only_steps=true`` and a ``playbook.yml`` to view all steps that you can select
     ```sh
-    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LINES=$LINES <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUMNS=$COLUMNS -e LINES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
      .ansible/playbooks/site.yml \
      -e "{cops_vars_debug: true, only_steps: true}"
@@ -196,7 +196,7 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 - Eg, to redo on the project ``xxx``, the steps ``zzz`` && ``yyy``:
 
     ```sh
-    docker exec -ti -e TERM=$TERM -e COLUNS=$COLUMNS -e LINES=$LINES <container> bash
+    docker exec -ti -e TERM=$TERM -e COLUMNS=$COLUMNS -e LINES=$LINES <container> bash
     .ansible/scripts/call_ansible.sh -v \
      .ansible/playbooks/site.yml \
      --skip-tags play_db \
