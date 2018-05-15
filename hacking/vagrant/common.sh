@@ -459,34 +459,81 @@ get_python2() {
     done
     echo $py2
 }
-upgrade_pip() {
-    local py="${1:-python}"
-    local pip="${2:-pip}"
-    local pipc="$(get_command $pip)"
-    if [[ -z "$pipc" ]];then
-        local PIP_URL="https://bootstrap.pypa.io/get-pip.py"
-        local GET_PIP="${GET_PIP-$PIP_URL}"
-        local PIP_INST="$(mktemp)"
-        if ! ( "$py" -c "import urllib; print urllib.urlopen('$GET_PIP').read()" > "$PIP_INST" );then
-            log "Error downloading pip installer"
+has_python_module() {
+    local py="${py:-python}"
+    for i in $@;do
+        if ! ( "${py}" -c "import $i" 2>/dev/null );then
             return 1
         fi
-        "$py" "$PIP_INST"
-        local pipc="$(get_command $pip)"
-        if [[ -z "$pipc" ]];then
-            log "pip not found"
+     done
+}
+pymod_ver() {
+    local mod="${1}"
+    local py="${2:-${py:-python}}"
+    "$py" -c "from __future__ import print_function;import $mod;print($mod.__version__)"
+}
+install_pip() {
+    local py="${1:-python}"
+    local DEFAULT_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
+    local PIP_URL="${PIP_URL:-$DEFAULT_PIP_URL}"
+    PIP_INST="$(mktemp)"
+    log "Reinstalling pip via $PIP_URL (copy to $PIP_INST)"
+    if ! ( "$py" -c "import urllib; print urllib.urlopen('$PIP_URL').read()" > "$PIP_INST" );then
+        log "Error downloading pip installer"
+        return 1
+    fi
+    "$py" "$PIP_INST" -U pip setuptools six
+}
+uninstall_at_least_pymodule() {
+    local py="${3:-${py-python}}"
+    local ver="${2}"
+    local mod="${1}"
+    local import="${4:-${1}}"
+    if ( ( has_python_module "$mod" ) && ( version_lt "$(pymod_ver "$mod" "$py")" "$ver" ) );then
+        local modd=$($py -c "from __future__ import print_function;import $import,os;print(os.path.dirname($import.__file__.replace('/__init__.pyc', '')))")
+        local modb="$HOME/.$mod.backup.$chrono.tar.bz2"
+        ( log "Backup mod install in $modb" \
+          && if [ -e "$modd/${import}.py" ];then
+                tar cjf "$modb" $modd/${import}.py* $modd/${mod}*egg-info &&\
+                    rm -rf $modd/${import}.py* $modd/${mod}*egg-info; \
+            elif [ -e "$modd/${import}" ];then
+                 tar cjf "$modb" $modd/${import} $modd/${mod}*egg-info &&\
+                     rm -rf $modd/${import} $modd/${mod}*egg-info; \
+            fi && log "Upgrading now from legacy pre $mod $ver" ) || \
+        die_in_error "Removing legacy $mod failed"
+    fi
+}
+upgrade_pip() {
+    local py="${1:-python}"
+    local pyc="$(get_command "$py")"
+    local dpy="$(dirname $pyc)"
+    local chrono=$(date +%F_%T|sed -e "s/:/-/g")
+    # force reinstalling pip in same place where it is (not /usr/local but /usr)
+    # __version__ is set by pip, uninstall last
+    if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
+        vv uninstall_at_least_pymodule requests  2.18.3 "$py"
+        vv uninstall_at_least_pymodule pyasn1    0.4.2  "$py"
+        vv uninstall_at_least_pymodule urllib3   1.20   "$py"
+        vv uninstall_at_least_pymodule pyopenssl 18.0.0 "$py" OpenSSL
+    fi
+    uninstall_at_least_pymodule six     1.11.0
+    uninstall_at_least_pymodule chardet 2.3.0
+    uninstall_at_least_pymodule pip     2.0
+    if ! ( has_python_module pip );then
+        install_pip "$py" || die "pip install failed for $py"
+        if ! ( has_python_module pip );then
+            log "pip not found for $py"
             return 1
         fi
     fi
-	local dpip="$(dirname $pipc)"
-	local pipo=""
-    log "ReInstalling pip ($pipc) for $py"
-	# force reinstalling pip in same place where it is (not /usr/local but /usr)
-	if ( echo "$dpip" | egrep -q  "^/" );then
-		pipo="--install-option=--install-scripts=$dpip"
-	fi
-    "${py}" "${pipc}" install -U $pipo --ignore-installed --force-reinstall setuptools &&\
-    "${py}" "${pipc}" install -U $pipo --ignore-installed --force-reinstall pip
+    log "ReInstalling pip for $py"
+    vv "${py}" -m pip install -U setuptools \
+        && vv "${py}" -m pip install -U pip six urllib3\
+        && vv "${py}" -m pip install chardet \
+        && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
+            vv "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
+            vv "${py}" -m pip install urllib3 pyopenssl
+        fi
 }
 make_virtualenv() {
     local py=${1:-$(get_python2)}
@@ -527,30 +574,29 @@ make_virtualenv() {
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
-      upgrade_pip "${venv_path}/bin/python" "${venv_path}/bin/pip" &&\
+      upgrade_pip "${venv_path}/bin/python" &&\
       deactivate; )
     fi
 }
 ensure_last_python_requirement() {
-    local PIP=${PIP:-pip}
     local COPS_PYTHON=${COPS_PYTHON:-python}
-    local i=
+    local COPS_UPGRADE=${COPS_UPGRADRE:-"-U"}
     local PIP_CACHE=${PIP_CACHE:-${VENV_PATH:-$(pwd)}/cache}
     # inside the for loop as at first pip can not have the opts
     # but can be upgraded to have them after
     local copt=
-    if "$py" "$PIP" --help | grep -q download-cache; then
+    if "$py" -m pip --help | grep -q download-cache; then
         copt="--download-cache"
-    elif $PIP --help | grep -q cache-dir; then
+    elif "$py" -m pip --help | grep -q cache-dir; then
         copt="--cache-dir"
     fi
     log "Installing last version of $@"
     if [[ -n "$copt" ]];then
-        vvv "$COPS_PYTHON" "$PIP" install \
-            --src "$(get_eggs_src_dir)" -U $copt "${PIP_CACHE}" $@
+        vvv "$COPS_PYTHON" -m pip install \
+            --src "$(get_eggs_src_dir)" $COPS_UPGRADE $copt "${PIP_CACHE}" $@
     else
-        vvv "$COPS_PYTHON" "$PIP" install \
-            --src "$(get_eggs_src_dir)" -U $@
+        vvv "$COPS_PYTHON" -m pip install \
+            --src "$(get_eggs_src_dir)" $COPS_UPGRADE $@
     fi
 }
 usage() { die 128 "No usage found"; }
