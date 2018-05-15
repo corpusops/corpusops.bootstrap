@@ -13,6 +13,7 @@ man-db
 python-six
 python-virtualenv
 python-pip
+python-apt
 rsync
 tcl8.5
 ca-certificates

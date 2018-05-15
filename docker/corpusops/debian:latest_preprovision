@@ -57,7 +57,8 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     set -e;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
-    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 $COPS_ROOT/bin/cops_pkgmgr_install.sh; \
+    DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 \
+      $COPS_ROOT/bin/cops_pkgmgr_install.sh; \
     : "Disable services from being started during apt-gets"; \
     $COPS_ROOT/hacking/docker_toggle_pm rc_on'
 
@@ -65,7 +66,6 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
 # the python diffs are to fix ipv6 error (cant bind address)
 COPY hacking/patches/python*.diff \
      requirements/os_* \
-     requirements/python_* \
      ${COPS_ROOT}/requirements/
 COPY bin/silent_run $COPS_ROOT/bin/
 RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
@@ -101,20 +101,12 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
         if [ "x${applypatch}" != "x" ];then\
             echo "Patching $f W $p" >&2;patch -fp4 < $p;\
         fi;\
-    done < <(ls -d /usr/lib*/python2* 2>/dev/null);\
-    cd ${COPS_ROOT};\
-    if [ "x$USE_VENV" != "xno" ];then \
-     VERBOSE=y $_silent_run virtualenv --python=python2 --system-site-packages --unzip-setuptools $(pwd)/venv;\
-     . venv/bin/activate;\
-     :;\
-     $_silent_run python -c "from test import test_support";\
-     VERBOSE=y $_silent_run $COPS_PYTHON $(which pip) install -U pip;\
-     VERBOSE=y $_silent_run $COPS_PYTHON $(which pip) install -U -r requirements/python_requirements.txt; \
-    fi'
+    done < <(ls -d /usr/lib*/python2* 2>/dev/null);'
 
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
 COPY .corpusops ${COPS_ROOT}/.corpusops
+COPY requirements/python_* ${COPS_ROOT}/requirements/
 COPY bin/install.sh bin/cops_shell_common ${COPS_ROOT}/bin/
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
