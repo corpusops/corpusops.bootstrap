@@ -28,7 +28,7 @@ fi
 exec_systemd_flag=(mktemp)
 rm -f "$exec_systemd_flag"
 testoldsysd() {
-    if ( cat - | grep -iq "unless pid 1" );then
+    if ( tee /dev/stderr | grep -iq "unless pid 1" );then
         echo "systemd requires exec" >&2
         touch "$exec_systemd_flag"
     fi
