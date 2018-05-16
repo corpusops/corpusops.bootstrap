@@ -24,14 +24,31 @@ if [[ -n ${CORPUSOPS_IN_DEV-} ]];then
         rsync -av $R/ /
     fi
 fi
+
+exec_systemd_flag=(mktemp)
+rm -f "$exec_systemd_flag"
+testoldsysd() {
+    if ( cat - | grep -iq "unless pid 1" );then
+        echo "systemd requires exec" >&2
+        touch "$exec_systemd_flag"
+    fi
+}
 if [ -e /sbin/init ] && \
     ( /sbin/init --version 2>&1 | grep -iq upstart; ) ;then
     exec /sbin/init
 else
-    if [[ -n $IMG_DEBUG ]];then
-        exec strace -f /lib/systemd/systemd $SYSTEMD_ARGS
-    else
+    # try to use systemd non exec(d (pre bionic way that
+    # doesnt support exec for some reason)
+    set +e
+    (((( /lib/systemd/systemd $SYSTEMD_ARGS 2>&1 ;\
+        echo $? >&3) | testoldsysd >&4) 3>&1) | (read xs; exit $xs)) 4>&1
+    ret=$?
+    if [ -e "$exec_systemd_flag" ];then
+        echo "Restarting systemd with exec" >&2
         exec /lib/systemd/systemd $SYSTEMD_ARGS
+    else
+        # other cases, error out
+        exit $ret
     fi
 fi
 # vim:set et sts=4 ts=4 tw=80:
