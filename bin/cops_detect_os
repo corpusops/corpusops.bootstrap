@@ -460,7 +460,7 @@ install_pip() {
         log "Error downloading pip installer"
         return 1
     fi
-    "$py" "$PIP_INST" -U pip setuptools six
+    $(may_sudo) "$py" "$PIP_INST" -U pip setuptools six
 }
 uninstall_at_least_pymodule() {
     local py="${3:-${py-python}}"
@@ -472,11 +472,11 @@ uninstall_at_least_pymodule() {
         local modb="$HOME/.$mod.backup.$chrono.tar.bz2"
         ( log "Backup mod install in $modb" \
           && if [ -e "$modd/${import}.py" ];then
-                tar cjf "$modb" $modd/${import}.py* $modd/${mod}*egg-info &&\
-                    rm -rf $modd/${import}.py* $modd/${mod}*egg-info; \
+            tar cjf "$modb" $modd/${import}.py* $modd/${mod}*egg-info &&\
+                $(may_sudo) rm -rf $modd/${import}.py* $modd/${mod}*egg-info; \
             elif [ -e "$modd/${import}" ];then
-                 tar cjf "$modb" $modd/${import} $modd/${mod}*egg-info &&\
-                     rm -rf $modd/${import} $modd/${mod}*egg-info; \
+                tar cjf "$modb" $modd/${import} $modd/${mod}*egg-info &&\
+                    $(may_sudo) rm -rf $modd/${import} $modd/${mod}*egg-info; \
             fi && log "Upgrading now from legacy pre $mod $ver" ) || \
         die_in_error "Removing legacy $mod failed"
     fi
@@ -506,11 +506,11 @@ upgrade_pip() {
     fi
     log "ReInstalling pip for $py"
     vv "${py}" -m pip install -U setuptools \
-        && vv "${py}" -m pip install -U pip six urllib3\
-        && vv "${py}" -m pip install chardet \
+        && vv $(may_sudo) "${py}" -m pip install -U pip six urllib3\
+        && vv $(may_sudo) "${py}" -m pip install chardet \
         && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
-            vv "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
-            vv "${py}" -m pip install urllib3 pyopenssl
+            vv $(may_sudo) "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
+            vv $(may_sudo) "${py}" -m pip install urllib3 pyopenssl
         fi
 }
 make_virtualenv() {
