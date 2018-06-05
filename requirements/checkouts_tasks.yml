@@ -44,7 +44,7 @@
     vv git fetch origin "+refs/heads/*:refs/remotes/origin/*"
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_fetch
-  when: "not (checkouted_remote|skipped)"
+  when: "not (checkouted_remote is skipped)"
   changed_when: False
 - {debug: {msg: "{{checkouted_fetch}}"}, when: "cops_debug|default(False)"}
 
@@ -67,12 +67,12 @@
     exit 1
   args: {chdir: '{{checkout_item.dest}}'}
   register: is_changeset_test
-  when: "not (checkouted_fetch|skipped)"
+  when: "not (checkouted_fetch is skipped)"
   changed_when: False
   failed_when: False
 - debug: { msg: "{{is_changeset_test.rc == 0}}" }
   register: is_changeset
-  when: "not (checkouted_fetch|skipped)"
+  when: "not (checkouted_fetch is skipped)"
 
 
 # Stash any changes
@@ -105,7 +105,7 @@
     fi
   args: {chdir: '{{checkout_item.dest}}'}
   register: stashed
-  when: "not (checkouted_fetch|skipped)"
+  when: "not (checkouted_fetch is skipped)"
   changed_when: "'git stash' in stashed.stderr"
 - {debug: {msg: "{{stashed}}"}, when: "cops_debug|default(False)"}
 
@@ -144,7 +144,7 @@
     fi
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_changeset
-  when: "not (checkouted_fetch|skipped) and is_changeset.msg"
+  when: "not (checkouted_fetch is skipped) and is_changeset.msg"
   changed_when: "'git reset --hard' in checkouted_changeset.stderr"
 - {debug: {msg: "{{checkouted_changeset}}"}, when: "cops_debug|default(False)"}
 
@@ -174,7 +174,7 @@
     fi
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_sw
-  when: "not (checkouted_fetch | skipped) and not is_changeset.msg"
+  when: "not (checkouted_fetch is skipped) and not is_changeset.msg"
   changed_when: "'git checkout' in checkouted_sw.stderr"
 - {debug: {msg: "{{checkouted_sw}}"}, when: "cops_debug|default(False)"}
 
@@ -196,7 +196,7 @@
 
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_merge
-  when: "not (checkouted_sw | skipped) and not is_changeset.msg"
+  when: "not (checkouted_sw is skipped) and not is_changeset.msg"
   changed_when: "'Already up-to-date.' not in checkouted_merge.stdout"
 - {debug: {msg: "{{checkouted_merge}}"}, when: "cops_debug|default(False)"}
 
@@ -211,8 +211,8 @@
     vv git $gargs stash drop
   args: {chdir: '{{checkout_item.dest}}'}
   register: stashed_reapply
-  when: "((not (checkouted_merge | skipped) or not ( checkouted_changeset | skipped ))
-            and stashed | changed)"
+  when: "((not (checkouted_merge is skipped) or not ( checkouted_changeset is skipped ))
+            and stashed is changed)"
 - {debug: {msg: "{{stashed_reapply}}"}, when: "cops_debug|default(False)"}
 
 
@@ -226,6 +226,6 @@
     fi
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_sub
-  when: "not (checkouted_merge | skipped) or not ( checkouted_changeset | skipped )"
+  when: "not (checkouted_merge is skipped) or not ( checkouted_changeset is skipped )"
   changed_when: "'' != checkouted_sub.stdout.strip()"
 - {debug: {msg: "{{checkouted_sub}}"}, when: "cops_debug|default(False)"}
