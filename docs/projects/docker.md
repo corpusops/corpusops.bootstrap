@@ -103,7 +103,7 @@ You definitely want to install it via corpusops ;).
   (if you have for example not initialazed any database)
 
     ```sh
-    bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+    bn=$(  . .a*/scripts/*_deploy_env;echo "${A_GIT_NAMESPACE}_${A_GIT_PROJECT}"| awk '{print tolower($0)}')
     sudo tar xzpvf local/image/${bn}-volumes.tgz
     ```
 
@@ -111,7 +111,7 @@ You definitely want to install it via corpusops ;).
 - If someone does have already build an image for this project,
 
     ```sh
-    bn=$(. .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+    bn=$(. .a*/scripts/*_deploy_env;echo "${A_GIT_NAMESPACE}_${A_GIT_PROJECT}"| awk '{print tolower($0)}')
     gzip -dc local/image/${bn}.gz | docker load
     ```
 ### <a name="launch"/>Launch the image
@@ -250,8 +250,8 @@ The idea is to extract the IP of the VM, and copy/paste the IP in you /etc/hosts
 
 ### <a name="dist"/>Export and distribute the images (dev & root)
 ```sh
-bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT})
-bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT})
+bns=$( . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}/${A_GIT_PROJECT}| awk '{print tolower($0)}')
+bn=$(  . .a*/scripts/*_deploy_env;echo ${A_GIT_NAMESPACE}_${A_GIT_PROJECT}| awk '{print tolower($0)}')
 if [ ! -e local/image ];then mkdir -p local/image;fi
 sudo docker save $bns $bns:dev | gzip > local/image/$bn.gz
 sudo tar pczvf local/image/${bn}-volumes.tgz local/data/ local/setup
