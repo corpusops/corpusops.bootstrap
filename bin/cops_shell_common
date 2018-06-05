@@ -514,12 +514,17 @@ upgrade_pip() {
         fi
     fi
     log "ReInstalling pip for $py"
-    vv "${py}" -m pip install -U setuptools \
-        && vv $(may_sudo) "${py}" -m pip install -U pip six urllib3\
-        && vv $(may_sudo) "${py}" -m pip install chardet \
+    if ( corpusops_use_venv );then
+        local maysudo=""
+    else
+        local maysudo=$(may_sudo)
+    fi
+    vv $maysudo "${py}" -m pip install -U setuptools \
+        && vv $maysudo "${py}" -m pip install -U pip six urllib3\
+        && vv $maysudo "${py}" -m pip install chardet \
         && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
-            vv $(may_sudo) "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
-            vv $(may_sudo) "${py}" -m pip install urllib3 pyopenssl
+            vv $maysudo "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
+            vv $maysudo "${py}" -m pip install urllib3 pyopenssl
         fi
 }
 make_virtualenv() {
@@ -578,11 +583,16 @@ ensure_last_python_requirement() {
         copt="--cache-dir"
     fi
     log "Installing last version of $@"
+    if ( corpusops_use_venv );then
+        local maysudo=""
+    else
+        local maysudo=$(may_sudo)
+    fi
     if [[ -n "$copt" ]];then
-        vvv "$COPS_PYTHON" -m pip install \
+        vvv $maysudo "$COPS_PYTHON" -m pip install \
             --src "$(get_eggs_src_dir)" $COPS_UPGRADE $copt "${PIP_CACHE}" $@
     else
-        vvv "$COPS_PYTHON" -m pip install \
+        vvv $maysudo "$COPS_PYTHON" -m pip install \
             --src "$(get_eggs_src_dir)" $COPS_UPGRADE $@
     fi
 }
