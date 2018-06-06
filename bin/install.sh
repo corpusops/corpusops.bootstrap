@@ -725,7 +725,7 @@ get_corpusops_branch() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.5"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.6"
 }
 
 set_vars() {
