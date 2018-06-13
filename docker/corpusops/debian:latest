@@ -33,7 +33,8 @@ RUN bash -c 'step_rev=2;set -ex;\
 
 # Install docker client for dind(sibling via docker socket) workflows
 RUN bash -c 'step_rev=2;set -e;\
-    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml'
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml \
+      -e "{corpusops_localsettings_docker_has_docker_py: true}"'
 
 # Disable docker service in base image
 RUN bash -c 'rm -vf \
