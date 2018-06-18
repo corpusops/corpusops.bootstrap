@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 shopt -s extglob
-set -e 
+set -e
 DEBUG=${DEBUG-}
 VERBOSE=${VERBOSE-${DEBUG}}
 if [[ -n ${DEBUG-} ]] ;then
@@ -8,7 +8,7 @@ if [[ -n ${DEBUG-} ]] ;then
 fi
 if [[ -n ${VERBOSE-} ]] ;then
     ANSIBLE_ARGS="$ANSIBLE_ARGS -vvvvv"
-fi           
+fi
 W=$(pwd)
 action=${1}
 if [[ -n ${@-} ]];then shift;fi
@@ -32,6 +32,7 @@ deploy_minimal() {
              cops_${PROJECT_TYPE}_s_maintenance_off: false,
              cops_${PROJECT_TYPE}_s_maintenance_on: false,
              cops_${PROJECT_TYPE}_s_reverse_proxy_reload: true,
+             cops_${PROJECT_TYPE}_s_setup_composer: true,
              cops_${PROJECT_TYPE}_s_workers: true,
              cops_${PROJECT_TYPE}_s_end_fixperms: true,
              cops_${PROJECT_TYPE}_s_setup_configs: true}" \
@@ -51,6 +52,7 @@ deploy_code_and_fpm() {
              cops_${PROJECT_TYPE}_s_setup_reverse_proxy: true,
              cops_${PROJECT_TYPE}_s_reverse_proxy_reload: true,
              cops_${PROJECT_TYPE}_s_workers: true,
+             cops_${PROJECT_TYPE}_s_setup_composer: true,
              cops_${PROJECT_TYPE}_s_setup_fpm: true,
              cops_${PROJECT_TYPE}_s_end_fixperms: true,
              cops_${PROJECT_TYPE}_s_setup_configs: true}" \
