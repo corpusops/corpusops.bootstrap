@@ -14,15 +14,19 @@ action=${1}
 if [[ -n ${@-} ]];then shift;fi
 cd "$W"
 . local/corpusops.bootstrap/hacking/shell_glue
-actions="@(db|full|minimal|code_and_fpm)"
+actions="@(db|full|minimal|code_and_fpm|solr)"
 export CUR_BRANCH=$(get_git_branch)
 export A_ENV_NAME=${A_ENV_NAME:-${CUR_BRANCH}}
 export PROJECT_TYPE=drupal
 export ANSIBLE_ARGS=${ANSIBLE_ARGS-}
 ### code & vhost
+deploy_solr() {
+    .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
+        .ansible/playbooks/solr.yml "$@"
+}
 deploy_db() {
     .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
-        .ansible/playbooks/db.yml $@
+        .ansible/playbooks/db.yml "$@"
 }
 ### code & vhost
 deploy_minimal() {
@@ -36,11 +40,11 @@ deploy_minimal() {
              cops_${PROJECT_TYPE}_s_workers: true,
              cops_${PROJECT_TYPE}_s_end_fixperms: true,
              cops_${PROJECT_TYPE}_s_setup_configs: true}" \
-        .ansible/playbooks/app.yml $@
+        .ansible/playbooks/app.yml "$@"
 }
 ### code vhost & fpm
 deploy_full() {
-    .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS .ansible/playbooks/app.yml
+    .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS .ansible/playbooks/app.yml "$@"
 }
 ### code vhost & fpm
 deploy_code_and_fpm() {
@@ -56,8 +60,8 @@ deploy_code_and_fpm() {
              cops_${PROJECT_TYPE}_s_setup_fpm: true,
              cops_${PROJECT_TYPE}_s_end_fixperms: true,
              cops_${PROJECT_TYPE}_s_setup_configs: true}" \
-        .ansible/playbooks/app.yml $@
+        .ansible/playbooks/app.yml "$@"
 }
-usage() { echo "$0 $actions"; }
-case $action in $actions)deploy_${action} $@;;*) usage;;esac
+usage() { echo "$0 $actions \$@"; }
+case $action in $actions)deploy_${action} "$@";;*) usage;;esac
 exit $?
