@@ -14,7 +14,7 @@ action=${1}
 if [[ -n ${@-} ]];then shift;fi
 cd "$W"
 . local/corpusops.bootstrap/hacking/shell_glue
-actions="@(db|full|minimal|code_and_fpm|solr)"
+actions="@(db|full|minimal|code_and_fpm|solr|nginx|nginx_full)"
 export CUR_BRANCH=$(get_git_branch)
 export A_ENV_NAME=${A_ENV_NAME:-${CUR_BRANCH}}
 export PROJECT_TYPE=drupal
@@ -32,6 +32,7 @@ deploy_db() {
 deploy_minimal() {
     .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
         -e "{only_steps: true,
+             cops_${PROJECT_TYPE}_s_users: false,
              cops_${PROJECT_TYPE}_lifecycle_app_push_code: true,
              cops_${PROJECT_TYPE}_s_maintenance_off: false,
              cops_${PROJECT_TYPE}_s_maintenance_on: false,
@@ -46,10 +47,28 @@ deploy_minimal() {
 deploy_full() {
     .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS .ansible/playbooks/app.yml "$@"
 }
+### vhost
+deploy_nginx_full() {
+    .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
+        -e "{only_steps: true,
+             cops_${PROJECT_TYPE}_s_users: false,
+             cops_${PROJECT_TYPE}_s_setup_reverse_proxy: true,
+             cops_${PROJECT_TYPE}_s_reverse_proxy: true}" \
+        .ansible/playbooks/app.yml "$@"
+}
+deploy_nginx() {
+    .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
+        -e "{only_steps: true,
+             cops_${PROJECT_TYPE}_s_users: false,
+             cops_${PROJECT_TYPE}_s_setup_reverse_proxy: true,
+             cops_${PROJECT_TYPE}_s_reverse_proxy_reload: true}" \
+        .ansible/playbooks/app.yml "$@"
+}
 ### code vhost & fpm
 deploy_code_and_fpm() {
     .ansible/scripts/call_ansible.sh $ANSIBLE_ARGS \
         -e "{only_steps: true,
+             cops_${PROJECT_TYPE}_s_users: false,
              cops_${PROJECT_TYPE}_lifecycle_app_push_code: true,
              cops_${PROJECT_TYPE}_s_maintenance_off: false,
              cops_${PROJECT_TYPE}_s_maintenance_on: false,
