@@ -6,6 +6,9 @@ LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
 SCRIPT_NAME=$(basename "${SCRIPT}")
 SCRIPT_DIR=$(cd "$(dirname $0)" && pwd)
 SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
+COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES-}"
+SECONDROUND_EXTRA="${SECONDROUND_EXTRA-}"
+SECONDROUND="${SECONDROUND-}"
 # OW: from where script was called (must be defined from callee)
 OW="${OW:-$(pwd)}"
 # W is script_dir/..
@@ -619,6 +622,7 @@ DO_UPDATE=${DO_UPDATE-default}
 DO_INSTALL=${DO_INSTALL-default}
 CHECK_OS=${CHECK_OS-}
 container=${container-}
+WHOAMI=$(whoami)
 
 ###
 i_y() {
@@ -805,7 +809,11 @@ is_aptget_available() {
     if ! apt-cache show ${@} >/dev/null 2>&1; then
         return 1
     else
-        return 0
+        if ! apt-get install -s ${@} >/dev/null 2>&1;then
+            return 1
+        else
+            return 0
+        fi
     fi
 }
 
@@ -899,20 +907,52 @@ update() {
     fi
 }
 
+secondround_pkgscan() {
+    # after update, check for packages that werent found at first
+    # if we can now resolve them
+    if [[ -n "${SECONDROUND}" ]]; then
+        for i in ${SECONDROUND};do
+            if ! is_${INSTALLER}_installed $i;then
+                if is_${INSTALLER}_available ${i}; then
+                    COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
+                else
+                    sdie "Package '${i}' not found"
+                fi
+            else
+                debug "PostPackage '${i}' found"
+                already_installed="${already_installed} ${i}"
+            fi
+        done
+    fi
+    if [[ -n "${SECONDROUND_EXTRA}" ]]; then
+        for i in ${SECONDROUND_EXTRA};do
+            if ! is_${INSTALLER}_installed ${i}; then
+                if is_${INSTALLER}_available ${i};then
+                    COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
+                else
+                    warn "EXTRA Package '${i}' not found"
+                fi
+            else
+                debug "PostEPackage '${i}' found'"
+                already_installed="${already_installed} ${i}"
+            fi
+        done
+    fi
+}
+
 prepare_install() {
-    candidates=""
     already_installed=""
-    secondround=""
-    secondround_extra=""
+    SECONDROUND=""
+    SECONDROUND_EXTRA=""
     if [[ -z "${SKIP_INSTALL}" ]];then
         # test if all packages are there
         if [[ -n "${WANTED_PACKAGES}" ]]; then
             for i in $WANTED_PACKAGES;do
                 if ! is_${INSTALLER}_installed $i;then
                     if is_${INSTALLER}_available ${i}; then
-                        candidates="${candidates} ${i}"
+                        COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
                     else
-                        secondround="${secondround} ${i}"
+                        SECONDROUND="${SECONDROUND} ${i}"
                     fi
                 else
                     debug "Package '${i}' found"
@@ -924,9 +964,9 @@ prepare_install() {
             for i in $WANTED_EXTRA_PACKAGES;do
                 if ! is_${INSTALLER}_installed ${i}; then
                     if is_${INSTALLER}_available ${i};then
-                        candidates="${candidates} ${i}"
+                        COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
                     else
-                        secondround_extra="${secondround_extra} ${i}"
+                        SECONDROUND_EXTRA="${SECONDROUND_EXTRA} ${i}"
                     fi
                 else
                     debug "EPackage '${i}' found"
@@ -935,60 +975,30 @@ prepare_install() {
             done
         fi
         # skip update & rest if everything is there
-        if [[ -z "${candidates}" ]];then
+        if [[ -z "${COPS_PKGMGR_PKGCANDIDATES}" ]];then
             if [ "x${DO_UPDATE}" = "xdefault" ];then
                 DO_UPDATE=""
             fi
         fi
-        if [[ -n $secondround ]];then
-            warn "Packages $(echo ${secondround}) not found before update"
+        if [[ -n $SECONDROUND ]];then
+            warn "Packages $(echo ${SECONDROUND}) not found before update"
         fi
-        if [[ -n $secondround_extra ]];then
-            warn "EXTRA Packages $(echo ${secondround_extra}) not found before update"
+        if [[ -n $SECONDROUND_EXTRA ]];then
+            warn "EXTRA Packages $(echo ${SECONDROUND_EXTRA}) not found before update"
         fi
-        #
-        #
-        update
-        #
-        #
-        # after update, check for packages that werent found at first
-        # if we can now resolve them
-        if [[ -n "${secondround}" ]]; then
-            for i in ${secondround};do
-                if ! is_${INSTALLER}_installed $i;then
-                    if is_${INSTALLER}_available ${i}; then
-                        candidates="${candidates} ${i}"
-                    else
-                        sdie "Package '${i}' not found"
-                    fi
-                else
-                    debug "PostPackage '${i}' found"
-                    already_installed="${already_installed} ${i}"
-                fi
-            done
+        if [ "x$WHOAMI" = "xroot" ];then
+            if [[ -n $SECONDROUND ]] || [[ -n $SECONDROUND_EXTRA ]];then
+                ( DO_UPDATE=1 update )
+                secondround_pkgscan
+            fi
         fi
-        if [[ -n "${secondround_extra}" ]]; then
-            for i in ${secondround_extra};do
-                if ! is_${INSTALLER}_installed ${i}; then
-                    if is_${INSTALLER}_available ${i};then
-                        candidates="${candidates} ${i}"
-                    else
-                        warn "EXTRA Package '${i}' not found"
-                    fi
-                else
-                    debug "PostEPackage '${i}' found'"
-                    already_installed="${already_installed} ${i}"
-                fi
-            done
-        fi
-
     else
         debug "Skip pre-flight install"
     fi
-    candidates=$( echo "${candidates}" | xargs -n1 | sort -u )
+    COPS_PKGMGR_PKGCANDIDATES=$( echo "${COPS_PKGMGR_PKGCANDIDATES}" | xargs -n1 | sort -u )
     already_installed=$( echo "${already_installed}" | xargs -n1 | sort -u )
-    if [[ -n "${candidates}" ]]; then
-        log "Will install: $(echo ${candidates})"
+    if [[ -n "${COPS_PKGMGR_PKGCANDIDATES}" ]]; then
+        log "Will install: $(echo ${COPS_PKGMGR_PKGCANDIDATES})"
     fi
     if [[ -n "${already_installed}" ]]; then
         log "Already installed: $(echo ${already_installed})"
@@ -996,7 +1006,7 @@ prepare_install() {
 }
 
 setup() {
-    if [[ -z "${SKIP_SETUP}" ]] &&  [[ -n "${DO_SETUP}" ]];then
+    if [[ -z "${SKIP_SETUP}" ]] && [[ -n "${DO_SETUP}" ]];then
         debug ${INSTALLER}_setup
         ${INSTALLER}_setup
         may_die $? $? "setup failed"
@@ -1009,32 +1019,61 @@ setup() {
 }
 
 upgrade() {
-    if [[ -z "${SKIP_UPGRADE}" ]] &&  [[ -n "${DO_UPGRADE}" ]];then
+    if ( todo_upgrade );then
         log ${INSTALLER}_upgrade
         ${INSTALLER}_upgrade
-        may_die $? $? "upgrade failed"
     else
         debug "Skip upgrade"
     fi
+    may_die $? $? "upgrade failed"
 }
 
 install() {
-    upgrade
-    if [[ -z "${SKIP_INSTALL}" ]] \
-        && [[ -n "${DO_INSTALL}" ]] \
-        && [[ -n "${candidates}" ]]; then
-        log ${INSTALLER}_install ${candidates}
-        ${INSTALLER}_install ${candidates}
+    if ( todo_install );then
+        upgrade
+        log ${INSTALLER}_install ${COPS_PKGMGR_PKGCANDIDATES}
+        ${INSTALLER}_install ${COPS_PKGMGR_PKGCANDIDATES}
         may_die $? $? "install failed"
     else
         debug "Skip install"
     fi
 }
 
+todo_upgrade() { [[ -z "${SKIP_UPGRADE}" ]] && [[ -n "${DO_UPGRADE}" ]]; }
+todo_install() {
+    if [[ -z "${SKIP_INSTALL}" ]] && [[ -n "${DO_INSTALL}" ]];then
+        if [[ -n "${COPS_PKGMGR_PKGCANDIDATES}" ]];then
+            return 0
+        fi
+        if [[ -n "$SECONDROUND_EXTRA" ]] || [[ -n "$SECONDROUND" ]];then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 detect_os
 parse_cli "${@}"
-setup
+if [ "x$WHOAMI" = "xroot" ];then
+    setup
+fi
 prepare_install  # calls: update
-upgrade
-install
+if ( todo_upgrade );then todo=1;else debug "Skip upgrade";fi
+if ( todo_install );then todo=1;else debug "Skip install";fi
+if [[ -z $todo ]] && [[ -z ${FORCE_RUN} ]];then
+    log "Nothing to do"
+else
+    if [ "x$WHOAMI" = "xroot" ];then
+        upgrade
+        install
+        ret=$?
+    else
+        export WANTED_PACKAGES=$COPS_PKGMGR_PKGCANDIDATES $SECONDROUND
+        export WANTED_EXTRA_PACKAGES=$SECONDROUND_EXTRA
+        log "Escalating privileges (root) for installing: $WANTED_PACKAGES $WANTED_EXTRA_PACKAGES"
+        $(may_sudo) "$0" "$@"
+        ret=$?
+    fi
+fi
+exit $ret
 # vim:set et sts=4 ts=4 tw=80:
