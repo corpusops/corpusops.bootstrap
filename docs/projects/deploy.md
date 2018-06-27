@@ -4,33 +4,11 @@
 Deploying corpusops based projects manually
 
 ## sumup
-- root: ``/home/f/namespace/myapp``
+- repo ($A_GIT_URL): https://gitlab.foo.net/foo/bar
+- root ($COPS_CWD): ``/home/f/namespace/myapp``
 - app_root:  ``appserver:/srv/projets/myapp/project``
 - data_root: ``appserver:/srv/projets/myapp/data``
 - user: ``myapp``
-
-## <a name="variables"/>Export variables
-- **Variables to export prior to inpute any commands (every time)**
-- Persistent settings
-
-    ```sh
-    cat .ansible/scripts/ansible_deploy_env.local
-    # should contain at least
-    # project repo
-    export A_GIT_URL=https://gitlab.foo.net/foo/bar
-    # local working directory
-    export COPS_CWD=$HOME/myapp
-    # verify adapt
-    $EDITOR .ansible/scripts/ansible_deploy_env.local
-    ```
-
-- Settings for the ansible commands
-
-    ```sh
-    # deploy enviroment & NONINTERACTIVITY *****ADAPT IT****
-    export A_ENV_NAME="staging"
-    export NONINTERACTIVE=1
-    ```
 
 ## <a name="prepare"/>Prepare localhost for deployment
 
@@ -38,12 +16,19 @@ Deploying corpusops based projects manually
 - Attention folder must be empty for cloning directly inside it.
 
     ```sh
+    export A_GIT_URL=https://gitlab.foo.net/foo/bar
+    export COPS_CWD=/home/f/namespace/myapp
     git clone --recursive "$A_GIT_URL" "$COPS_CWD"
     cd $COPS_CWD
     # if branch is not master
     # git checkout -b $A_ENV_NAME
     git submodule init
     git submodule update
+    # verify adapt
+    $EDITOR .ansible/scripts/ansible_deploy_env.local
+    # should contain at least: project namespace: $A_GIT_NAMESPACE & repo: $A_GIT_PROJECT+
+    # those 2 vars control also the path to the local vault password when you have to deploy to remote environments
+    # and certainly git server $A_GIT_SERVER), & git url $A_GIT_URL: ${A_GIT_SERVER}/$A_GIT_NAMESPACE/$A_GIT_PROJECT
     ```
 
 ### <a name="download"/>Download corpusops
