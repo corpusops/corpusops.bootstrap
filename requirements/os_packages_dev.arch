@@ -8,6 +8,6 @@ libsigc++
 openssl
 python
 swig
-pkg-config
+pkgconf
 libtool
 groff
