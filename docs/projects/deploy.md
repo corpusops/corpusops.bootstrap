@@ -12,24 +12,31 @@ Deploying corpusops based projects manually
 
 ## <a name="prepare"/>Prepare localhost for deployment
 
-### <a name="get"/>Get the code
+### <a name="get"/>Prepare context
 - Attention folder must be empty for cloning directly inside it.
 
     ```sh
     export A_GIT_URL=https://gitlab.foo.net/foo/bar
     export COPS_CWD=/home/f/namespace/myapp
-    git clone --recursive "$A_GIT_URL" "$COPS_CWD"
+        git clone --recursive "$A_GIT_URL" "$COPS_CWD"
     cd $COPS_CWD
     # if branch is not master
     # git checkout -b $A_ENV_NAME
     git submodule init
     git submodule update
+    ```
+
+### <a name="get"/>Verify core variables are in place
+- Before everything else, verify that setup for identifying your project is done
+
+    ```sh
     # verify adapt
     $EDITOR .ansible/scripts/ansible_deploy_env.local
     # should contain at least: project namespace: $A_GIT_NAMESPACE & repo: $A_GIT_PROJECT+
     # those 2 vars control also the path to the local vault password when you have to deploy to remote environments
     # and certainly git server $A_GIT_SERVER), & git url $A_GIT_URL: ${A_GIT_SERVER}/$A_GIT_NAMESPACE/$A_GIT_PROJECT
-    ```
+    ``` 
+
 
 ### <a name="download"/>Download corpusops
 - Attention local/corpusops.bootstrap folder must be empty for cloning directly inside it.
