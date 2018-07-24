@@ -18,7 +18,7 @@ Deploying corpusops based projects manually
     ```sh
     export A_GIT_URL=https://gitlab.foo.net/foo/bar
     export COPS_CWD=/home/f/namespace/myapp
-        git clone --recursive "$A_GIT_URL" "$COPS_CWD"
+    git clone --recursive "$A_GIT_URL" "$COPS_CWD"
     cd $COPS_CWD
     # if branch is not master
     # git checkout -b $A_ENV_NAME
