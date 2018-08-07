@@ -44,6 +44,12 @@ for vault_var in $VAULT_VARS;do
     f="$SECRET_VAULT_PREFIX.$vault_name"
     echo "setup $vault_name vault password file: ($f)"
     if [[ -n "$val" ]];then
+        if ( echo "$f" | egrep -q "/" )then
+            vaultsfolder="$(dirname $f)"
+            if [ ! -e "$vaultf" ];then
+                mkdir -p "$vaultsfolder"
+            fi
+        fi
         echo "$val" > "$f"
         chmod 600 "$f"
     fi
