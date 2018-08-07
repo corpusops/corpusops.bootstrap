@@ -812,7 +812,7 @@ if [ "x${ANSIBLE_CONNECTION}" = "x" ] && [ "x${A_INVENTORY}" = "xlocalhost," ];t
 fi
 #
 DEFAULT_SECRET_VAULTS=""
-DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
+DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-${A_GIT_NAMESPACE//\//___}.$A_GIT_PROJECT"
 DEFAULT_SECRET_VAULTS=""
 i="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
 if [ -e "$i" ];then
@@ -899,3 +899,4 @@ fi
 if [[ -n ${ANSIBLE_HOST_KEY_CHECKING-} ]];then
     export ANSIBLE_HOST_KEY_CHECKING
 fi
+# vim:set et sts=4 ts=4 tw=80:
