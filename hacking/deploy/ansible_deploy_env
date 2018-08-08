@@ -715,6 +715,17 @@ set_base_vars() {
 }
 call_cops_installer() { ( export NONINTERACTIVE=1; \
     "$COPS_INSTALLER" $@; ); }
+warn_vault() {
+    if [[ -z $vaultpwfiles ]];then
+        if [[ -n $SECRET_VAULTS ]];then
+            log "No vault password found in (last HAS MORE priority): $SECRET_VAULTS"
+        elif [[ -n $DEFAULT_SEARCHED_SECRET_VAULTS ]];then
+            log "No vault password found in (last HAS MORE priority): $DEFAULT_SEARCHED_SECRET_VAULTS"
+        fi
+    fi
+}
+
+
 #
 set_base_vars $@
 do_unset
@@ -773,6 +784,7 @@ DEFAULT_A_GIT_NAMESPACE="$(basename $(dirname $COPS_CWD))"
 DEFAULT_A_GIT_PROJECT="$(basename $COPS_CWD)"
 export A_GIT_PROJECT="${A_GIT_PROJECT-${DEFAULT_A_GIT_PROJECT}}"
 export A_GIT_NAMESPACE="${A_GIT_NAMESPACE-${DEFAULT_A_GIT_NAMESPACE}}"
+export SANE_A_GIT_NAMESPACE=${A_GIT_NAMESPACE//\//___}
 DEFAULT_A_GIT_URL="${A_GIT_SERVER}/${A_GIT_NAMESPACE}/${A_GIT_PROJECT}"
 export A_GIT_URL="${A_GIT_URL:-$DEFAULT_A_GIT_URL}"
 export A_VAULT_NAME="${A_VAULT_NAME-${A_ENV_NAME}}"
@@ -812,14 +824,17 @@ if [ "x${ANSIBLE_CONNECTION}" = "x" ] && [ "x${A_INVENTORY}" = "xlocalhost," ];t
 fi
 #
 DEFAULT_SECRET_VAULTS=""
-DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-${A_GIT_NAMESPACE//\//___}.$A_GIT_PROJECT"
+DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-${SANE_A_GIT_NAMESPACE}.$A_GIT_PROJECT"
 DEFAULT_SECRET_VAULTS=""
-i="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT"
+DEFAULT_SEARCHED_SECRET_VAULTS=""
+i="$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT"
+DEFAULT_SEARCHED_SECRET_VAULTS="$DEFAULT_SEARCHED_SECRET_VAULTS $i"
 if [ -e "$i" ];then
     DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
 fi
 if [[ -n "${A_VAULT_NAME}" ]];then
-    i="$HOME/.ansiblevault-$A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME"
+    i="$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME"
+    DEFAULT_SEARCHED_SECRET_VAULTS="$DEFAULT_SEARCHED_SECRET_VAULTS $i"
     if [ -e "$i" ];then
         DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
     fi
