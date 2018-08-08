@@ -45,6 +45,7 @@ if [[ -z "$PLAYBOOK" ]] && [[ -z "$@" ]];then
 fi
 
 set_core_variables
+warn_vault
 
 launchlog="$A_LAUNCH_CMD ${@}"
 
