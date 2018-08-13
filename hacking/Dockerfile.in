@@ -29,12 +29,14 @@ ADD requirements/ $COPS_ROOT/requirements/
 RUN bash -c 'step_rev=2;set -ex;\
     : reinstall py build prereqs;\
     pip2 uninstall -y ipaddr docker-py;\
+    export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
     $COPS_ROOT/bin/install.sh -C --skip-sync-code;\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
 
 # Install docker client for dind(sibling via docker socket) workflows
 RUN bash -c 'step_rev=2;set -e;\
+    export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml \
       -e "{corpusops_localsettings_docker_has_docker_py: true}"'
