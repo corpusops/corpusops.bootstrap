@@ -55,7 +55,8 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
     DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 \
       $COPS_ROOT/bin/cops_pkgmgr_install.sh; \
-    && : install gosu \
+    :; \
+    : install gosu \
     && mkdir /tmp/gosu && cd /tmp/gosu \
     && arch=$( dpkg --print-architecture|awk -F- "{ print \$NF }"; ) \
     && gpg -q --keyserver keyserver.ubuntu.com --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
