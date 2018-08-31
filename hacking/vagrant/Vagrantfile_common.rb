@@ -422,9 +422,10 @@ def cops_init(opts)
                        " #{machine_num}" \
                        " #{cfg['VB_NAME_POST']}(#{cfg['SCWD']})")
         ssh_username = "vagrant"
-        if ['xenial'].include? machine_cfg['OS_RELEASE']
-            ssh_username = "ubuntu"
-        end
+        # not on the new base boxes ... omg
+        #if ['xenial'].include? machine_cfg['OS_RELEASE']
+        #    ssh_username = "ubuntu"
+        #end
         machine_config(cfg, machine_num, 'SSH_USERNAME', ssh_username)
         machine_config(cfg, machine_num,
                        'PRIVATE_NETWORK_NUM',
