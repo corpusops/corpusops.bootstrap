@@ -33,7 +33,7 @@ fi
 # Setup ansible vault password files if any (via gitlab secret variable)
 # from each found CORPUSOPS_VAULT_PASSWORD_XXX
 export VAULT_VARS=$( printenv \
-    | egrep -oe "^${VAULT_PASSWORD_VARIABLES_PREFIX}[a-zA-Z]+=" \
+    | egrep -oe "^${VAULT_PASSWORD_VARIABLES_PREFIX}[a-zA-Z0-9]+=" \
     | sed -e "s/=$//g"|awk '!seen[$0]++')
 debug "VAULT_VARS: $VAULT_VARS"
 
