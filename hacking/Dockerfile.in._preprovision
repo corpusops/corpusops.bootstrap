@@ -70,12 +70,7 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     && mv -f gosu-$arch /usr/bin/gosu \
     && chmod +x /usr/bin/gosu; \
     : "Disable services from being started during apt-gets"; \
-    $COPS_ROOT/hacking/docker_toggle_pm rc_on \
-    && : Install dockerize \
-    && curl -sOL https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    '
+    $COPS_ROOT/hacking/docker_toggle_pm rc_on'
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
