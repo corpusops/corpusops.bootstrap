@@ -680,7 +680,7 @@ else
     amsg="$amsg fallback to system ansible: $EXEC_SCRIPT"
     warn $amsg
 fi
-if [[ -z "${DISABLE-MITOGEN}" ]] && ( python -c "import ansible_mitogen" 1>/dev/null 2>&1 );then
+if [[ -z "${DISABLE_MITOGEN}" ]] && ( python -c "import ansible_mitogen" 1>/dev/null 2>&1 );then
     debug "Activating mitogen, set ANSIBLE_STRATEGY=linear to disable"
     py="from __future__ import print_function"
     py="$py;import ansible_mitogen;print(ansible_mitogen.__path__[0])"
