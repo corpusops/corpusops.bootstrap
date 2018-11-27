@@ -10,6 +10,7 @@ ARG NO_OUTPUT=y
 ARG USE_VENV=no
 ARG PYTHONUNBUFFERED=1
 ARG NONINTERACTIVE="y"
+ARG DOCKERIZE_VERSION v0.6.1
 # ARG DEFAULT_A_VERBOSITY="-vvvvv -e cops_vars_debug=true"
 ARG DEFAULT_A_VERBOSITY=""
 ENV ANSIBLE_FORCE_COLOR=true
@@ -17,6 +18,7 @@ ENV PYTHONUNBUFFERED $PYTHONUNBUFFERED
 ENV NONINTERACTIVE=$NONINTERACTIVE
 ENV COPS_ROOT $COPS_ROOT
 ENV A_VERBOSITY="$DEFAULT_A_VERBOSITY"
+ENV DOCKERIZE_VERSION=$DOCKERIZE_VERSION
 ENV _cops_ar "$COPS_ROOT/bin/cops_apply_role"
 ENV _sapply_role "$COPS_ROOT/bin/silent_run $_cops_ar $A_VERBOSITY"
 ENV _apply_role "$_cops_ar $A_VERBOSITY"
@@ -29,6 +31,7 @@ ENV _call_roles=".ansible/scripts/call_roles.sh     $A_VERBOSITY"
 COPY requirements/os_* $COPS_ROOT/requirements/
 COPY hacking/docker_toggle_pm $COPS_ROOT/hacking/
 COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
+
 RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
@@ -70,7 +73,12 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     && mv -f gosu-$arch /usr/bin/gosu \
     && chmod +x /usr/bin/gosu; \
     : "Disable services from being started during apt-gets"; \
-    $COPS_ROOT/hacking/docker_toggle_pm rc_on'
+    $COPS_ROOT/hacking/docker_toggle_pm rc_on \
+    && : Install dockerize
+    && curl -sOL https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    '
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
