@@ -172,7 +172,8 @@ Deploying corpusops based projects manually
     ```
 
 ### <a name="sshdeploysetup"></a>GENERIC ssh setup
-- Generate a key from the vault for ansible to connect to remote boxes
+- Generate from the vault iinventory you just did the ssh connection keyfile
+  for ansible to connect to remote boxes
 
     ```sh
     # Generate SSH deploy key locally for ansible to work and dump
