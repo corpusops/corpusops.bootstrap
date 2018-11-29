@@ -63,7 +63,7 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     && : ::: \
     && mkdir /tmp/gosu && cd /tmp/gosu \
     && : :: gosu: search latest artefacts and SHA files \
-    && arch=$( dpkg --print-architecture|awk -F- "{ print \$NF }"; ) \
+    && arch=$( arch|sed -re "s/x86_64/amd64/g" ) \
     && : one keyserver may fail, try on multiple servers \
     && for k in $GPG_KEYS;do \
         touch /k_$k \
