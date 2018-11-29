@@ -22,6 +22,9 @@ ENV _apply_role "$_cops_ar $A_VERBOSITY"
 ENV _silent_run "$COPS_ROOT/bin/silent_run"
 ENV _call_ansible=".ansible/scripts/call_ansible.sh $A_VERBOSITY"
 ENV _call_roles=".ansible/scripts/call_roles.sh     $A_VERBOSITY"
+# See https://github.com/nodejs/docker-node/issues/380
+ARG GPG_KEYS=B42F6819007F00F88E364FD4036A9C25BF357DD4
+ARG GPG_KEYS_SERVERS="keyserver.ubuntu.com hkp://p80.pool.sks-keyservers.net:80 hkp://ipv4.pool.sks-keyservers.net hkp://pgp.mit.edu:80"
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
@@ -54,27 +57,30 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     echo "packages: " $WANTED_PACKAGES >&2;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
     DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 \
-      $COPS_ROOT/bin/cops_pkgmgr_install.sh; \
-    :; \
-    : install gosu \
+      $COPS_ROOT/bin/cops_pkgmgr_install.sh \
+    && : ::: \
+    && : install gosu \
+    && : ::: \
     && mkdir /tmp/gosu && cd /tmp/gosu \
+    && : :: gosu: search latest artefacts and SHA files \
     && arch=$( dpkg --print-architecture|awk -F- "{ print \$NF }"; ) \
-    && gpg -q --keyserver keyserver.ubuntu.com --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
+    && : one keyserver may fail, try on multiple servers \
+    && for k in $GPG_KEYS;do \
+        touch /k_$k \
+        && for s in $GPG_KEYS_SERVERS;do if ( gpg -q --batch --keyserver $s --recv-keys $k );then rm -f /k_$k && break;fi;done \
+        && if [ -e /k_$k ];then exit 1;fi \
+       done \
     && urls="$( curl -s "https://api.github.com/repos/tianon/gosu/releases/latest" \
                | grep browser_download_url | cut -d "\"" -f 4\
                | egrep -i "sha|$arch"; )" \
+    && : :: gosu: download artefacts \
     && while read u;do curl -sLO $u;done <<< "$urls" \
+    && : :: gosu: integrity check \
     && for i in SHA256SUMS gosu-$arch;do gpg -q --batch --verify $i.asc $i &> /dev/null;done \
     && grep gosu-$arch SHA256SUMS | sha256sum -c - >/dev/null \
+    && : :: gosu: filesystem install \
     && mv -f gosu-$arch /usr/bin/gosu \
-    && chmod +x /usr/bin/gosu; \
-    : "Disable services from being started during apt-gets"; \
-    $COPS_ROOT/hacking/docker_toggle_pm rc_on \
-    && : Install dockerize \
-    && curl -sOL https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    '
+    && chmod +x /usr/bin/gosu'
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
