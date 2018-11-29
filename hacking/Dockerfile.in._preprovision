@@ -25,7 +25,7 @@ ENV _call_ansible=".ansible/scripts/call_ansible.sh $A_VERBOSITY"
 ENV _call_roles=".ansible/scripts/call_roles.sh     $A_VERBOSITY"
 # See https://github.com/nodejs/docker-node/issues/380
 ARG GPG_KEYS=B42F6819007F00F88E364FD4036A9C25BF357DD4
-ARG GPG_KEYS_SERVERS="keyserver.ubuntu.com hkp://p80.pool.sks-keyservers.net:80 hkp://ipv4.pool.sks-keyservers.net hkp://pgp.mit.edu:80"
+ARG GPG_KEYS_SERVERS="hkp://p80.pool.sks-keyservers.net:80 hkp://ipv4.pool.sks-keyservers.net hkp://pgp.mit.edu:80"
 
 # 1/ - Prebuild requirements & helpers,
 #    - Make also life easier for systemd based containers
