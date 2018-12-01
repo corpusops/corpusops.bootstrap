@@ -63,9 +63,9 @@ else
     fi
 fi
 if [[ -n "${@}" ]];then
-    quiet_vv echo $A_LAUNCH_CMD "${@}"
+    quiet_vv $A_LAUNCH_CMD "${@}"
 else
-    quiet_vv echo $A_LAUNCH_CMD
+    quiet_vv $A_LAUNCH_CMD
 fi
 ret=$?
 if [[ -z ${NO_SILENT} ]] && [[ -z $QUIET ]] && [[ "$ret" != "0" ]];then
