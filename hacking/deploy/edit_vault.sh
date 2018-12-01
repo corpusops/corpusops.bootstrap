@@ -19,9 +19,6 @@ according to $A_ENV_NAME or DEFAULT_PASWORD
 }
 
 parse_cli $@
-if [[ -z $@ ]];then
-    ensure_ansible_env
-fi
 
 A_CRYPTED_VAULTS=${@:-${A_CRYPTED_VAULTS}}
 
@@ -30,6 +27,8 @@ edit_vault() {
     if [ -e $vault ];then mode=edit;else mode=create;fi
     debug "${mode}: $vault"
     warn_vault
+    vaultd="$(dirname "$vault")"
+    if [ ! -e "$vaultd" ];then mkdir -p "$vaultd";fi
     vv ansible-vault $mode $vaultpwfiles $vault
 }
 
