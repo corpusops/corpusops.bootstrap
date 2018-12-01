@@ -27,7 +27,6 @@ A_CRYPTED_VAULTS=${@:-${A_CRYPTED_VAULTS}}
 
 edit_vault() {
     local vault=$1
-    echo $vault
     if [ -e $vault ];then mode=edit;else mode=create;fi
     debug "${mode}: $vault"
     warn_vault
