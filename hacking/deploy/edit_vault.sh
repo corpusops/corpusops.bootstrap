@@ -12,19 +12,22 @@ usage() {
 [A_CRYPTED_VAULTS= ] \\
     '$0' [vaultfile1] [vaultfile2] ...
 
-Wrapper to call ansible-vault with the selected vault password file, according to $A_ENV_NAME
-
+Wrapper to call ansible-vault with the selected vault password file,
+according to $A_ENV_NAME or DEFAULT_PASWORD
 
 '
 }
 
 parse_cli $@
-ensure_ansible_env
+if [[ -z $@ ]];then
+    ensure_ansible_env
+fi
 
 A_CRYPTED_VAULTS=${@:-${A_CRYPTED_VAULTS}}
 
 edit_vault() {
     local vault=$1
+    echo $vault
     if [ -e $vault ];then mode=edit;else mode=create;fi
     debug "${mode}: $vault"
     warn_vault
