@@ -816,7 +816,7 @@ if [ ! -e $DEFAULT_A_INVENTORY_FILE ];then
         DEFAULT_A_INVENTORY_FILE=$A_VAGRANT_INVENTORY
     fi
 fi
-if [[ -z "${A_ENV_NAME}" ]];then warn "\$A_ENV_NAME is empty !";fi
+if [[ -z "${A_ENV_NAME}" ]];then debug "BIG WARNING: \$A_ENV_NAME is empty !";fi
 A_INVENTORY_FILE_SUF=""
 DEFAULT_A_INVENTORY=""
 export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
