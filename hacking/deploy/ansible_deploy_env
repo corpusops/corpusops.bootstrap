@@ -683,6 +683,7 @@ EOF
     debug "$(cat $COREVARS_VAULT)"
 }
 set_vaultpwfiles() {
+    local SECRET_VAULT="" vault=""
     vaultpwfiles=''
     debug "SECRET_VAULTS: $SECRET_VAULTS"
     for SECRET_VAULT in $SECRET_VAULTS;do
@@ -831,6 +832,22 @@ if [ "x${ANSIBLE_CONNECTION}" = "x" ] && [ "x${A_INVENTORY}" = "xlocalhost," ];t
     export ANSIBLE_CONNECTION="-c local"
 fi
 #
+get_vaults_for_env() {
+    local envname=$1 vault="" i=""
+    env_vaults=""
+    env_searched_vaults=""
+    for i in \
+      "$(if [[ -n "${envname}" ]];then
+           echo "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT.$envname";
+         fi )" \
+      "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT" \
+        ;do if [[ -n "$i" ]];then
+        env_searched_vaults="$env_searched_vaults $i"
+        if [ -e "$i" ];then
+            env_vaults="$env_vaults $i"
+        fi
+    fi;done
+}
 VAULT_SECRET_GROUP_FILE="${SECRET_GROUP_VAULT:-${A_GROUP_VAULT_NAME:-default}.yml}"
 VAULT_SECRET_GROUP="${VAULT_SECRET_GROUP:-${A_ENV_NAME:-all}}"
 INVENTORY_GROUPVARS="$A_INVENTORY_FILE/group_vars"
@@ -852,22 +869,18 @@ DEFAULT_SECRET_VAULTS=""
 DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-${SANE_A_GIT_NAMESPACE}.$A_GIT_PROJECT"
 DEFAULT_SECRET_VAULTS=""
 DEFAULT_SEARCHED_SECRET_VAULTS=""
-for i in \
-  "$(if [[ -n "${A_VAULT_NAME}" ]];then
-       echo "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME";
-     fi )" \
-  "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT" \
-    ;do if [[ -n "$i" ]];then
-    DEFAULT_SEARCHED_SECRET_VAULTS="$DEFAULT_SEARCHED_SECRET_VAULTS $i"
-    if [ -e "$i" ];then
-        DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
-    fi
-fi;done
-debug "  \$SEARCHED_SECRET_VAULTS: $DEFAULT_SEARCHED_SECRET_VAULTS"
-debug "  \$SECRET_VAULTS: $DEFAULT_SECRET_VAULTS"
+reset_vaults() {
+    get_vaults_for_env "$A_ENV_NAME"
+    DEFAULT_SEARCHED_SECRET_VAULTS="$env_searched_vaults"
+    DEFAULT_SECRET_VAULTS="$env_vaults"
+    debug "  \$SEARCHED_SECRET_VAULTS: $DEFAULT_SEARCHED_SECRET_VAULTS"
+    debug "  \$SECRET_VAULTS: $DEFAULT_SECRET_VAULTS"
+    export SECRET_VAULTS="${SECRET_VAULTS-$DEFAULT_SECRET_VAULTS}"
+}
+reset_vaults
+#
 export PLAYBOOK_POST_ARGS="${PLAYBOOK_POST_ARGS-}"
 export PLAYBOOK_POST_CUSTOM_ARGS="${PLAYBOOK_POST_CUSTOM_ARGS-}"
-export SECRET_VAULTS="${SECRET_VAULTS-$DEFAULT_SECRET_VAULTS}"
 export SECRET_VAULT_PREFIX="${SECRET_VAULT_PREFIX-${DEFAULT_SECRET_VAULT_PREFIX}}"
 export VAULT_PASSWORD_VARIABLES_PREFIX=${VAULT_PASSWORD_VARIABLES_PREFIX:-CORPUSOPS_VAULT_PASSWORD_}
 DEFAULT_A_VAULTS="corevars.yml default.yml app.yml $A_VAULT_NAME.clear.yml $A_VAULT_NAME.yml local.yml $A_ENV_NAME.local.yml"
