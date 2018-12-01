@@ -679,8 +679,7 @@ cops_cwd: "$COPS_CWD"
 cops_playbooks: "$COPS_PLAYBOOKS"
 EOF
 
-    log "-> Using core vault: $COREVARS_VAULT"
-
+    debug "-> Using core vault: $COREVARS_VAULT"
     debug "$(cat $COREVARS_VAULT)"
 }
 set_vaultpwfiles() {
@@ -794,6 +793,7 @@ export SANE_A_GIT_NAMESPACE=${A_GIT_NAMESPACE//\//___}
 DEFAULT_A_GIT_URL="${A_GIT_SERVER}/${A_GIT_NAMESPACE}/${A_GIT_PROJECT}"
 export A_GIT_URL="${A_GIT_URL:-$DEFAULT_A_GIT_URL}"
 export A_VAULT_NAME="${A_VAULT_NAME-${A_ENV_NAME}}"
+export A_VAULT_NAMES="${A_VAULT_NAMES-${A_ENV_NAME}}"
 DEFAULT_A_VAULTS_FOLDER="$COPS_CWD/.ansible/vaults"
 export A_VAULTS_FOLDER="${A_VAULTS_FOLDER-${DEFAULT_A_VAULTS_FOLDER}}"
 DEFAULT_A_VAULTS_FOLDERS="$A_VAULTS_FOLDER $COPS_LOCAL_FOLDER"
@@ -801,14 +801,22 @@ export A_VAULTS_FOLDERS="${A_VAULTS_FOLDERS-$DEFAULT_A_VAULTS_FOLDERS}"
 DEFAULT_A_CRYPTED_VAULTS="$A_VAULTS_FOLDER/${A_ENV_NAME}.yml"
 export A_CRYPTED_VAULTS="${A_CRYPTED_VAULTS-${DEFAULT_A_CRYPTED_VAULTS}}"
 DEFAULT_A_INVENTORY_FILE=""
-if [[ -n "${A_ENV_NAME}" ]];then
-    DEFAULT_A_INVENTORY_FILE="$COPS_CWD/.ansible/inventory_${A_ENV_NAME}"
-    if [ ! -e $DEFAULT_A_INVENTORY_FILE ];then
-        if [[ "$A_ENV_NAME" == "vagrant" ]] && [ -e "$A_VAGRANT_INVENTORY" ] ;then
-            DEFAULT_A_INVENTORY_FILE=$A_VAGRANT_INVENTORY
-        fi
+for i in \
+    "$COPS_CWD/.ansible/inventory_${A_ENV_NAME-}" \
+    "$COPS_CWD/.ansible/inventory" \
+;do
+    if [ -e "$i" ];then
+        debug " -> Using \$DEFAULT_GLOBAL_A_INVENTORY_FILE: $i"
+        export DEFAULT_A_INVENTORY_FILE="$i"
+        break
+    fi
+done
+if [ ! -e $DEFAULT_A_INVENTORY_FILE ];then
+    if [[ "$A_ENV_NAME" == "vagrant" ]] && [ -e "$A_VAGRANT_INVENTORY" ] ;then
+        DEFAULT_A_INVENTORY_FILE=$A_VAGRANT_INVENTORY
     fi
 fi
+if [[ -z "${A_ENV_NAME}" ]];then warn "\$A_ENV_NAME is empty !";fi
 A_INVENTORY_FILE_SUF=""
 DEFAULT_A_INVENTORY=""
 export A_INVENTORY_FILE="${A_INVENTORY_FILE-${DEFAULT_A_INVENTORY_FILE}}"
@@ -818,8 +826,8 @@ if [[ -n "${A_INVENTORY_FILE}" ]];then
     fi
     DEFAULT_A_INVENTORY="-i ${A_INVENTORY_FILE}${A_INVENTORY_FILE_SUF}"
 fi
-A_INVENTORY="${A_INVENTORY-${DEFAULT_A_INVENTORY}}"
 # Do not set inventory if redefined in $@
+A_INVENTORY="${A_INVENTORY:-${DEFAULT_A_INVENTORY}}"
 if echo $@ | egrep -iq -- "(( ?-i( +|localhost))|(--(inventory-file|inventory)(=| )))";then
     debug "Inventory CLI switch detected, removing default one"
     A_INVENTORY=""
@@ -833,18 +841,19 @@ DEFAULT_SECRET_VAULTS=""
 DEFAULT_SECRET_VAULT_PREFIX="$HOME/.ansiblevault-${SANE_A_GIT_NAMESPACE}.$A_GIT_PROJECT"
 DEFAULT_SECRET_VAULTS=""
 DEFAULT_SEARCHED_SECRET_VAULTS=""
-i="$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT"
-DEFAULT_SEARCHED_SECRET_VAULTS="$DEFAULT_SEARCHED_SECRET_VAULTS $i"
-if [ -e "$i" ];then
-    DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
-fi
-if [[ -n "${A_VAULT_NAME}" ]];then
-    i="$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME"
+for i in \
+  "$(if [[ -n "${A_VAULT_NAME}" ]];then
+       echo "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT.$A_VAULT_NAME";
+     fi )" \
+  "$HOME/.ansiblevault-$SANE_A_GIT_NAMESPACE.$A_GIT_PROJECT" \
+    ;do if [[ -n "$i" ]];then
     DEFAULT_SEARCHED_SECRET_VAULTS="$DEFAULT_SEARCHED_SECRET_VAULTS $i"
     if [ -e "$i" ];then
         DEFAULT_SECRET_VAULTS="$DEFAULT_SECRET_VAULTS $i"
     fi
-fi
+fi;done
+debug "  \$SEARCHED_SECRET_VAULTS: $DEFAULT_SEARCHED_SECRET_VAULTS"
+debug "  \$SECRET_VAULTS: $DEFAULT_SECRET_VAULTS"
 export PLAYBOOK_POST_ARGS="${PLAYBOOK_POST_ARGS-}"
 export PLAYBOOK_POST_CUSTOM_ARGS="${PLAYBOOK_POST_CUSTOM_ARGS-}"
 export SECRET_VAULTS="${SECRET_VAULTS-$DEFAULT_SECRET_VAULTS}"
@@ -888,7 +897,6 @@ export PATH="$LOCAL_COPS_ROOT/bin:$LOCAL_COPS_ROOT/venv/bin:$PATH"
 run_verbose=
 if [[ -z "$NO_SILENT" ]];then run_verbose="output_in_error";fi
 set_vaultpwfiles
-A_INVENTORY_SLUG=
 if [[ -n ${A_INVENTORY} ]];then
     if echo $A_INVENTORY | egrep -iq -- "(( ?-i)|(--(inventory-file|inventory)(=| )))";then
         A_INVENTORY_SLUG="$A_INVENTORY"
