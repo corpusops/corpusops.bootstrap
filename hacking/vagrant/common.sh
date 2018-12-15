@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
+readlinkf() {
+    if ( uname | egrep -iq "linux|darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        readlink -f "$@"
+    fi
+}
 shopt -s extglob
 
-COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlink -f "$0")")}
-W=${W:-$(readlink -f "$COPS_VAGRANT_DIR/../..")}
+COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlinkf "$0")")}
+W=${W:-$(readlinkf "$COPS_VAGRANT_DIR/../..")}
 
 sourcefile() {
     for i in $@;do
@@ -22,6 +35,19 @@ if [ -e /root/vagrant/provision_settings.sh ];then
 fi
 
 # BEGIN: corpusops common glue
+readlinkf() {
+    if ( uname | egrep -iq "linux|darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        readlink -f "$@"
+    fi
+}
 # scripts vars
 SCRIPT=$0
 LOGGER_NAME=${LOGGER_NAME-$(basename $0)}

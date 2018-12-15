@@ -2,9 +2,22 @@
 #
 # Launch a container like packer would have to debug builds
 #
+readlinkf() {
+    if ( uname | egrep -iq "linux|darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        readlink -f "$@"
+    fi
+}
 W=$(pwd)
 export LOGGER_NAME=packer_test
-sc=$(dirname $(readlink -f "$0"))/../bin/cops_shell_common
+sc=$(dirname $(readlinkf "$0"))/../bin/cops_shell_common
 [[ ! -e $sc ]] && echo "missing $sc" >&2
 . "$sc" || exit 1
 usage() {
@@ -44,7 +57,7 @@ LOCAL_COPS_ROOT=${LOCAL_COPS_ROOT:-$W/local/corpusops.bootstrap}
 COPS_ROOT=${COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT:-/srv/corpusops/corpusops.bootstrap}
 if [ -e $COPS_ROOT ];then
-    COPS_ROOT=$(readlink -f $COPS_ROOT)
+    COPS_ROOT=$(readlinkf $COPS_ROOT)
 fi
 COPS_PLAY="${COPS_PLAY:-.ansible/site.yml}"
 COPS_ALTPLAY="${COPS_ALTPLAY:-.ansible/playbooks/site.yml}"
