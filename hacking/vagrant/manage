@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
+readlinkf() {
+    if ( uname | egrep -iq "linux|darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        readlink -f "$@"
+    fi
+}
 W=${W:-$(cd "$(dirname $0)" && pwd)}
-COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlink -f "$0")")}
+COPS_VAGRANT_DIR=${COPS_VAGRANT_DIR:-$(dirname "$(readlinkf "$0")")}
 
 
 . "$COPS_VAGRANT_DIR/common.sh" || exit 1

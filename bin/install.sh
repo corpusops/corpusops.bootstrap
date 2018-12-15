@@ -5,6 +5,19 @@ LOGGER_NAME=cs
 
 
 # BEGIN: corpusops common glue
+readlinkf() {
+    if ( uname | egrep -iq "linux|darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        readlink -f "$@"
+    fi
+}
 # scripts vars
 SCRIPT=$0
 LOGGER_NAME=${LOGGER_NAME-$(basename $0)}
@@ -596,7 +609,7 @@ usage() { die 128 "No usage found"; }
 # END: corpusops common glue
 
 CORPUSOPS_VERSION="1.0"
-THIS="$(readlink -f "${0}")"
+THIS="$(readlinkf "${0}")"
 LAUNCH_ARGS=${@}
 
 get_cops_pip() {
