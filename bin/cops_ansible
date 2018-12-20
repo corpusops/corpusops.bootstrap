@@ -275,6 +275,7 @@ version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
 is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
+is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine"; }
 is_redhat_like() { echo $DISTRIB_ID \
         | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
