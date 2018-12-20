@@ -250,6 +250,7 @@ version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
 is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
+is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine"; }
 is_redhat_like() { echo $DISTRIB_ID \
         | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
@@ -264,7 +265,7 @@ detect_os() {
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
     DISTRIB_RELEASE=""
-    if hash -r lsb_release >/dev/null 2>&1; then
+    if ( lsb_release -h >/dev/null 2>&1 ); then
         DISTRIB_ID=$(lsb_release -si)
         DISTRIB_CODENAME=$(lsb_release -sc)
         DISTRIB_RELEASE=$(lsb_release -sr)
@@ -606,7 +607,7 @@ usage() { die 128 "No usage found"; }
 usage() {
     echo '
 Universal shell wrapper to manage OS package manager
-OS SUPPORT: debian(& ubuntu) / archlinux / red-hat (centos/rh/fedora)
+OS SUPPORT: debian(& ubuntu) / archlinux / red-hat (centos/rh/fedora) / alpine
 
 [NONINTERACTIVE="y"] \
 [WANTED_EXTRA_PACKAGES="vim"] \
@@ -890,6 +891,8 @@ parse_cli() {
     done
     if ( is_debian_like; );then
         INSTALLER=aptget
+    elif ( is_alpine_like; );then
+        INSTALLER=apk
     elif ( is_archlinux_like; );then
         INSTALLER=pacman
     elif ( is_redhat_like; );then
@@ -1015,6 +1018,42 @@ prepare_install() {
     fi
 }
 
+###
+is_apk_available() {
+    for i in $@;do
+        if ! ( apk info $i >/dev/null 2>&1 );then
+            return 1
+        fi
+    done
+    return 0
+}
+
+is_apk_installed() {
+    for i in $@;do
+        if ! ( apk info -e $i >/dev/null 2>&1 ); then
+            return 1
+        fi
+    done
+    return 0
+}
+
+apk_update() {
+    vvv apk update
+}
+
+apk_upgrade() {
+    vvv apk upgrade --available
+}
+
+apk_install() {
+    vvv apk add ${@}
+}
+
+apk_setup() {
+    :
+}
+
+###
 setup() {
     if [ x"${SKIP_SETUP}" = "x" ] && [ x"${DO_SETUP}" != "x" ];then
         debug ${INSTALLER}_setup
@@ -1086,4 +1125,5 @@ else
     fi
 fi
 exit $ret
+
 # vim:set et sts=4 ts=4 tw=80:
