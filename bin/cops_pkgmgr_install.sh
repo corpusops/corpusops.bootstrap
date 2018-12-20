@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # BEGIN: corpusops common glue
 readlinkf() {
     if ( uname | egrep -iq "linux|darwin|bsd" );then
@@ -76,22 +76,22 @@ uniquify_string() {
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
 is_ci() {
-    return $( ( [[ -n ${TRAVIS-} ]] || [[ -n ${GITLAB_CI} ]] );echo $?;)
+    return $( ( [ "x${TRAVIS-}" != "x" ] || [ "x${GITLAB_CI}" != "x" ] );echo $?;)
 }
 log_() {
     reset_colors;msg_color=${2:-${YELLOW}};
     logger_color=${1:-${RED}};
     logger_slug="${logger_color}[${LOGGER_NAME}]${NORMAL} ";
     shift;shift;
-    if [[ -n ${NO_LOGGER_SLUG} ]];then logger_slug="";fi
+    if [ "${NO_LOGGER_SLUG}" != "x" ];then logger_slug="";fi
     printf "${logger_slug}${msg_color}$(echo "${@}")${NORMAL}\n" >&2;
     printf "" >&2;  # flush
 }
-reset_colors() { if [[ -n ${NO_COLOR} ]];then BLUE="";YELLOW="";RED="";CYAN="";fi; }
+reset_colors() { if [ "x${NO_COLOR}" != "x" ];then BLUE="";YELLOW="";RED="";CYAN="";fi; }
 log() { log_ "${RED}" "${CYAN}" "${@}"; }
 get_chrono() { date "+%F_%H-%M-%S"; }
 cronolog() { log_ "${RED}" "${CYAN}" "($(get_chrono)) ${@}"; }
-debug() { if [[ -n "${DEBUG// }" ]];then log_ "${YELLOW}" "${YELLOW}" "${@}"; fi; }
+debug() { if [ "x${DEBUG-}" != "x" ];then log_ "${YELLOW}" "${YELLOW}" "${@}"; fi; }
 warn() { log_ "${RED}" "${CYAN}" "${YELLOW}[WARN] ${@}${NORMAL}"; }
 bs_log(){ log_ "${RED}" "${YELLOW}" "${@}"; }
 bs_yellow_log(){ log_ "${YELLOW}" "${YELLOW}" "${@}"; }
@@ -102,7 +102,7 @@ may_die() {
     shift
     shift
     if [ "x${thetest}" != "x0" ]; then
-        if [[ -z "${NO_HEADER-}" ]]; then
+        if [ "x${NO_HEADER-}" = "x" ]; then
             NO_LOGGER_SLUG=y log_ "" "${CYAN}" "Problem detected:"
         fi
         NO_LOGGER_SLUG=y log_ "${RED}" "${RED}" "$@"
@@ -129,7 +129,7 @@ parse_cli_common() {
         esac
     done
     reset_colors
-    if [[ -n ${USAGE} ]]; then
+    if [ "x${USAGE}" != "x" ]; then
         usage
     fi
 }
@@ -157,12 +157,12 @@ pipe_return() {
 output_in_error() { ( do_trap output_in_error_post EXIT TERM QUIT INT;\
                       output_in_error_ "${@}" ; ); }
 output_in_error_() {
-    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set -x;fi
+    if [ "x${OUTPUT_IN_ERROR_DEBUG-}" != "x" ];then set -x;fi
     if is_ci;then
         DEFAULT_CI_BUILD=y
     fi
     CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
-    if [[ -n $CI_BUILD ]];then
+    if [ "x$CI_BUILD" != "x" ];then
         DEFAULT_NO_OUTPUT=y
         DEFAULT_DO_OUTPUT_TIMER=y
     fi
@@ -171,8 +171,8 @@ output_in_error_() {
     NO_OUTPUT="${NO_OUTPUT-${DEFAULT_NO_OUTPUT-1}}"
     DO_OUTPUT_TIMER="${DO_OUTPUT_TIMER-$DEFAULT_DO_OUTPUT_TIMER}"
     LOG=${LOG-}
-    if [[ -n $NO_OUTPUT ]];then
-        if [[ -z "${LOG}" ]];then
+    if [ "x$NO_OUTPUT" != "x" ];then
+        if [  "x${LOG}" = "x" ];then
             LOG=$(mktemp)
             DEFAULT_CLEANUP_LOG=y
         else
@@ -182,30 +182,30 @@ output_in_error_() {
         DEFAULT_CLEANUP_LOG=
     fi
     CLEANUP_LOG=${CLEANUP_LOG:-${DEFAULT_CLEANUP_LOG}}
-    if [[ -n $VERBOSE ]];then
-        log "Running$([[ -n $LOG ]] && echo "($LOG)"; ): $@";
+    if [ "x$VERBOSE" != "x" ];then
+        log "Running$([ "x$LOG" != "x" ] && echo "($LOG)"; ): $@";
     fi
     TMPTIMER=
-    if [[ -n ${DO_OUTPUT_TIMER} ]]; then
+    if [ "x${DO_OUTPUT_TIMER}" = "x" ]; then
         TMPTIMER=$(mktemp)
         ( i=0;\
           while test -f $TMPTIMER;do\
            i=$((++i));\
            if [ `expr $i % $TIMER_FREQUENCE` -eq 0 ];then \
-               log "BuildInProgress$([[ -n $LOG ]] && echo "($LOG)"; ): ${@}";\
+               log "BuildInProgress$([ "x$LOG" != "x" ] && echo "($LOG)"; ): ${@}";\
              i=0;\
            fi;\
            sleep 1;\
           done;\
-          if [[ -n $VERBOSE ]];then log "done: ${@}";fi; ) &
+          if [ "x$VERBOSE" != "x" ];then log "done: ${@}";fi; ) &
     fi
     # unset NO_OUTPUT= LOG= to prevent output_in_error children to be silent
     # at first
     reset_env="NO_OUTPUT LOG"
-    if [[ -n $NO_OUTPUT ]];then
+    if [ "x$NO_OUTPUT" != "x" ];then
         ( unset $reset_env;"${@}" ) >>"$LOG" 2>&1;ret=$?
     else
-        if [[ -n $LOG ]] && has_command tee;then
+        if [ "x$LOG" != "x" ] && has_command tee;then
             ( unset $reset_env; pipe_return "tee -a $tlog" "${@}"; )
             ret=$?
         else
@@ -213,20 +213,20 @@ output_in_error_() {
             ret=$?
         fi
     fi
-    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
-    if [[ -z ${OUTPUT_IN_ERROR_NO_WAIT-} ]];then wait;fi
-    if [ -e "$LOG" ] &&  [[ "${ret}" != "0" ]] && [[ -n $NO_OUTPUT ]];then
+    if [ -e "$TMPTIMER" ]; then rm -f "${TMPTIMER}";fi
+    if [ "x${OUTPUT_IN_ERROR_NO_WAIT-}" = "x" ];then wait;fi
+    if [ -e "$LOG" ] &&  [ "x${ret}" != "x0" ] && [ "x$NO_OUTPUT" != "x" ];then
         cat "$LOG" >&2
     fi
-    if [[ -n ${OUTPUT_IN_ERROR_DEBUG-} ]];then set +x;fi
+    if [ "x${OUTPUT_IN_ERROR_DEBUG-}" != "x" ];then set +x;fi
     return ${ret}
 }
 output_in_error_post() {
-    if [[ -e "$TMPTIMER" ]]; then rm -f "${TMPTIMER}";fi
-    if [[ -e "$LOG" ]] && [[ -n $CLEANUP_LOG ]];then rm -f "$LOG";fi
+    if [ -e "$TMPTIMER" ]; then rm -f "${TMPTIMER}";fi
+    if [ -e "$LOG" ] && [ "x$CLEANUP_LOG" != "x" ];then rm -f "$LOG";fi
 }
-test_silent_log() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT_LOG-} ]] || [[ -n "${SILENT_DEBUG}" ]] ) ); }
-test_silent() { ( [[ -z ${NO_SILENT-} ]] && ( [[ -n ${SILENT-} ]] || test_silent_log ) ); }
+test_silent_log() { ( [ "x${NO_SILENT-}" = "x" ] && ( [ "x${SILENT_LOG-}" != "x" ] || [ x"${SILENT_DEBUG}" != "x" ] ) ); }
+test_silent() { ( [ "x${NO_SILENT-}" = "x" ] && ( [ "x${SILENT-}" != "x" ] || test_silent_log ) ); }
 silent_run_() {
     (LOG=${SILENT_LOG:-${LOG}};
      NO_OUTPUT=${NO_OUTPUT-};\
@@ -236,14 +236,14 @@ silent_run() { ( silent_run_ "${@}" ; ); }
 run_silent() {
     (
     DEFAULT_RUN_SILENT=1;
-    if [[ -n ${NO_SILENT-} ]];then DEFAULT_RUN_SILENT=;fi;
+    if [ "x${NO_SILENT-}" != "x" ];then DEFAULT_RUN_SILENT=;fi;
     SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
     )
 }
 vvv() { debug "${@}";silent_run "${@}"; }
 vv() { log "${@}";silent_run "${@}"; }
 silent_vv() { SILENT=${SILENT-1} vv "${@}"; }
-quiet_vv() { if [[ -z ${QUIET-} ]];then log "${@}";fi;run_silent "${@}";}
+quiet_vv() { if [ "x${QUIET-}" = "x" ];then log "${@}";fi;run_silent "${@}";}
 version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
@@ -326,11 +326,11 @@ save_container() {
     local n="${1}"
     local d="${2:-${n}}"
     local running=$(docker ps -q    --filter 'name='$n)
-    if [[ -n "${running}" ]];then
+    if [ x"${running}" != "x" ];then
         vv docker kill "${running}"
     fi
     local cid=$(get_container_id $n)
-    if [[ -n "${cid}" ]];then
+    if [ x"${cid}" != "x" ];then
         vv docker commit "$cid" "$d"
         vv docker rm "$cid"
     else
@@ -349,13 +349,13 @@ get_full_chrono() { date "+%F_%H-%M-%S-%N"; }
 get_random_slug() { len=${1:-32};strings=${2:-'a-zA-Z0-9'};echo "$(cat /dev/urandom|tr -dc "$strings"|fold -w ${len}|head -n 1)"; }
 may_sudo() {
     if [ "$(whoami)" != "root" ] && [ -z "${NO_SUDO-}" ];then
-        echo "sudo $([[ -z $DIRECT_SUDO ]] && echo "-HE")"
+        echo "sudo $([ "x$DIRECT_SUDO" = "x" ] && echo "-HE")"
     fi
 }
 get_ancestor_from_dockerfile() {
     local dockerfile=${1}
     local ancestor=
-    if [[ -e "${dockerfile}" ]] && egrep -q ^FROM "${dockerfile}"; then
+    if [ -e "${dockerfile}" ] && egrep -q ^FROM "${dockerfile}"; then
         ancestor=$(egrep ^FROM "${dockerfile}"\
             | head -n1 | awk '{print $2}' | xargs -n1| sort -u )
     fi
@@ -373,14 +373,14 @@ do_tmp_cleanup() {
     done
     for test_docker in ${tmp_dockers};do
         test_dockerid=$(vvv get_container_id ${test_docker})
-        if [[ "${test_dockerid}" != "" ]]; then
+        if [ "x${test_dockerid}" != "x" ]; then
             log "Removing produced test docker ${test_docker}"
             docker rm -f "${test_dockerid}"
         fi
     done
     for test_tag in ${tmp_imgs};do
         test_tagid=$(vvv get_image ${test_tag})
-        if [[ "${test_tagid}" != "" ]]; then
+        if [ "x${test_tagid}" != "x" ]; then
             log "Removing produced test image: ${test_tag}"
             docker rmi "${test_tagid}"
         fi
@@ -421,7 +421,7 @@ upgrade_wd_to_br() {
             fi
         fi
         update_wd_to_br "$up_branch" "$wd" &&\
-        while read subdir;do
+        echo "${existing_gitmodules}" | while read subdir;do
             subdir=$(echo $subdir|sed -e "s/^\.\///g")
             if [ -h "${subdir}/.git" ] || [ -f "${subdir}/.git" ];then
                 debug "Checking if ${subdir} is always a submodule"
@@ -432,7 +432,7 @@ upgrade_wd_to_br() {
                     vv rm -rf "${subdir}"
                 fi
             fi
-        done < <( echo "${existing_gitmodules}" )
+        done
         if [ -e .gitmodules ];then
             warn "Upgrading submodules in $wd"
             vv git submodule update --recursive
@@ -443,7 +443,7 @@ get_python2() {
     local py2=
     for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
         local lpy=$(get_command $i 2>/dev/null)
-        if [[ -n $lpy ]] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
+        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
             py2=${lpy}
             break
         fi
@@ -566,7 +566,7 @@ make_virtualenv() {
             mkdir -p "${venv_path}"
         fi
     $venv \
-        $( [[ -n $py ]] && echo "--python=$py"; ) \
+        $( [ "x$py" != "x" ] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
@@ -592,7 +592,7 @@ ensure_last_python_requirement() {
     else
         local maysudo=$(may_sudo)
     fi
-    if [[ -n "$copt" ]];then
+    if [ "x$copt" != "x" ];then
         vvv $maysudo "$COPS_PYTHON" -m pip install \
             --src "$(get_eggs_src_dir)" $COPS_UPGRADE $copt "${PIP_CACHE}" $@
     else
@@ -636,7 +636,7 @@ WHOAMI=$(whoami)
 
 ###
 i_y() {
-    if [[ -n ${NONINTERACTIVE} ]]; then
+    if [ "x${NONINTERACTIVE}" != "x" ]; then
         if is_archlinux_like;then
             echo "--noconfirm"
         else
@@ -797,7 +797,7 @@ rh_is_available_but_maybe_provided_by_others() {
 }
 
 rh_is_available_but_maybe_provided_by_other() {
-    if [[ -z "$(rh_is_available_but_maybe_provided_by_others $@)" ]];then
+    if [ "x$(rh_is_available_but_maybe_provided_by_others $@)" = "x" ];then
         return 1
     fi
     return 0
@@ -808,7 +808,7 @@ rh_is_installed_but_maybe_provided_by_others() {
 }
 
 rh_is_installed_but_maybe_provided_by_other() {
-    if [[ -z "$(rh_is_installed_but_maybe_provided_by_others $@)" ]];then
+    if [ "x$(rh_is_installed_but_maybe_provided_by_others $@)" = "x"];then
         return 1
     fi
     return 0
@@ -834,7 +834,7 @@ is_aptget_installed() {
 }
 
 aptget_add_conf() {
-    if [[ -n "$2" ]] && grep -q "$2" $APT_CONF_FILE 2>/dev/null;then
+    if [ x"$2" != "x" ] && grep -q "$2" $APT_CONF_FILE 2>/dev/null;then
         log "test $2 success, skip adding slug $1"
     else
         echo "${1}" >> $APT_CONF_FILE
@@ -854,7 +854,7 @@ aptget_install() {
 }
 
 aptget_setup() {
-    if [[ -n "${NONINTERACTIVE}" ]];then
+    if [ x"${NONINTERACTIVE}" != "x" ];then
         export DEBIAN_FRONTEND=noninteractive
         aptget_add_conf "APT::Install-Recommends "0";" "APT::Install-Recommends"
         aptget_add_conf "APT::Get::Assume-Yes "true";" "APT::Get::Assume-Yes"
@@ -901,14 +901,14 @@ parse_cli() {
         sdie "Not supported os: ${DISTRIB_ID}"
     fi
     debug "INSTALLER: ${INSTALLER}"
-    if [[ -n $CHECK_OS ]];then
+    if [ "x$CHECK_OS" != "x" ];then
         warn "OS is supported"
         exit 0
     fi
 }
 
 update() {
-    if [[ -z "${SKIP_UPDATE}" ]] && [[ -n "${DO_UPDATE}" ]];then
+    if [ x"${SKIP_UPDATE}" = "x" ] && [ x"${DO_UPDATE}" != "x" ];then
         log ${INSTALLER}_update
         ${INSTALLER}_update
         may_die $? $? "Update failed"
@@ -920,7 +920,7 @@ update() {
 secondround_pkgscan() {
     # after update, check for packages that werent found at first
     # if we can now resolve them
-    if [[ -n "${SECONDROUND}" ]]; then
+    if [ x"${SECONDROUND}" != "x" ]; then
         for i in ${SECONDROUND};do
             if ! is_${INSTALLER}_installed $i;then
                 if is_${INSTALLER}_available ${i}; then
@@ -934,7 +934,7 @@ secondround_pkgscan() {
             fi
         done
     fi
-    if [[ -n "${SECONDROUND_EXTRA}" ]]; then
+    if [ x"${SECONDROUND_EXTRA}" != "x" ]; then
         for i in ${SECONDROUND_EXTRA};do
             if ! is_${INSTALLER}_installed ${i}; then
                 if is_${INSTALLER}_available ${i};then
@@ -954,9 +954,9 @@ prepare_install() {
     already_installed=""
     SECONDROUND=""
     SECONDROUND_EXTRA=""
-    if [[ -z "${SKIP_INSTALL}" ]];then
+    if [ x"${SKIP_INSTALL}" = "x" ];then
         # test if all packages are there
-        if [[ -n "${WANTED_PACKAGES}" ]]; then
+        if [ x"${WANTED_PACKAGES}" != "x" ]; then
             for i in $WANTED_PACKAGES;do
                 if ! is_${INSTALLER}_installed $i;then
                     if is_${INSTALLER}_available ${i}; then
@@ -970,7 +970,7 @@ prepare_install() {
                 fi
             done
         fi
-        if [[ -n "${WANTED_EXTRA_PACKAGES}" ]]; then
+        if [ x"${WANTED_EXTRA_PACKAGES}" != "x" ]; then
             for i in $WANTED_EXTRA_PACKAGES;do
                 if ! is_${INSTALLER}_installed ${i}; then
                     if is_${INSTALLER}_available ${i};then
@@ -985,19 +985,19 @@ prepare_install() {
             done
         fi
         # skip update & rest if everything is there
-        if [[ -z "${COPS_PKGMGR_PKGCANDIDATES}" ]];then
+        if [ x"${COPS_PKGMGR_PKGCANDIDATES}" = "x" ];then
             if [ "x${DO_UPDATE}" = "xdefault" ];then
                 DO_UPDATE=""
             fi
         fi
-        if [[ -n $SECONDROUND ]];then
+        if [ "x$SECONDROUND" != "x" ];then
             warn "Packages $(echo ${SECONDROUND}) not found before update"
         fi
-        if [[ -n $SECONDROUND_EXTRA ]];then
+        if [ "x$SECONDROUND_EXTRA" != "x" ];then
             warn "EXTRA Packages $(echo ${SECONDROUND_EXTRA}) not found before update"
         fi
         if [ "x$WHOAMI" = "xroot" ];then
-            if [[ -n $SECONDROUND ]] || [[ -n $SECONDROUND_EXTRA ]];then
+            if [ "x$SECONDROUND" != "x" ] || [ "x$SECONDROUND_EXTRA" != "x" ];then
                 ( DO_UPDATE=1 update )
                 secondround_pkgscan
             fi
@@ -1007,16 +1007,16 @@ prepare_install() {
     fi
     COPS_PKGMGR_PKGCANDIDATES=$( echo "${COPS_PKGMGR_PKGCANDIDATES}" | xargs -n1 | sort -u )
     already_installed=$( echo "${already_installed}" | xargs -n1 | sort -u )
-    if [[ -n "${COPS_PKGMGR_PKGCANDIDATES}" ]]; then
+    if [ x"${COPS_PKGMGR_PKGCANDIDATES}" != "x" ]; then
         log "Will install: $(echo ${COPS_PKGMGR_PKGCANDIDATES})"
     fi
-    if [[ -n "${already_installed}" ]]; then
+    if [ x"${already_installed}" != "x" ]; then
         log "Already installed: $(echo ${already_installed})"
     fi
 }
 
 setup() {
-    if [[ -z "${SKIP_SETUP}" ]] && [[ -n "${DO_SETUP}" ]];then
+    if [ x"${SKIP_SETUP}" = "x" ] && [ x"${DO_SETUP}" != "x" ];then
         debug ${INSTALLER}_setup
         ${INSTALLER}_setup
         may_die $? $? "setup failed"
@@ -1049,13 +1049,13 @@ install() {
     fi
 }
 
-todo_upgrade() { [[ -z "${SKIP_UPGRADE}" ]] && [[ -n "${DO_UPGRADE}" ]]; }
+todo_upgrade() { [ x"${SKIP_UPGRADE}" = "x" ] && [ x"${DO_UPGRADE}" != "x" ]; }
 todo_install() {
-    if [[ -z "${SKIP_INSTALL}" ]] && [[ -n "${DO_INSTALL}" ]];then
-        if [[ -n "${COPS_PKGMGR_PKGCANDIDATES}" ]];then
+    if [ x"${SKIP_INSTALL}" = "x" ] && [ x"${DO_INSTALL}" != "x" ];then
+        if [ x"${COPS_PKGMGR_PKGCANDIDATES}" != "x" ];then
             return 0
         fi
-        if [[ -n "$SECONDROUND_EXTRA" ]] || [[ -n "$SECONDROUND" ]];then
+        if [ x"$SECONDROUND_EXTRA" != "x" ] || [ x"$SECONDROUND" != "x" ];then
             return 0
         fi
     fi
@@ -1070,7 +1070,7 @@ fi
 prepare_install  # calls: update
 if ( todo_upgrade );then todo=1;else debug "Skip upgrade";fi
 if ( todo_install );then todo=1;else debug "Skip install";fi
-if [[ -z $todo ]] && [[ -z ${FORCE_RUN} ]];then
+if [ "x$todo" = "x" ] && [ "x${FORCE_RUN}" = "x" ];then
     log "Nothing to do"
 else
     if [ "x$WHOAMI" = "xroot" ];then
