@@ -88,7 +88,7 @@ log_() {
     logger_color=${1:-${RED}};
     logger_slug="${logger_color}[${LOGGER_NAME}]${NORMAL} ";
     shift;shift;
-    if [ "${NO_LOGGER_SLUG}" != "x" ];then logger_slug="";fi
+    if [ "x${NO_LOGGER_SLUG}" != "x" ];then logger_slug="";fi
     printf "${logger_slug}${msg_color}$(echo "${@}")${NORMAL}\n" >&2;
     printf "" >&2;  # flush
 }
