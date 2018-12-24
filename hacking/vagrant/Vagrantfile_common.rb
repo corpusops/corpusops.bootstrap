@@ -421,7 +421,7 @@ def cops_init(opts)
                        "#{cfg['VB_NAME_PRE']}" \
                        " #{machine_num}" \
                        " #{cfg['VB_NAME_POST']}(#{cfg['SCWD']})")
-        ssh_username = cfg.setdefault('SSH_USERNAME', "vagrant")
+        ssh_username = "vagrant"
         # not on the new base boxes ... omg
         #if ['xenial'].include? machine_cfg['OS_RELEASE']
         #    ssh_username = "ubuntu"
@@ -479,7 +479,6 @@ def cops_configure(cfg)
             hostname = machine_cfg['HOSTNAME']
             config.vm.define hostname do |sub|
                 config.vm.provider :virtualbox do |vb|
-                    vb.customize ["modifyvm", :id, "--audio", "none"]
                     vb.customize ["modifyvm", :id, "--ioapic", "on"]
                     vb.customize ["modifyvm", :id, "--memory", machine_cfg['MEMORY']]
                     vb.customize ["modifyvm", :id, "--cpus", machine_cfg['CPUS']]
