@@ -1111,6 +1111,7 @@ if ( todo_upgrade );then todo=1;else debug "Skip upgrade";fi
 if ( todo_install );then todo=1;else debug "Skip install";fi
 if [ "x$todo" = "x" ] && [ "x${FORCE_RUN}" = "x" ];then
     log "Nothing to do"
+    ret=0
 else
     if [ "x$WHOAMI" = "xroot" ];then
         upgrade
