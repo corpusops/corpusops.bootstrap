@@ -809,7 +809,7 @@ rh_is_installed_but_maybe_provided_by_others() {
 }
 
 rh_is_installed_but_maybe_provided_by_other() {
-    if [ "x$(rh_is_installed_but_maybe_provided_by_others $@)" = "x"];then
+    if [ "x$(rh_is_installed_but_maybe_provided_by_others $@)" = "x" ];then
         return 1
     fi
     return 0
