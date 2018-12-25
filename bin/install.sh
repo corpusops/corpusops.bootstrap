@@ -197,7 +197,7 @@ output_in_error_() {
           while test -f $TMPTIMER;do\
            i=$((++i));\
            if [ `expr $i % $TIMER_FREQUENCE` -eq 0 ];then \
-               log "BuildInProgress$([ "x$LOG" != "x" ] && echo "($LOG)"; ): ${@}";\
+               log "BuildInProgress$( if [ "x$LOG" != "x" ];then echo "($LOG)";fi ): ${@}";\
              i=0;\
            fi;\
            sleep 1;\
