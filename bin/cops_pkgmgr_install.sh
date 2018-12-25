@@ -1119,8 +1119,8 @@ else
         install
         ret=$?
     else
-        export WANTED_PACKAGES=$COPS_PKGMGR_PKGCANDIDATES $SECONDROUND
-        export WANTED_EXTRA_PACKAGES=$SECONDROUND_EXTRA
+        export WANTED_PACKAGES="$( echo $COPS_PKGMGR_PKGCANDIDATES $SECONDROUND )"
+        export WANTED_EXTRA_PACKAGES="$( echo $SECONDROUND_EXTRA )"
         log "Escalating privileges (root) for installing: $WANTED_PACKAGES $WANTED_EXTRA_PACKAGES"
         $(may_sudo) "$0" "$@"
         ret=$?
