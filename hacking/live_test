@@ -78,7 +78,8 @@ uniquify_string() {
 do_trap_() { rc=$?;func=$1;sig=$2;${func};if [ "x${sig}" != "xEXIT" ];then kill -${sig} $$;fi;exit $rc; }
 do_trap() { rc=${?};func=${1};shift;sigs=${@};for sig in ${sigs};do trap "do_trap_ ${func} ${sig}" "${sig}";done; }
 is_ci() {
-    return $( ( [ "x${TRAVIS-}" != "x" ] || [ "x${GITLAB_CI}" != "x" ] );echo $?;)
+    if [ "x${TRAVIS-}" != "x" ] || [ "x${GITLAB_CI}" != "x" ];then return 1;fi
+    return 0
 }
 log_() {
     reset_colors;msg_color=${2:-${YELLOW}};
