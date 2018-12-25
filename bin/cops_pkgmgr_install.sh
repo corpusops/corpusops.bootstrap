@@ -250,6 +250,7 @@ version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
 is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
+is_suse_like() { echo $DISTRIB_ID | egrep -iq "suse"; }
 is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine"; }
 is_redhat_like() { echo $DISTRIB_ID \
         | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
@@ -646,7 +647,17 @@ i_y() {
     fi
 }
 
-###
+ensure_command() {
+    local cmd=${1}
+    shift
+    local pkgs=${@}
+    if ! has_command ${cmd}; then
+        ${INSTALLER}_install ${pkgs}
+    fi
+}
+
+
+### archlinux (pacman)
 is_pacman_available() {
     for i in $@;do
         if ! ( pacman -Si $(i_y) "$i" >/devnull 2>&1 ||\
@@ -678,15 +689,6 @@ pacman_install() {
     vvv pacman -S $(i_y) $@
 }
 
-ensure_command() {
-    local cmd=${1}
-    shift
-    local pkgs=${@}
-    if ! has_command ${cmd}; then
-        ${INSTALLER}_install ${pkgs}
-    fi
-}
-
 pacman_setup() {
     ensure_command awk core/gawk
     ensure_command sort core/coreutils
@@ -694,7 +696,8 @@ pacman_setup() {
     ensure_command which core/which
 }
 
-###
+### redhat alike (dnf & yum)
+### DNF
 dnf_repoquery() {
     vvv dnf repoquery -q "${@}"
 }
@@ -742,7 +745,7 @@ dnf_setup() {
     rh_setup
 }
 
-###
+### YUM
 yum_repoquery() {
     repoquery -q "${@}"
 }
@@ -815,7 +818,17 @@ rh_is_installed_but_maybe_provided_by_other() {
     return 0
 }
 
-###
+rh_setup() {
+    ${INSTALLER}_ensure_repoquery
+    ensure_command xargs findutils
+    ensure_command awk gawk
+    ensure_command sort coreutils
+    ensure_command egrep grep
+    ensure_command which which
+}
+
+
+### Ubuntu
 is_aptget_available() {
     if ! apt-cache show ${@} >/dev/null 2>&1; then
         return 1
@@ -864,13 +877,81 @@ aptget_setup() {
     fi
 }
 
-rh_setup() {
-    ${INSTALLER}_ensure_repoquery
-    ensure_command xargs findutils
-    ensure_command awk gawk
-    ensure_command sort coreutils
-    ensure_command egrep grep
-    ensure_command which which
+### Alpine
+is_apk_available() {
+    for i in $@;do
+        if ! ( apk info $i >/dev/null 2>&1 );then
+            return 1
+        fi
+    done
+    return 0
+}
+
+is_apk_installed() {
+    for i in $@;do
+        if ! ( apk info -e $i >/dev/null 2>&1 ); then
+            return 1
+        fi
+    done
+    return 0
+}
+
+apk_update() {
+    vvv apk update
+}
+
+apk_upgrade() {
+    vvv apk upgrade --available
+}
+
+apk_install() {
+    vvv apk add ${@}
+}
+
+apk_setup() {
+    :
+}
+
+### opensuse (zypeer)
+zyppern() { 
+    cmd="zypper"
+    if [ "x${NONINTERACTIVE}" != "x" ];then cmd="$cmd --non-interactive";fi
+    echo "$cmd"
+}
+
+zypperl() { echo "--auto-agree-with-licenses"; }
+
+is_zypper_available() {
+    for i in $@;do
+        if ! ( $(zyppern) install -D $(zypperl)  $i >/dev/null 2>&1 );then
+            return 1
+        fi
+    done
+    return 0
+}
+
+is_zypper_installed() {
+    for i in $@;do
+        if ! ( zypper info $i|egrep -iq "Installed\s.*yes"); then
+            return 1
+        fi
+    done
+    return 0
+}
+zypper_update() {
+    vvv $(zyppern) refresh
+}
+
+zypper_upgrade() {
+    vv $(zyppern) update $(zypperl)
+}
+
+zypper_install() {
+    vvv $(zyppern) install $(zypperl) ${@}
+}
+
+zypper_setup() {
+    :
 }
 
 ###
@@ -891,6 +972,8 @@ parse_cli() {
     done
     if ( is_debian_like; );then
         INSTALLER=aptget
+    elif ( is_suse_like; );then
+        INSTALLER=zypper
     elif ( is_alpine_like; );then
         INSTALLER=apk
     elif ( is_archlinux_like; );then
@@ -1017,41 +1100,6 @@ prepare_install() {
         log "Already installed: $(echo ${already_installed})"
         ret=0
     fi
-}
-
-###
-is_apk_available() {
-    for i in $@;do
-        if ! ( apk info $i >/dev/null 2>&1 );then
-            return 1
-        fi
-    done
-    return 0
-}
-
-is_apk_installed() {
-    for i in $@;do
-        if ! ( apk info -e $i >/dev/null 2>&1 ); then
-            return 1
-        fi
-    done
-    return 0
-}
-
-apk_update() {
-    vvv apk update
-}
-
-apk_upgrade() {
-    vvv apk upgrade --available
-}
-
-apk_install() {
-    vvv apk add ${@}
-}
-
-apk_setup() {
-    :
 }
 
 ###
