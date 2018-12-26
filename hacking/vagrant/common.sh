@@ -332,20 +332,19 @@ detect_os() {
 get_command() {
     local p=
     local cmd="${@}"
-    if which which >/dev/null 2>/dev/null;then
-        p=$(which "${cmd}" 2>/dev/null)
-    fi
+    # if which which >/dev/null 2>/dev/null;then
+    #     p=$(which "${cmd}" 2>/dev/null)
+    # fi
     if [ "x${p}" = "x" ];then
-        p=$(export IFS=:;
-            echo "${PATH-}" | while read -ra pathea;do
-                for pathe in "${pathea[@]}";do
-                    pc="${pathe}/${cmd}";
-                    if [ -x "${pc}" ]; then
-                        p="${pc}"
-                    fi
-                done
-                if [ "x${p}" != "x" ]; then echo "${p}";break;fi
-            done )
+        p=$(export IFS=":";
+            for pathe in $PATH;do
+                pc="${pathe}/${cmd}";
+                if [ -x "${pc}" ]; then
+                    p="${pc}"
+                fi
+            done
+            if [ "x${p}" != "x" ]; then echo "${p}";break;fi
+         )
     fi
     if [ "x${p}" != "x" ];then
         echo "${p}"
