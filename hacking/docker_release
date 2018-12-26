@@ -313,8 +313,8 @@ get_command() {
                 if [ -x "${pc}" ]; then
                     p="${pc}"
                 fi
+                if [ "x${p}" != "x" ]; then echo "${p}";break;fi
             done
-            if [ "x${p}" != "x" ]; then echo "${p}";break;fi
          )
     fi
     if [ "x${p}" != "x" ];then
