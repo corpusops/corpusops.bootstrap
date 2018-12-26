@@ -300,9 +300,9 @@ detect_os() {
 get_command() {
     local p=
     local cmd="${@}"
-    # if which which >/dev/null 2>/dev/null;then
-    #     p=$(which "${cmd}" 2>/dev/null)
-    # fi
+    if which which >/dev/null 2>/dev/null;then
+        p=$(which "${cmd}" 2>/dev/null)
+    fi
     if [ "x${p}" = "x" ];then
         p=$(export IFS=":";
             for pathe in $PATH;do
