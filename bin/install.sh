@@ -283,6 +283,10 @@ detect_os() {
         DISTRIB_CODENAME=$(. /etc/os-release;echo $VERSION)
         DISTRIB_CODENAME=$(echo $DISTRIB_CODENAME |sed -e "s/.*(\([^)]\+\))/\1/")
         DISTRIB_RELEASE=$(. /etc/os-release;echo $VERSION_ID)
+    elif [ -e /etc/alpine-release ];then
+        DISTRIB_ID="alpine"
+        DISTRIB_CODENAME="Alpine Linux"
+        DISTRIB_RELEASE="$(cat /etc/alpine-release)"
     elif [ -e /etc/redhat-release ];then
         RHRELEASE=$(cat /etc/redhat-release)
         DISTRIB_CODENAME=${RHRELEASE}
