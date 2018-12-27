@@ -249,7 +249,7 @@ version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
 is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
 is_suse_like() { echo $DISTRIB_ID | egrep -iq "suse"; }
-is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine"; }
+is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine" || test -e /etc/alpine-release; }
 is_redhat_like() { echo $DISTRIB_ID \
         | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
@@ -301,9 +301,9 @@ detect_os() {
 get_command() {
     local p=
     local cmd="${@}"
-    # if which which >/dev/null 2>/dev/null;then
-    #     p=$(which "${cmd}" 2>/dev/null)
-    # fi
+    if which which >/dev/null 2>/dev/null;then
+        p=$(which "${cmd}" 2>/dev/null)
+    fi
     if [ "x${p}" = "x" ];then
         p=$(export IFS=":";
             for pathe in $PATH;do
