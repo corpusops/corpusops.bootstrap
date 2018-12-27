@@ -917,7 +917,7 @@ apk_setup() {
 }
 
 ### opensuse (zypeer)
-zyppern() { 
+zyppern() {
     cmd="zypper"
     if [ "x${NONINTERACTIVE}" != "x" ];then cmd="$cmd --non-interactive";fi
     echo "$cmd"
@@ -1134,8 +1134,10 @@ install() {
     if ( todo_install );then
         upgrade
         log ${INSTALLER}_install ${COPS_PKGMGR_PKGCANDIDATES}
-        ${INSTALLER}_install ${COPS_PKGMGR_PKGCANDIDATES}
-        may_die $? $? "install failed"
+        if [ "x${COPS_PKGMGR_PKGCANDIDATES}" != "x" ];then
+            ${INSTALLER}_install ${COPS_PKGMGR_PKGCANDIDATES}
+            may_die $? $? "install failed"
+        fi
     else
         debug "Skip install"
     fi
