@@ -679,7 +679,9 @@ parse_cli() {
 
 release_test() {
     if [[ -n ${TRAVIS} ]]; then
-        if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+        if [[ -n ${FORCE_RELEASE} ]]; then
+            return 0
+        elif [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
             debug "Is a travis pull request, no release"
             return 1
         elif echo "${TRAVIS_BRANCH}"\
