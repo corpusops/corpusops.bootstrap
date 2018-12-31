@@ -28,7 +28,6 @@ W=${OVERRIDEN_W:-$(cd "$SCRIPT_DIR/.." && pwd)}
 DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
 DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
 #
-FORCE_INSTALL=${FORCE_INSTALL-${FORCE_REINSTALL-}}
 SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
@@ -629,7 +628,7 @@ usage() {
 Universal shell wrapper to manage OS package manager
 OS SUPPORT: debian(& ubuntu) / archlinux / red-hat (centos/rh/fedora) / alpine
 
-[NONINTERACTIVE="y"] [FORCE_INSTALL=""]\
+[NONINTERACTIVE="y"] \
 [WANTED_EXTRA_PACKAGES="vim"] \
 [WANTED_EXTRA_PACKAGES="nano"] \
 [DO_SETUP=y] [SKIP_SETUP=y] \
@@ -1062,7 +1061,7 @@ prepare_install() {
         # test if all packages are there
         if [ x"${WANTED_PACKAGES}" != "x" ]; then
             for i in $WANTED_PACKAGES;do
-                if [[ -n $FORCE_INSTALL ]] || ! ( is_${INSTALLER}_installed $i );then
+                if ! is_${INSTALLER}_installed $i;then
                     if is_${INSTALLER}_available ${i}; then
                         COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
                     else
@@ -1076,7 +1075,7 @@ prepare_install() {
         fi
         if [ x"${WANTED_EXTRA_PACKAGES}" != "x" ]; then
             for i in $WANTED_EXTRA_PACKAGES;do
-                if [[ -n $FORCE_INSTALL ]] || ! ( is_${INSTALLER}_installed $i );then
+                if ! is_${INSTALLER}_installed ${i}; then
                     if is_${INSTALLER}_available ${i};then
                         COPS_PKGMGR_PKGCANDIDATES="${COPS_PKGMGR_PKGCANDIDATES} ${i}"
                     else
