@@ -9,7 +9,7 @@ cids="
 $( \
     docker ps -a --no-trunc \
     | grep  Exited \
-    | egrep "sh -c '((.*apt-get ((install|remove )|(-y (install|remove))))|echo|#\(nop|.*step_rev.*)" \
+    | egrep "sh -c '((.*apt-get ((install|remove )|(-y (install|remove))))|.*step_rev.*)" \
     | awk '{print $1}' )
 $( \
     docker ps -a --no-trunc \
@@ -19,7 +19,7 @@ $( \
     | awk '{print $1}' )
 $(\
     docker ps -a  --no-trunc|egrep 'Exited'\
-    |egrep "(ROLES=.*call|rm -f local/corpusops.bootstrap|_call_ansible|.ansible/scripts/(download_corpusops.sh|setup_core_variables.sh|setup_ansible.sh))" \
+    |egrep "(ROLES=.*call_ansible|rm -f local/corpusops.bootstrap|_call_ansible|.ansible/scripts/(download_corpusops.sh|setup_core_variables.sh|setup_ansible.sh))" \
     | awk '{print $1}' )
 
 "
