@@ -183,6 +183,7 @@
     set -e
     vv() { echo "${@}" >&2;"${@}"; }
     gargs=$(if [ "x$(git config user.email)" = "x" ];then echo "-c user.name=Corpusops -c user.email=autocommiter@corpousops";fi)
+    chrono=$(date '+%F--%H-%M-%S')
     get_git_branch() {
        ( cd "${1:-$(pwd)}" &&\
          git rev-parse --abbrev-ref HEAD | grep -v HEAD || \
@@ -192,7 +193,17 @@
     curbr=$(get_git_branch)
     merge="remotes/origin$(if [ "x${curbr}" != "x" ];then echo "/${curbr}";fi)"
     vv git branch -a
-    vv git $gargs merge --ff-only $merge
+    if ! (vv git $gargs merge --ff-only $merge );then
+      if (LANG=C LC_ALL=C vv git $gargs merge --ff-only $merge 2>&1|egrep -q "fatal");then
+        if ! (vv git $gargs rebase $merge);then
+          vv git checkout $gargs HEAD -b backupupgrade-$chrono
+          vv git checkout $curbr
+          vv git reset --hard $gargs $merge
+        fi
+      else
+        exit 1
+      fi
+    fi
 
   args: {chdir: '{{checkout_item.dest}}'}
   register: checkouted_merge
