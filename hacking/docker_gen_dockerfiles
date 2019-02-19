@@ -660,6 +660,7 @@ rewrite_dockerfile() {
         -e "s|__BASE_IMAGE__|${base_image}|g" \
         -e "s|__IMAGE_PREPROVISION__|${image_preprovision}|g" \
         -e "s|FROM archlinux:latest|FROM archlinux/base|g" \
+        -e "s!^(FROM (ubuntu|debian|centos|archlinux)):!FROM corpusops/\2-bare:!g" \
         "${template}"
 }
 while read image_line;do

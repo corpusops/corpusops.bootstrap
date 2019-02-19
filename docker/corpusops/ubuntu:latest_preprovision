@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM ubuntu:latest
+FROM corpusops/ubuntu-bare:latest
 ENV container docker
 
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
