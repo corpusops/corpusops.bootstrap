@@ -28,7 +28,6 @@ W=${OVERRIDEN_W:-$(cd "$SCRIPT_DIR/.." && pwd)}
 DEFAULT_COPS_ROOT="/srv/corpusops/corpusops.bootstrap"
 DEFAULT_COPS_URL="https://github.com/corpusops/corpusops.bootstrap"
 #
-FORCE_INSTALL=${FORCE_INSTALL-${FORCE_REINSTALL-}}
 SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
@@ -503,14 +502,22 @@ uninstall_at_least_pymodule() {
     local import="${4:-${1}}"
     if ( ( has_python_module "$mod" ) && ( version_lt "$(pymod_ver "$mod" "$py")" "$ver" ) );then
         local modd=$($py -c "from __future__ import print_function;import $import,os;print(os.path.dirname($import.__file__.replace('/__init__.pyc', '')))")
+        submods=$(echo "$import"|grep -o "\."|wc -l)
+        if [ $submods -gt 0 ];then
+            for i in $(seq 1 $submods);do
+                modd=$modd/..
+            done
+            modd=$(cd "$modd" && pwd)
+        fi
         local modb="$HOME/.$mod.backup.$chrono.tar.bz2"
+        local importp=${import//.//}
         ( log "Backup mod install in $modb" \
-          && if [ -e "$modd/${import}.py" ];then
-            tar cjf "$modb" $modd/${import}.py* $modd/${mod}*egg-info &&\
-                $(may_sudo) rm -rf $modd/${import}.py* $modd/${mod}*egg-info; \
-            elif [ -e "$modd/${import}" ];then
-                tar cjf "$modb" $modd/${import} $modd/${mod}*egg-info &&\
-                    $(may_sudo) rm -rf $modd/${import} $modd/${mod}*egg-info; \
+          && if [ -e "$modd/${importp}.py" ];then
+            tar cjf "$modb" $modd/${importp}.py* $modd/${mod}*egg-info &&\
+                $(may_sudo) rm -rf $modd/${importp}.py* $modd/${mod}*egg-info; \
+            elif [ -e "$modd/${importp}" ];then
+                tar cjf "$modb" $modd/${importp} $modd/${mod}*egg-info &&\
+                    $(may_sudo) rm -rf $modd/${importp} $modd/${mod}*egg-info; \
             fi && log "Upgrading now from legacy pre $mod $ver" ) || \
         die_in_error "Removing legacy $mod failed"
     fi
@@ -527,6 +534,7 @@ upgrade_pip() {
         vv uninstall_at_least_pymodule pyasn1    0.4.2  "$py"
         vv uninstall_at_least_pymodule urllib3   1.20   "$py"
         vv uninstall_at_least_pymodule pyopenssl 18.0.0 "$py" OpenSSL
+        vv uninstall_at_least_pymodule backports.ssl_match_hostname 3.7.0 "$py" backports.ssl_match_hostname
     fi
     uninstall_at_least_pymodule six     1.11.0
     uninstall_at_least_pymodule chardet 2.3.0
