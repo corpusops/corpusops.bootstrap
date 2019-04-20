@@ -7,9 +7,7 @@ a whole modern infrastructure
 ## Documentation topics
 - [Docs](./docs)
 
-    
-# Support development
-- [paypal](https://paypal.me/kiorky)
+
 
 ## Galaxy
 corpusops team normally add entries to this [galaxy user](https://galaxy.ansible.com/corpusops/).
