@@ -298,6 +298,7 @@ do_mount() {
     set_hosts_args ${@}
     for h in $hosts;do
         local ssh_host=$h
+        VM_MOUNTPATH=$(get_vm_mountpath)
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
         if [ ! -e "${VM_MOUNTPOINT}" ];then
             mkdir -p "${VM_MOUNTPOINT}"
@@ -315,7 +316,7 @@ do_mount() {
                     echo "-o Cipher=$selected_cipher"
                    fi )\
                 -F "$(pwd)/.vagrant/cops-sshconfig-$h" \
-                vagrant:/ "${VM_MOUNTPOINT}"
+                "vagrant:$VM_MOUNTPATH" "${VM_MOUNTPOINT}"
             die_in_error "Error while mounting $h"
         else
             log "VM $h is already mounted: ${VM_MOUNTPOINT}"
@@ -328,8 +329,12 @@ do_umount() {
     local hosts="" cmd_args=""
     set_hosts_args ${@}
     for h in $hosts;do
+        VM_MOUNTPATH=$(get_vm_mountpath)
         VM_MOUNTPOINT=$VMS_MOUNT_PATH/$h
         if [ -e "$VM_MOUNTPOINT/bin" ];then
+            vv fusermount -u "${VM_MOUNTPOINT}"
+            die_in_error "Error while umounting $h"
+        elif [[ -n "$(ls "$VM_MOUNTPOINT")" ]];then
             vv fusermount -u "${VM_MOUNTPOINT}"
             die_in_error "Error while umounting $h"
         else
@@ -419,6 +424,12 @@ BOX: ${boximportname}
 BOX_URI: file://$(readlink -f ${BOX})
 EOF
     die_in_error "vagrant setup for import is done, you can now run $0 up --help"
+}
+
+get_vm_mountpath() {
+    CONFMOUNTPATH="$(grep  VM_MOUNTPATH: vagrant_config.yml \
+            | awk '{print $2}' | sed -re "s/[\"\']//g")"
+    echo ${CONFMOUNTPATH:-/}
 }
 
 
