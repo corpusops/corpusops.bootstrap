@@ -128,7 +128,7 @@ COPY hacking/container_rootfs/ $COPS_ROOT/hacking/container_rootfs/
 COPY hacking/sync_files $COPS_ROOT/hacking/
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     VERBOSE=y $_silent_run $COPS_ROOT/hacking/sync_files;\
-    VERBOSE=y $_silent_run rsync -a hacking/container_rootfs/ /;\
+    VERBOSE=y $_silent_run rsync -aK hacking/container_rootfs/ /;\
     VERBOSE=y $_silent_run /sbin/cops_container_activate_core_services.sh;\
     VERBOSE=y $_silent_run /sbin/cops_container_disable_networkifacesscripts.sh;'
 
