@@ -1,11 +1,9 @@
 ---
 sudo: required
-
 dist: trusty
+git: {lfs_skip_smudge: true}
 env:
-git:
-  lfs_skip_smudge: true
-matrix:
+  matrix:
     - >
       TEST_IMAGES="corpusops/ubuntu:18.04_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04"
