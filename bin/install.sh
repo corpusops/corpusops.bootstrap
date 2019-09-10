@@ -60,6 +60,8 @@ EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:jessie"
 EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
+# ansible related
+export DISABLE_MITOGEN=${DISABLE_MITOGEN-1}
 #
 # colors
 RED="\\e[0;31m"
@@ -883,7 +885,7 @@ check_py_modules() {
     fi
     "${bin}" << EOF
 import six
-import mitogen
+$( if [[ -z "${DISABLE_MITOGEN-1}" ]] ;then echo "import mitogen";fi; )
 import corpusops
 import ansible
 import dns
@@ -1536,4 +1538,4 @@ if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
     main
 fi
 exit $?
-s## vim:set et sts=5 ts=4 tw=0:
+# vim:set et sts=5 ts=4 tw=0:

@@ -62,6 +62,8 @@ EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:jessie"
 EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
+# ansible related
+export DISABLE_MITOGEN=${DISABLE_MITOGEN-1}
 #
 # colors
 RED="\\e[0;31m"
