@@ -15,7 +15,11 @@ readlinkf() {
             python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
         fi
     else
-        readlink -f "$@"
+        val="$(readlink -f "$@")"
+        if [[ -z "$val" ]];then
+            val=$(readlink "$@")
+        fi
+        echo "$val"
     fi
 }
 # scripts vars
@@ -1044,6 +1048,28 @@ checkouter_() {
         )prefix='$(pwd)' venv='${VENV_PATH}'"
 }
 
+fix_ansible_bins() {
+    # handle broken links after upgrades
+    local binp="" bin="" ret=0 abin="$(get_eggs_src_dir)/ansible/bin" owd="$(pwd)"
+    if [ -d "$abin" ];then
+        cd "$abin"
+        for bin in ansible-test;do
+            binp="$(readlinkf $abin/$bin)"
+            bindir="$(dirname $binp)"
+            if [ ! -e "$bindir" ];then
+                mkdir -p "$bindir"
+            fi
+            if [ ! -e "$binp" ];then
+                if ! ( touch "$binp" );then
+                    ret=1
+                fi
+            fi
+        done
+        cd "$owd"
+    fi
+    return $ret
+}
+
 upgrade_ansible() {
     w="$(pwd)"
     if [ ! -e  "$(get_eggs_src_dir)/ansible/.git" ] && [ -e "$(get_eggs_src_dir)/ansible/lib" ];then
@@ -1278,9 +1304,16 @@ install_python_libs_() {
             for i in ${EGGS_GIT_DIRS};do
                 if [ -e "$(get_eggs_src_dir)/${i}" ]; then
                     cd "$(get_eggs_src_dir)/${i}"
-                    COPS_PYTHON="$py" COPS_UPGRADE="" ensure_last_python_requirement \
-                        --no-deps -e .
-                    die_in_error "requirements/src eggs doesn't install"
+                    fix_ansible_bins
+                    die_in_error "corpusops fix ansible bins failed"
+                    if ! ( COPS_PYTHON="$py" COPS_UPGRADE="" ensure_last_python_requirement \
+                             --no-deps -e . );then
+                        fix_ansible_bins
+                        die_in_error "corpusops fix ansible bins failed (force)"
+                        COPS_PYTHON="$py" COPS_UPGRADE="" ensure_last_python_requirement \
+                            --force-reinstall --no-deps -e .
+                        die_in_error "requirements/src eggs doesn't force install"
+                    fi
                 fi
             done
             cd "${cwd}"
