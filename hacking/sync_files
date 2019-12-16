@@ -14,7 +14,11 @@ readlinkf() {
             python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
         fi
     else
-        readlink -f "$@"
+        val="$(readlink -f "$@")"
+        if [[ -z "$val" ]];then
+            val=$(readlink "$@")
+        fi
+        echo "$val"
     fi
 }
 # scripts vars
