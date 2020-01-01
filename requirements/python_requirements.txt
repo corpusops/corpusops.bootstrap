@@ -52,4 +52,5 @@ docker[tls] >= 3.3.0
 
 # Remote/Forking Debugging (install manually, do not work on docker/centos)
 #epdb
+#remote-pdb >= 2.0.0
 pdb_clone

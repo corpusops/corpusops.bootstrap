@@ -501,6 +501,19 @@ get_python2() {
     done
     echo $py2
 }
+get_python3() {
+    local py3=
+    for i in python3.9 python3.8 python3.7 python3.6 \
+             python-3.9 python-3.8 python-3.7 python3.6 \
+             python-3;do
+        local lpy=$(get_command $i 2>/dev/null)
+        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 3' );then
+            py3=${lpy}
+            break
+        fi
+    done
+    echo $py3
+}
 has_python_module() {
     local py="${py:-python}"
     for i in $@;do
@@ -597,22 +610,8 @@ make_virtualenv() {
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
     local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
-    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
-        if [ ! -e "${venv_path}" ];then
-            mkdir -p "${venv_path}"
-        fi
-        if [ -e "${DEFAULT_VENV_PATH}" ] && \
-            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
-            [ ! -h "${DEFAULT_VENV_PATH}" ];then
-            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
-        fi
-        if [ -h $DEFAULT_VENV_PATH ] &&\
-            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
-            rm -f "${DEFAULT_VENV_PATH}"
-        fi
-        if [ ! -e $DEFAULT_VENV_PATH ];then
-            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
-        fi
+    if [ ! -e "${venv_path}" ];then
+        mkdir -p "${venv_path}"
     fi
     if     [ ! -e "${venv_path}/bin/activate" ] \
         || [ ! -e "${venv_path}/lib" ] \
@@ -622,9 +621,6 @@ make_virtualenv() {
         if [ ! -e "${PIP_CACHE}" ]; then
             mkdir -p "${PIP_CACHE}"
         fi
-        if [ ! -e "${venv_path}" ]; then
-            mkdir -p "${venv_path}"
-        fi
     $venv \
         $( [ "x$py" != "x" ] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
@@ -632,6 +628,20 @@ make_virtualenv() {
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
       deactivate; )
+    fi
+    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
+        if [ -h $DEFAULT_VENV_PATH ] &&\
+            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
+            rm -f "${DEFAULT_VENV_PATH}"
+        fi
+        if [ -e "${DEFAULT_VENV_PATH}" ] && \
+            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
+            [ ! -h "${DEFAULT_VENV_PATH}" ];then
+            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
+        fi
+        if [ ! -e $DEFAULT_VENV_PATH ];then
+            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
+        fi
     fi
 }
 ensure_last_python_requirement() {
@@ -690,7 +700,12 @@ add_ansible_search_path "$W"
 add_ansible_search_path "$A"   "$DA"
 add_ansible_search_path "$ODA" "$OA"
 add_ansible_search_path "$OW"
-export VENV_PATH="${VENV_PATH-${SCRIPT_ROOT}/venv}"
+if [ -e "${SCRIPT_ROOT}/venv3" ];then
+    DEFAULT_VENV_PATH="${SCRIPT_ROOT}/venv3"
+else
+    DEFAULT_VENV_PATH="${SCRIPT_ROOT}/venv"
+fi
+export VENV_PATH="${VENV_PATH-$DEFAULT_VENV_PATH}"
 PLUGINS_OR_MODULES_DIRS="\
 ANSIBLE_LIBRARY:library
 ANSIBLE_ACTION_PLUGINS:action_plugins
