@@ -17,7 +17,7 @@
 /var/cache
 /var/log
 /var/run
-/venv
+/venv*
 /roles
 /playbooks
 /hacking/docker-squash*

@@ -2,6 +2,7 @@
 # SEE CORPUSOPS DOCS FOR FURTHER INSTRUCTIONS
 
 LOGGER_NAME=cs
+export COPS_PYTHON_VERSION=3
 
 
 # BEGIN: corpusops common glue
@@ -481,6 +482,19 @@ get_python2() {
     done
     echo $py2
 }
+get_python3() {
+    local py3=
+    for i in python3.9 python3.8 python3.7 python3.6 \
+             python-3.9 python-3.8 python-3.7 python3.6 \
+             python-3;do
+        local lpy=$(get_command $i 2>/dev/null)
+        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 3' );then
+            py3=${lpy}
+            break
+        fi
+    done
+    echo $py3
+}
 has_python_module() {
     local py="${py:-python}"
     for i in $@;do
@@ -577,22 +591,8 @@ make_virtualenv() {
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
     local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
-    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
-        if [ ! -e "${venv_path}" ];then
-            mkdir -p "${venv_path}"
-        fi
-        if [ -e "${DEFAULT_VENV_PATH}" ] && \
-            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
-            [ ! -h "${DEFAULT_VENV_PATH}" ];then
-            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
-        fi
-        if [ -h $DEFAULT_VENV_PATH ] &&\
-            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
-            rm -f "${DEFAULT_VENV_PATH}"
-        fi
-        if [ ! -e $DEFAULT_VENV_PATH ];then
-            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
-        fi
+    if [ ! -e "${venv_path}" ];then
+        mkdir -p "${venv_path}"
     fi
     if     [ ! -e "${venv_path}/bin/activate" ] \
         || [ ! -e "${venv_path}/lib" ] \
@@ -602,9 +602,6 @@ make_virtualenv() {
         if [ ! -e "${PIP_CACHE}" ]; then
             mkdir -p "${PIP_CACHE}"
         fi
-        if [ ! -e "${venv_path}" ]; then
-            mkdir -p "${venv_path}"
-        fi
     $venv \
         $( [ "x$py" != "x" ] && echo "--python=$py"; ) \
         --system-site-packages --unzip-setuptools \
@@ -612,6 +609,20 @@ make_virtualenv() {
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
       deactivate; )
+    fi
+    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
+        if [ -h $DEFAULT_VENV_PATH ] &&\
+            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
+            rm -f "${DEFAULT_VENV_PATH}"
+        fi
+        if [ -e "${DEFAULT_VENV_PATH}" ] && \
+            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
+            [ ! -h "${DEFAULT_VENV_PATH}" ];then
+            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
+        fi
+        if [ ! -e $DEFAULT_VENV_PATH ];then
+            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
+        fi
     fi
 }
 ensure_last_python_requirement() {
@@ -776,6 +787,17 @@ get_ansible_branch() {
     get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.9"
 }
 
+move_old_py2_venv() {
+    local OLD_VENV_PATH="${W}/venv"
+    local BCK_VENV_PATH="${W}/venv.bak.$CHRONO"
+    if [ -e "$OLD_VENV_PATH" ] && [ ! -h "$OLD_VENV_PATH" ] && \
+          ( "$OLD_VENV_PATH/bin/python" -V 2>&1 | grep -iq "python 2"; );then
+        log Moving old Python2 virtualenv
+        mv -vf "$OLD_VENV_PATH" "$BCK_VENV_PATH"
+        ln -sf "$BCK_VENV_PATH" "$OLD_VENV_PATH"
+    fi
+}
+
 set_vars() {
     reset_colors
     SCRIPT_DIR="${W}/bin"
@@ -824,7 +846,7 @@ set_vars() {
     else
         EXTRA_PACKAGES=""
     fi
-    VENV_PATH="${VENV_PATH:-"${W}/venv"}"
+    VENV_PATH="${VENV_PATH:-"${W}/venv${COPS_PYTHON_VERSION}"}"
     EGGS_GIT_DIRS="ansible"
     PIP_CACHE="${VENV_PATH}/cache"
     if [ "x${QUIET}" = "x" ]; then
@@ -868,7 +890,7 @@ set_vars() {
 get_cops_orig_python() {
     local default_py=$(
         deactivate 2>/dev/null || :;
-        get_python2
+        get_python${COPS_PYTHON_VERSION}
         )
     echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
 }
@@ -885,7 +907,7 @@ check_py_modules() {
     # test if salt binaries are there & working
     bin="$(get_cops_python)"
     if [[ -z $bin ]];then
-        sdie "No python2 interpreter found"
+        sdie "No python interpreter found"
     fi
     "${bin}" << EOF
 import six
@@ -1267,7 +1289,7 @@ install_python_libs_() {
         fi
     done
     if [[ -z "$(get_cops_python)" ]];then
-        sdie "Python not found (missing python2 interpreter)"
+        sdie "Python not found (missing python interpreter)"
     fi
     if check_py_modules; then
         if [ "x${QUIET}" = "x" ]; then
@@ -1554,6 +1576,7 @@ main() {
         synchronize_code || die "synchronize_code failed"
     else
         install_prerequisites || die "System prerequisites failed"
+        move_old_py2_venv || die "moving old Python2 virtualenv failed"
         setup_virtualenv || die "setup_virtualenv failed"
         install_python_libs || die "python libs incomplete install"
         ensure_ansible_is_usable
