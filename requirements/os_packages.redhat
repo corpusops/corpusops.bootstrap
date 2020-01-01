@@ -31,10 +31,10 @@ patchutils
 pcre
 perl
 pkgconfig
-python
-python-six
-python-test
-python-virtualenv
+python3
+python3-six
+python3-test
+python3-virtualenv
 redhat-rpm-config
 rsync
 swig

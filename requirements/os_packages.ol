@@ -21,10 +21,10 @@ libtool
 m4
 man-db
 pkgconfig
-python
-python-devel
-python-six
-python-virtualenv
+python3
+python3-devel
+python3-six
+python3-virtualenv
 rsync
 swig
 tcl

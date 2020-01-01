@@ -5,7 +5,7 @@ libffi-devel
 gmp-devel
 openssl-devel
 libsigc++20-devel
-python-devel
+python3-devel
 tcl-devel
 autoconf
 automake

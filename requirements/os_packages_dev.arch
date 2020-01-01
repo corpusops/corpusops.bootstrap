@@ -6,7 +6,7 @@ libffi
 gmp
 libsigc++
 openssl
-python
+python3
 swig
 pkgconf
 libtool

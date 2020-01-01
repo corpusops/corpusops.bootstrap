@@ -10,10 +10,10 @@ libgmpxx4ldbl
 openssl
 lsb-release
 man-db
-python-six
-python-virtualenv
-python-pip
-python-apt
+python3-six
+python3-virtualenv
+python3-pip
+python3-apt
 rsync
 ca-certificates
 binutils
