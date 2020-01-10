@@ -29,8 +29,8 @@ It will in ./corpusops/corpusops.bootstrap:
 
 
 **Note about branches and Versions**:
-- `2.0`: current branch with support with ansible from `2.5` included and onwards.
-- `master`: old branch with support with ansible up to `2.7`.
+- `2.0`: current branch with support with ansible from `2.5` included and onwards **using python-3**.
+- `master`: old branch with support with ansible up to `2.7` using **python-2.7**.
 
 ## badges
 
