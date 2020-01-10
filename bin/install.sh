@@ -1236,6 +1236,10 @@ setup_virtualenv_() {
         bs_log "virtualenv setup skipped"
         return 0
     fi
+    # handle backward upgrade
+    if [ -h "$SCRIPT_ROOT/venv" ] && [ "xmaster" = "x$(get_corpusops_branch)" ] ;then
+        rm "$SCRIPT_ROOT/venv"
+    fi
     make_virtualenv $(get_cops_orig_python)
 }
 
