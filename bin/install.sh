@@ -769,11 +769,11 @@ get_eggs_src_dir() {
 }
 
 get_corpusops_branch() {
-    get_default_knob corpusops_branch "${CORPUSOPS_BRANCH}" "master"
+    get_default_knob corpusops_branch "${CORPUSOPS_BRANCH}" "2.0"
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.7"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.9"
 }
 
 set_vars() {
