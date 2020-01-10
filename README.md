@@ -29,6 +29,11 @@ It will in ./corpusops/corpusops.bootstrap:
 * Install a virtualenv with ansible
 * Download corpusops roles & playbooks
 
+
+**Note about branches and Versions**:
+- `2.0`: current branch with support with ansible from `2.5` included and onwards.
+- `master`: old branch with support with ansible up to `2.7`.
+
 ## badges
 
 |  Branch                                                             | TravisBuild                                                                                                                                                          |
