@@ -42,10 +42,10 @@ It will in ./corpusops/corpusops.bootstrap:
 - [corpusops.roles](https://github.com/corpusops/roles)
 
 ### Ansible preconfigured playbooks helpers
-- [corpusops.playbooks](https://github.com/corpusops/playbooks)
+- [playbooks](https://github.com/corpusops/roles/tree/master/playbooks)
 
 ### Ansible plugins roles
-- [corpusops.roles/ansible_plugins](https://github.com/corpusops/roles/tree/master/ansible_plugins): collections of lookup, plugins, and filters
+- [ansible_plugins](https://github.com/corpusops/roles/tree/master/ansible_plugins): collections of lookup, plugins, and filters
     - debug
     - lsb_release
     - humanlog
