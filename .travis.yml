@@ -4,36 +4,36 @@ dist: trusty
 git: {lfs_skip_smudge: true}
 env:
   global:
-    - ANSIBLE_RELEASE=2.7
+    - ANSIBLE_RELEASE=2.9
   matrix:
     # latest tags
-    - >
-      TEST_IMAGES="corpusops/ubuntu:18.04_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04"
-    - >
-      TEST_IMAGES="corpusops/ubuntu:16.04_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04"
-    - >
-      TEST_IMAGES="corpusops/ubuntu:14.04_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/ubuntu:14.04"
-    - >
-      TEST_IMAGES="corpusops/ubuntu:latest_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest"
-    - >
-      TEST_IMAGES="corpusops/archlinux:latest_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/archlinux:latest_preprovision"
-    - >
-      TEST_IMAGES="corpusops/debian:latest_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/debian:latest"
-    - >
-      TEST_IMAGES="corpusops/debian:stretch_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/debian:stretch"
-    - >
-      TEST_IMAGES="corpusops/debian:jessie_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/debian:jessie"
-    - >
-      TEST_IMAGES="corpusops/centos:7_preprovision"
-      IMAGES="${TEST_IMAGES} corpusops/centos:7"
+    #- >
+    #  TEST_IMAGES="corpusops/ubuntu:18.04_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04"
+    #- >
+    #  TEST_IMAGES="corpusops/ubuntu:16.04_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04"
+    #- >
+    #  TEST_IMAGES="corpusops/ubuntu:14.04_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/ubuntu:14.04"
+    #- >
+    #  TEST_IMAGES="corpusops/ubuntu:latest_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest"
+    #- >
+    #  TEST_IMAGES="corpusops/archlinux:latest_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/archlinux:latest_preprovision"
+    #- >
+    #  TEST_IMAGES="corpusops/debian:latest_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/debian:latest"
+    #- >
+    #  TEST_IMAGES="corpusops/debian:stretch_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/debian:stretch"
+    #- >
+    #  TEST_IMAGES="corpusops/debian:jessie_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/debian:jessie"
+    #- >
+    #  TEST_IMAGES="corpusops/centos:7_preprovision"
+    #  IMAGES="${TEST_IMAGES} corpusops/centos:7"
     # specific release
     - >
       TEST_IMAGES="corpusops/ubuntu:18.04_preprovision${ANSIBLE_RELEASE}"
