@@ -3,7 +3,10 @@ sudo: required
 dist: trusty
 git: {lfs_skip_smudge: true}
 env:
+  global:
+    - ANSIBLE_RELEASE=2.7
   matrix:
+    # latest tags
     - >
       TEST_IMAGES="corpusops/ubuntu:18.04_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04"
@@ -31,6 +34,34 @@ env:
     - >
       TEST_IMAGES="corpusops/centos:7_preprovision"
       IMAGES="${TEST_IMAGES} corpusops/centos:7"
+    # specific release
+    - >
+      TEST_IMAGES="corpusops/ubuntu:18.04_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:16.04_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:14.04_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:14.04${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:latest_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/archlinux:latest_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/archlinux:latest_preprovision${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/debian:latest_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/debian:latest${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/debian:stretch_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/debian:stretch${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/debian:jessie_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/debian:jessie${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/centos:7_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/centos:7${ANSIBLE_RELEASE}"
 language: python
 python: "2.7"
 before_install:
@@ -51,7 +82,7 @@ install:
 #    done
   - deactivate
   - |
-    cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json 
+    cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json
   - |
     echo "TRAVIS_ENV_VARS:" >&2
     env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
