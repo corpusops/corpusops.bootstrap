@@ -5,36 +5,8 @@ git: {lfs_skip_smudge: true}
 env:
   global:
     - ANSIBLE_RELEASE=-2.9
+    - RELEASE_AS_LATEST=false
   matrix:
-    ## # latest tag is also this specific release
-    ## - >
-    ##   TEST_IMAGES="corpusops/ubuntu:18.04_preprovision corpusops/ubuntu:18.04_preprovision ${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04 corpusops/ubuntu:18.04${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/ubuntu:16.04_preprovision corpusops/ubuntu:16.04_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/ubuntu:16.04 corpusops/ubuntu:16.04${ANSIBLE_RELEASE}"
-    ## #- >
-    ## #  TEST_IMAGES="corpusops/ubuntu:14.04_preprovision"
-    ## #  IMAGES="${TEST_IMAGES} corpusops/ubuntu:14.04"
-    ## - >
-    ##   TEST_IMAGES="corpusops/ubuntu:latest_preprovision corpusops/ubuntu:latest_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/ubuntu:latest corpusops/ubuntu:latest${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/archlinux:latest_preprovision corpusops/archlinux:latest_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/archlinux:latest_preprovision corpusops/archlinux:latest_preprovision${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/debian:latest_preprovision corpusops/debian:latest_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/debian:latest corpusops/debian:latest${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/debian:stretch_preprovision corpusops/debian:stretch_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/debian:stretch corpusops/debian:stretch${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/debian:jessie_preprovision ${corpusops/debian:jessie_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/debian:jessie corpusops/debian:jessie${ANSIBLE_RELEASE}"
-    ## - >
-    ##   TEST_IMAGES="corpusops/centos:7_preprovision corpusops/centos:7_preprovision${ANSIBLE_RELEASE}"
-    ##   IMAGES="${TEST_IMAGES} corpusops/centos:7 corpusops/centos:7${ANSIBLE_RELEASE}"
-    # It's a specific release only
     - >
       TEST_IMAGES="corpusops/ubuntu:18.04_preprovision${ANSIBLE_RELEASE}"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04${ANSIBLE_RELEASE}"
@@ -118,6 +90,10 @@ script:
     NO_SYNC=1 hacking/test_script
 after_success:
   - DEBUG=1 hacking/docker_release
+  - |
+    if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then for i in $IMAGES;do
+      IMAGES="$(echo $i|sed -e "s/-${ANSIBLE_RELEASE}$//g")" DEBUG=1 hacking/docker_release
+    done;fi
 cache:
   directories:
     - $HOME/.cache/pip
