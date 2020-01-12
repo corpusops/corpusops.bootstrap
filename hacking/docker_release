@@ -687,6 +687,9 @@ parse_cli() {
     done
     RELEASABLE="$(echo "${RELEASABLE}" | xargs -n1)"
     RELEASABLE_BRANCHES="${RELEASABLE_BRANCHES:-"^master$"}"
+    if ( echo "$RELEASABLE_BRANCHES" | grep -q base64: );then
+        export RELEASABLE_BRANCHES="$(echo "$RELEASABLE_BRANCHES"|cut -b8-|base64 -d)"
+    fi
     if [[ -z "${RELEASABLE}" ]]; then
         die "no releasable images produced yet from: ${YELLOW}$IMAGES"
     fi
