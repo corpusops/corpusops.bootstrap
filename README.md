@@ -29,8 +29,8 @@ It will in ./corpusops/corpusops.bootstrap:
 
 
 **Note about branches and Versions**:
-- `2.0`: current branch with support with ansible from `2.5` included and onwards **using python-3**.
-- `master`: old branch with support with ansible up to `2.7` using **python-2.7**.
+- `2.0`: current branch with roles supported ansible version from  `<=2.5` using **python-3** and bundling **ansible-2.9**.
+- `master`:  old branch with roles supported ansible version up to `>=2.7` using **python-2** and bundling **ansible-2.7**. 
 
 ### Upgrading from ``master`` branch
 We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
