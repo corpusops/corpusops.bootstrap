@@ -82,7 +82,8 @@ install:
 #    done
   - deactivate
   - |
-    cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json
+    cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json \
+      || cp -fv docker/2.0-IMAGES.json docker/IMAGES.json
   - |
     echo "TRAVIS_ENV_VARS:" >&2
     env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
