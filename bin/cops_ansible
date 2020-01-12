@@ -810,16 +810,18 @@ if [[ -n ${ENV_DEBUG-} ]]; then
     exit 1
 fi
 get_abin_version() { $EXEC_SCRIPT --version|head -n1|awk '{print $2}'|cut -b-3; }
-ANSIBLE_SCRIPT_ARGS="$@"
-if [[ "$@" == *--sudo* ]];then
-    if ( version_gte $(get_abin_version) 2.9);then
-        ANSIBLE_SCRIPT_ARGS="$( \
-            echo "${ANSIBLE_SCRIPT_ARGS}"|sed -e "s/ --sudo\($\| \)/ --become /g")"
+declare -a ANSIBLE_SCRIPT_ARGS
+for arg in "$@";do
+    if [[ "$arg" == *--sudo* ]];then
+        if ( version_gte $(get_abin_version) 2.9);then
+            arg=="$(echo "$arg"| sed -e "s/ --sudo\($\| \)/ --become /g")"
+            continue
+        fi
     fi
-fi
-set -- $ANSIBLE_SCRIPT_ARGS
+    ANSIBLE_SCRIPT_ARGS+=("${arg}")
+done
 # if not included, but executed directly from a wrapper
 if echo "${EXEC_SCRIPT}" | egrep -vq '^cops_ansible$';then
-    exec ${EXEC_SCRIPT} "${@}"
+    exec ${EXEC_SCRIPT} "${ANSIBLE_SCRIPT_ARGS[@]}"
 fi
 # vim:set et sts=4 ts=4 tw=80:
