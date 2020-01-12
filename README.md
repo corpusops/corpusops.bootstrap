@@ -36,7 +36,7 @@ It will in ./corpusops/corpusops.bootstrap:
 We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
 
     ```
-    cd $corpusops_boostrap && \
+    cd $corpusops_bootstrap && \
         git pull &&\
         ./bin/install.sh -C -b 2.0 && \
         bin/install.sh -C && \
