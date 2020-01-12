@@ -800,7 +800,7 @@ declare -a ANSIBLE_SCRIPT_ARGS
 for arg in "$@";do
     if [[ "$arg" == *--sudo* ]];then
         if ( version_gte $(get_abin_version) 2.9);then
-            arg=="$(echo "$arg"| sed -e "s/ --sudo\($\| \)/ --become /g")"
+            arg="$(echo "$arg"| sed -e "s/ --sudo\($\| \)/ --become /g")"
             continue
         fi
     fi
