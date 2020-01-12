@@ -92,7 +92,9 @@ after_success:
   - DEBUG=1 hacking/docker_release
   - |
     if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then for i in $IMAGES;do
-      IMAGES="$(echo $i|sed -e "s/-${ANSIBLE_RELEASE}$//g")" DEBUG=1 hacking/docker_release
+      di="$(echo $i|sed -e "s/-${ANSIBLE_RELEASE}$//g")"
+      docker tag $i $di
+      IMAGES="$di" DEBUG=1 hacking/docker_release
     done;fi
 cache:
   directories:
