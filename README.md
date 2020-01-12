@@ -28,7 +28,7 @@ It will in ./corpusops/corpusops.bootstrap:
 * Download corpusops roles & playbooks
 
 
-**Note about branches and Versions**:
+### Note about branches and Versions
 - `2.0`: current branch with roles supported ansible version `>=  2.5` using **python-3** and bundling **ansible-2.9**.
 - `master`:  old branch with roles supported ansible version `<=  2.7` using **python-2** and bundling **ansible-2.7**. 
 
