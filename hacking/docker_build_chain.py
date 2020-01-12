@@ -10,7 +10,10 @@ import json
 import logging
 import os
 import re
-import six
+try:
+    import six
+except ImportError:
+    from ansible.module_utils import six
 import sys
 import time
 import traceback
