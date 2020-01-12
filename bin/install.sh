@@ -484,9 +484,8 @@ get_python2() {
 }
 get_python3() {
     local py3=
-    for i in python3.9 python3.8 python3.7 python3.6 \
-             python-3.9 python-3.8 python-3.7 python3.6 \
-             python-3;do
+    for i in python3.9  python3.8  python3.7  python3.6  python3.5  python3.4  python3 \
+             python-3.9 python-3.8 python-3.7 python-3.6 python-3.5 python-3.4 python-3;do
         local lpy=$(get_command $i 2>/dev/null)
         if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 3' );then
             py3=${lpy}
