@@ -3,11 +3,11 @@
     {
       "tag": "corpusops/ubuntu:14.04_preprovision",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
-    }, 
+    },
     {
       "tag": "corpusops/ubuntu:16.04_preprovision",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
-    }, 
+    },
     {
       "tag": "corpusops/ubuntu:18.04_preprovision",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
@@ -23,7 +23,7 @@
     {
       "tag": "corpusops/ubuntu:14.04",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
-    }, 
+    },
     {
       "tag": "corpusops/ubuntu:16.04",
 	  "dockerfile": "docker/corpusops/{name}:{version}"
@@ -62,6 +62,78 @@
     },
     {
       "tag": "corpusops/archlinux:latest",
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+
+
+
+
+
+
+
+
+    {
+      "tag": "corpusops/ubuntu:14.04_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:16.04_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:18.04_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:latest_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/centos:7_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:14.04-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:16.04-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:18.04-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/ubuntu:latest-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/centos:7-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/debian:stretch_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/debian:stretch-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/debian:latest_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/debian:latest-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/archlinux:latest_preprovision-2.7,
+	  "dockerfile": "docker/corpusops/{name}:{version}"
+    },
+    {
+      "tag": "corpusops/archlinux:latest-2.7,
 	  "dockerfile": "docker/corpusops/{name}:{version}"
     }
   ]
