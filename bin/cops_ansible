@@ -809,6 +809,15 @@ if [[ -n ${ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
+get_abin_version() { $EXEC_SCRIPT --version|head -n1|awk '{print $2}'|cut -b-3; }
+ANSIBLE_SCRIPT_ARGS="$@"
+if [[ "$@" == *--sudo* ]];then
+    if ( version_gte $(get_abin_version) 2.9);then
+        ANSIBLE_SCRIPT_ARGS="$( \
+            echo "${ANSIBLE_SCRIPT_ARGS}"|sed -e "s/ --sudo\($\| \)/ --become /g")"
+    fi
+fi
+set -- $ANSIBLE_SCRIPT_ARGS
 # if not included, but executed directly from a wrapper
 if echo "${EXEC_SCRIPT}" | egrep -vq '^cops_ansible$';then
     exec ${EXEC_SCRIPT} "${@}"
