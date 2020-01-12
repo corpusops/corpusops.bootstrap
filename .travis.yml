@@ -121,5 +121,5 @@ after_success:
 cache:
   directories:
     - $HOME/.cache/pip
-    - $TRAVIS_BUILD_DIR/venv
+    - $TRAVIS_BUILD_DIR/venv3
     - $TRAVIS_BUILD_DIR/roles/corpusops.roles
