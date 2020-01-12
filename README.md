@@ -32,6 +32,17 @@ It will in ./corpusops/corpusops.bootstrap:
 - `2.0`: current branch with support with ansible from `2.5` included and onwards **using python-3**.
 - `master`: old branch with support with ansible up to `2.7` using **python-2.7**.
 
+### Upgrading from ``master`` branch
+We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
+
+    ```
+    cd $corpusops_boostrap && \
+        git pull &&\
+        ./bin/install.sh -C -b 2.0 && \
+        bin/install.sh -C && \
+        rm -f .corpusops/corpusops_branch
+    ```
+
 ## badges
 
 |  Branch                                                             | TravisBuild                                                                                                                                                          |
