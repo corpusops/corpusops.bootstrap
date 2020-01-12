@@ -29,7 +29,7 @@ It will in ./corpusops/corpusops.bootstrap:
 
 ### Note about branches and Versions
 - `2.0`: current branch with roles supported ansible version `>=  2.5` using **python-3** and bundling **ansible-2.9**.
-- `master`:  old branch with roles supported ansible version `<=  2.7` using **python-2** and bundling **ansible-2.7**. 
+- `master`:  old branch with roles supported ansible version `<=  2.7` using **python-2** and bundling **ansible-2.7**.
 
 ### Upgrading from ``master`` branch
 We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
@@ -41,6 +41,11 @@ cd $corpusops_bootstrap && \
     bin/install.sh -C && \
     rm -f .corpusops/corpusops_branch
 ```
+
+## Ansible notes
+- It's better to use the installer (this repo, corpusops.bootstrap) that uses under the hood our [ansible fork](https://github.com/corpusops/ansible)
+ which have [small fixes & divergences](https://github.com/corpusops/ansible/tree/stable-2.9/divergences)
+ to [pristine ansible](https://github.com/ansible/ansible).
 
 ## badges
 
