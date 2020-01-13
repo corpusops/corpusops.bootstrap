@@ -494,6 +494,12 @@ pymod_ver() {
     local py="${2:-${py:-python}}"
     "$py" -c "from __future__ import print_function;import $mod;print($mod.__version__)"
 }
+get_setuptools() {
+    local py=${1:-python}
+    local setuptoolsreq="setuptools"
+    if ( is_python2 );then setuptoolsreq="setuptools<=45";fi
+    echo "$setuptoolsreq"
+}
 install_pip() {
     local py="${1:-python}"
     local DEFAULT_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
@@ -504,7 +510,14 @@ install_pip() {
         log "Error downloading pip installer"
         return 1
     fi
-    $(may_sudo) "$py" "$PIP_INST" -U pip setuptools six
+    $(may_sudo) "$py" "$PIP_INST" -U pip $(get_setuptools $py) six
+}
+is_python2() {
+    local py=${1:-python}
+    if ( $py -V 2>&1| grep -iq "python 2" );then
+        return 0
+    fi
+    return 1
 }
 uninstall_at_least_pymodule() {
     local py="${3:-${py-python}}"
@@ -563,8 +576,8 @@ upgrade_pip() {
     else
         local maysudo=$(may_sudo)
     fi
-    vv $maysudo "${py}" -m pip install -U setuptools \
-        && vv $maysudo "${py}" -m pip install -U pip six urllib3\
+    vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)"\
+        && vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)" pip six urllib3\
         && vv $maysudo "${py}" -m pip install chardet \
         && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
             vv $maysudo "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
