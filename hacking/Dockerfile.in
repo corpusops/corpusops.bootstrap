@@ -2,7 +2,7 @@
 # and their requisites; together with docker cache
 
 # __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
-FROM __IMAGE_PREPROVISION__-2.7
+FROM __IMAGE_PREPROVISION__-2.9
 
 # Rewarm apt cache
 RUN bash -c '\
