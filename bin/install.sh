@@ -1317,7 +1317,7 @@ install_python_libs_() {
             upgrade_pip "$py" || sdie "upgrading pip failed"
         fi
         local pip=$(get_cops_pip)
-        if ! ( $pip --version >/dev/null 2>&1 );then
+        if ! ( $py -m pip --version >/dev/null 2>&1 );then
             sdie "pip not found"
         fi
         upgrade_pip "$py"
