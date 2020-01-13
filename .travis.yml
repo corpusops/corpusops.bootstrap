@@ -94,7 +94,9 @@ after_success:
   - |
     if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then for i in $IMAGES;do
       di="$(echo $i|sed -e "s/-${ANSIBLE_RELEASE}$//g")"
+      echo docker tag $i $di >&2
       docker tag $i $di
+      echo DEBUG=1 hacking/docker_release $i $di
       DEBUG=1 hacking/docker_release "$i" "$di"
     done;fi
 cache:
