@@ -80,6 +80,7 @@ before_install:
 ##     fi
 ##   - sudo service docker stop
 ##   - bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
+    - /bin/true
 script:
     - /bin/true
 ##  - |
