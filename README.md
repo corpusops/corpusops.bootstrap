@@ -49,10 +49,10 @@ cd $corpusops_bootstrap && \
 
 ## badges
 
-|  Branch                                                             | TravisBuild                                                                                                                                                          |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.0                                                                 | [![Build Status 2.0  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=2.0)](https://travis-ci.org/corpusops/corpusops.bootstrap)         |
-| master                                                              | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap)         |
+|  Branch | TravisBuild |  Branch | TravisBuild |
+| ------- | ----------- |  ------ | ----------- |
+| 2.0 | [![Build Status 2.0  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=2.0)](https://travis-ci.org/corpusops/corpusops.bootstrap) | master | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap) |
+
 
 ## Roles
 - [corpusops.roles](https://github.com/corpusops/roles)
