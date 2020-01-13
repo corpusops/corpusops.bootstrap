@@ -52,47 +52,49 @@ install:
 #        fi
 #      fi;
 #    done
-  - deactivate
-  - |
-    cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json \
-      || cp -fv docker/2.0-IMAGES.json docker/IMAGES.json
-  - |
-    echo "TRAVIS_ENV_VARS:" >&2
-    env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
-  - |
-    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-    else
-        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
-    fi
-    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
-    export CORPUSOPS_BRANCH
-    if ! ( bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}; );then
-      echo "Busting venv cache && rebuilding"
-      rm -rf $TRAVIS_BUILD_DIR/venv/*
-      bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
-    fi
-    if ! bin/install.sh -C --synchronize-code;then
-      rm -rf $TRAVIS_BUILD_DIR/roles/corpusops.roles $TRAVIS_BUILD_DIR/playbooks/corpusops
-      bin/install.sh -C --synchronize-code
-    fi
-  - sudo service docker stop
-  - bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
+- deactivate
+- |
+  cp -fv docker/${TRAVIS_BRANCH}-IMAGES.json docker/IMAGES.json \
+    || cp -fv docker/2.0-IMAGES.json docker/IMAGES.json
+- |
+  echo "TRAVIS_ENV_VARS:" >&2
+  env | grep TRAVIS | sort -u | sed -re "s/^/  /g" >&2
+- |
+  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+      CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+  else
+      CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+  fi
+  echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
+  export CORPUSOPS_BRANCH
+  if ! ( bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}; );then
+    echo "Busting venv cache && rebuilding"
+    rm -rf $TRAVIS_BUILD_DIR/venv/*
+    bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}
+  fi
+  if ! bin/install.sh -C --synchronize-code;then
+    rm -rf $TRAVIS_BUILD_DIR/roles/corpusops.roles $TRAVIS_BUILD_DIR/playbooks/corpusops
+    bin/install.sh -C --synchronize-code
+  fi
+- sudo service docker stop
+- bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
 script:
-  - |
-    if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-        CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-    else
-        CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
-    fi
-    echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
-    export CORPUSOPS_BRANCH
-    NO_SYNC=1 hacking/test_script
+- |
+  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
+      CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
+  else
+      CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
+  fi
+  echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
+  export CORPUSOPS_BRANCH
+  NO_SYNC=1 hacking/test_script
 after_success:
   - |
     if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then for i in $IMAGES;do
-      di="$(echo $i|sed -e "s/-${ANSIBLE_RELEASE}$//g")"
+      di="$(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
+      echo docker tag $i $di >&2
       docker tag $i $di
+      echo DEBUG=1 hacking/docker_release $i $di
       DEBUG=1 hacking/docker_release "$i" "$di"
     done;fi
 cache:
