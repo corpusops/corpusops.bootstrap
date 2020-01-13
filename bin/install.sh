@@ -590,7 +590,7 @@ upgrade_pip() {
         local maysudo=$(may_sudo)
     fi
     vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)"\
-        && vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)" pip six urllib3\
+        && vv $maysudo "${py}" -m pip install -U pip six urllib3\
         && vv $maysudo "${py}" -m pip install chardet \
         && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
             vv $maysudo "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
