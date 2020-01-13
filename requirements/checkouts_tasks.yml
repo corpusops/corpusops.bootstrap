@@ -196,9 +196,9 @@
     if ! (vv git $gargs merge --ff-only $merge );then
       if (LANG=C LC_ALL=C vv git $gargs merge --ff-only $merge 2>&1|egrep -q "fatal");then
         if ! (vv git $gargs rebase $merge);then
-          vv git checkout $gargs HEAD -b backupupgrade-$chrono
+          vv git $gargs checkout HEAD -b backupupgrade-$chrono
           vv git checkout $curbr
-          vv git reset --hard $gargs $merge
+          vv git $gargs reset --hard $merge
         fi
       else
         exit 1
