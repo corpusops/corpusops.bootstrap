@@ -100,7 +100,7 @@ after_success:
         docker tag $imgs
       fi
       DEBUG=1 hacking/docker_release $imgs
-    done;fi
+    done
 cache:
   directories:
     - $HOME/.cache/pip
