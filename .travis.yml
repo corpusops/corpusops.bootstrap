@@ -93,10 +93,13 @@ script:
   NO_SYNC=1 hacking/test_script
 after_success:
   - |
-    if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then for i in $IMAGES;do
-      di="$(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
-      docker tag $i $di
-      DEBUG=1 hacking/docker_release "$i" "$di"
+    for i in $IMAGES;do
+      imgs="$i"
+      if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then
+        imgs="$imgs $(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
+        docker tag $imgs
+      fi
+      DEBUG=1 hacking/docker_release $imgs
     done;fi
 cache:
   directories:
