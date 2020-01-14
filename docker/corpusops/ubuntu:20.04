@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/ubuntu:20.04_preprovision-2.7
+FROM corpusops/ubuntu:20.04_preprovision-2.9
 
 # Rewarm apt cache
 RUN bash -c '\
@@ -27,7 +27,7 @@ ADD requirements/ $COPS_ROOT/requirements/
 # Be sure that system python is capable of SSL SNI connections
 RUN bash -c 'step_rev=2;set -ex;\
     : reinstall py build prereqs;\
-    pip2 uninstall -y ipaddr docker-py;\
+    pip3 uninstall -y ipaddr docker-py;\
     export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
     $COPS_ROOT/bin/install.sh -C --skip-sync-code;\
