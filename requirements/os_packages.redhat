@@ -32,9 +32,9 @@ pcre
 perl
 pkgconfig
 python3
-python3-six
+python-six
 python3-test
-python3-virtualenv
+python-virtualenv
 redhat-rpm-config
 rsync
 swig
