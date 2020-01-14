@@ -473,28 +473,32 @@ upgrade_wd_to_br() {
         fi
     )
 }
-get_python2() {
-    local py2=
-    for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
+get_python_() {
+    local py_ver=$1
+    shift
+    local selectedpy=""
+    local py_bins="$@"
+    for i in $py_bins;do
         local lpy=$(get_command $i 2>/dev/null)
-        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
-            py2=${lpy}
+        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi "python $py_ver" );then
+            selectedpy=${lpy}
             break
         fi
     done
-    echo $py2
+    echo $selectedpy
+}
+get_python2() {
+    local py_ver=2
+    get_python_ $py_ver \
+        python2.7 python2.6 python-2.7 python-2.6 \
+        python-${py_ver} python${py_ver} python
 }
 get_python3() {
-    local py3=
-    for i in python3.9  python3.8  python3.7  python3.6  python3.5  python3.4  python3 \
-             python-3.9 python-3.8 python-3.7 python-3.6 python-3.5 python-3.4 python-3;do
-        local lpy=$(get_command $i 2>/dev/null)
-        if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 3' );then
-            py3=${lpy}
-            break
-        fi
-    done
-    echo $py3
+    local py_ver=3
+    get_python_ $py_ver \
+        python3.9  python3.8  python3.7  python3.6  python3.5  python3.4  \
+        python-3.9 python-3.8 python-3.7 python-3.6 python-3.5 python-3.4 \
+        python-${py_ver} python${py_ver} python
 }
 has_python_module() {
     local py="${py:-python}"
@@ -902,11 +906,16 @@ set_vars() {
 }
 
 get_cops_orig_python() {
-    local default_py=$(
+	local DEFAULT_PYTHON_BIN_FIRST=""
+	if [ "x${CORPUSOPS_USE_VENV}" = "xno" ];then
+   		DEFAULT_PYTHON_BIN_FIRST="y"
+	fi
+	local default_py=$(
         deactivate 2>/dev/null || :;
-        get_python${COPS_PYTHON_VERSION}
-        )
-    echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
+        DEFAULT_PYTHON_BIN_FIRST=$DEFAULT_PYTHON_BIN_FIRST \
+		get_python${COPS_PYTHON_VERSION}
+    )
+     echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
 }
 
 get_cops_python() {
@@ -1576,9 +1585,9 @@ parse_cli_opts() {
 }
 
 setup() {
-    detect_os
-    parse_cli_opts $LAUNCH_ARGS
-    set_vars # real variable affectation
+     detect_os
+     parse_cli_opts $LAUNCH_ARGS
+     set_vars # real variable affectation
 }
 
 main() {
