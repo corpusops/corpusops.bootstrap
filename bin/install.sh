@@ -42,6 +42,7 @@ SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:20.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
@@ -49,6 +50,7 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovis
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:20.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:18.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:14.04"
@@ -590,7 +592,7 @@ upgrade_pip() {
         local maysudo=$(may_sudo)
     fi
     vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)"\
-        && vv $maysudo "${py}" -m pip install -U pip six urllib3\
+        && vv $maysudo "${py}" -m pip install -U "$(get_setuptools $py)" pip six urllib3\
         && vv $maysudo "${py}" -m pip install chardet \
         && if ( version_lt "$($py -V 2>&1|awk '{print $2}')" "3.0" );then
             vv $maysudo "${py}" -m pip install -U backports.ssl_match_hostname ndg-httpsclient pyasn1 &&\
