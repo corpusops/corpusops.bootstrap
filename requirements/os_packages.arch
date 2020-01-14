@@ -10,14 +10,10 @@ gmp
 openssl
 lsb-release
 man-db
-python3
-python3-six
-python3-pip
-python3-virtualenv
 python
 python-six
-python-virtualenv
 python-pip
+python-virtualenv
 rsync
 tcl
 ca-certificates
