@@ -706,6 +706,7 @@ fi
 if ! ( is_ci; ) ;then
     NO_OUTPUT=${NO_OUTPUT-}
 fi
+python -V>&2
 output_in_error $DOCKER_BUILD_CHAIN "${@}"
 ret=$?
 exit ${ret}
