@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/ubuntu:18.04_preprovision-2.7
+FROM corpusops/ubuntu:18.04_preprovision-2.9
 
 # Rewarm apt cache
 RUN bash -c '\
