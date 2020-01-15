@@ -707,7 +707,7 @@ for i in hacking/container_rootfs/sbin/cops_container_{snapshot,strip}.sh;do
     if [ ! -e $d ];then mkdir -p $d;fi
     cp -vf $i $df
 done
-cp $W/bin/cops_docker_cleanup.sh $W/roles/corpusops.roles/services_virt_docker/templates/usr/local/bin/
+cp $W/bin/cops_docker_cleanup.sh $W/roles/corpusops.roles/services_virt_docker/files/usr/local/bin/
 for r in \
     $W \
     $W/roles/corpusops.roles/lxc_snapshot \
