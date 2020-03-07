@@ -5,7 +5,7 @@ git: {lfs_skip_smudge: true}
 env:
   global:
     - ANSIBLE_RELEASE=-2.9
-    - RELEASE_AS_LATEST=false
+    - RELEASE_AS_LATEST=true
   matrix:
     # - >
     #   TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
