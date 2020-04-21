@@ -26,13 +26,17 @@ ADD roles/        $COPS_ROOT/roles/
 ADD requirements/ $COPS_ROOT/requirements/
 
 # Be sure that system python is capable of SSL SNI connections
+# and apt is configured, and has installed base packages
 RUN bash -c 'step_rev=2;set -ex;\
     : reinstall py build prereqs;\
     pip3 uninstall -y ipaddr docker-py;\
     export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
     $COPS_ROOT/bin/install.sh -C --skip-sync-code;\
-    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
+    $_apply_role \
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_pkgmgr/role.yml\
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_basepkgs/role.yml\
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
 
 # Install docker client for dind(sibling via docker socket) workflows
 RUN bash -c 'step_rev=2;set -e;\
