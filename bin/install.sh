@@ -620,9 +620,13 @@ make_virtualenv() {
         if [ ! -e "${PIP_CACHE}" ]; then
             mkdir -p "${PIP_CACHE}"
         fi
+    ust="--unzip-setuptools"
+    if ! ( $venv --help 2>&1 | grep -q -- $ust );then
+        ust=""
+    fi
     $venv \
         $( [ "x$py" != "x" ] && echo "--python=$py"; ) \
-        --system-site-packages --unzip-setuptools \
+        --system-site-packages $ust \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
