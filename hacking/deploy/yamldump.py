@@ -4,7 +4,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import yaml
-import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import os
 import sys
 import json
@@ -17,7 +20,7 @@ for f in files:
     print('Dumping {0}\n'.format(f))
     data = yaml.load(open(f).read())
     edata = json.loads(json.dumps(data))
-    out = StringIO.StringIO()
+    out = StringIO()
     yaml.safe_dump(edata,
                    out,
                    allow_unicode=True,
