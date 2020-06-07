@@ -4,7 +4,6 @@ curl
 gettext
 git
 iputils-ping
-libffi6
 libgmp10
 libgmpxx4ldbl
 openssl
