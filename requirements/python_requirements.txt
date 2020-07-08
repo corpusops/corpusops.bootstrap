@@ -15,7 +15,7 @@ timelib >= 0.2.4
 # SSL
 certifi >= 14.05.14
 cryptography >= 0.8
-pycrypto >= 2.6.1
+PyCryptodome >= 3.9.8
 pyOpenSSL >= 0.15.1
 
 
