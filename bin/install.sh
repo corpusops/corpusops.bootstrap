@@ -950,6 +950,7 @@ import urllib3
 import ipaddr
 import ipwhois
 import pyasn1
+import Crypto.SelfTest.Math
 from distutils.version import LooseVersion
 OpenSSL_version = LooseVersion(OpenSSL.__dict__.get('__version__', '0.0'))
 if OpenSSL_version <= LooseVersion('0.15'):
@@ -1340,6 +1341,10 @@ install_python_libs_() {
         if $(get_cops_python) --version 2>&1| egrep -iq "python 2\.";then
             COPS_PYTHON="$py" ensure_last_python_requirement enum34
             die_in_error "installing enum on python2"
+        fi
+        if ( "$py" -c "import Crypto" ) && ! ("$py" -c "import Crypto.SelfTest.Math" );then
+            log "As switching to pycryptodome, we uninstall pycrypto"
+            vv $maysudo "$py" -m pip uninstall -y pycrypto
         fi
         COPS_UPGRADE="" COPS_PYTHON="$py" ensure_last_python_requirement \
             -r requirements/python_requirements.txt
