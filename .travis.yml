@@ -7,9 +7,9 @@ env:
     - ANSIBLE_RELEASE=-2.7
     # - RELEASE_AS_LATEST=true
   matrix:
-    # - >
-    #   TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
-    #   IMAGES="${TEST_IMAGES} corpusops/ubuntu:20.04${ANSIBLE_RELEASE}"
+    - >
+      TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
+      IMAGES="${TEST_IMAGES} corpusops/ubuntu:20.04${ANSIBLE_RELEASE}"
     - >
       TEST_IMAGES="corpusops/ubuntu:18.04_preprovision${ANSIBLE_RELEASE}"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:18.04${ANSIBLE_RELEASE}"
