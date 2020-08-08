@@ -1000,7 +1000,7 @@ install_prerequisites_() {
     _PACKAGES=${BASE_PACKAGES}
     if [[ -n ${FORCE_PACKAGES_INSTALL-} ]] || ! is_python_install_complete;then
         log "Virtualenv not complete, installing also system dev packages"
-        _PACKAGES="${_PACKAGES} ${DEV_PACKAGES}"
+        export EXTRA_PACKAGES="${EXTRA_PACKAGES} ${DEV_PACKAGES}"
     else
         log "Virtualenv complete, dev packages won't be installed"
     fi
