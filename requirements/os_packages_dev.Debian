@@ -7,6 +7,7 @@ libgmp3-dev
 libsigc++-2.0-dev
 libssl-dev
 python-dev
+python2-dev
 swig
 pkg-config
 libtool
