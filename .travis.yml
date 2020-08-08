@@ -1,6 +1,7 @@
 ---
-sudo: required
-dist: xenial
+services: [docker]
+# sudo: required
+# dist: xenial
 git: {lfs_skip_smudge: true}
 env:
   global:
@@ -40,7 +41,16 @@ env:
 language: python
 python: "2.7"
 before_install:
-  - sudo sh -xc "apt-get update -qq && apt-get install -yqq python-six"
+- >
+  sudo bash -exc "python -c
+  \"d='/etc/docker/daemon.json';
+  import json;
+  c = json.load(open(d));
+  c['experimental'] = True;
+  print c;open(d, 'w').write(json.dumps(c))
+  \"
+  && systemctl restart docker"
+- sudo sh -xc "apt-get update -qq && apt-get install -yqq python-six"
 install:
 # update block if neccessary
 #    for j in venv/src/ansible roles/corpusops.roles playbooks/corpusops;do
@@ -80,8 +90,9 @@ install:
     rm -rf $TRAVIS_BUILD_DIR/roles/corpusops.roles $TRAVIS_BUILD_DIR/playbooks/corpusops
     bin/install.sh -C --synchronize-code
   fi
-- sudo service docker stop
-- bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
+# now travis has sufficient docker version for --squash, use it !
+# - sudo service docker stop
+# - bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
 script:
 - |
   if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
