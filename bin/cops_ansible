@@ -22,7 +22,26 @@
 #   - nosshhostkeychecking
 #   - nocows
 #   - better controlpath
+readlinkf() {
+    if ( uname | egrep -iq "darwin|bsd" );then
+        if ( which greadlink 2>&1 >/dev/null );then
+            greadlink -f "$@"
+        elif ( which perl 2>&1 >/dev/null );then
+            perl -MCwd -le 'print Cwd::abs_path shift' "$@"
+        elif ( which python 2>&1 >/dev/null );then
+            python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$@"
+        fi
+    else
+        val="$(readlink -f "$@")"
+        if [[ -z "$val" ]];then
+            val=$(readlink "$@")
+        fi
+        echo "$val"
+    fi
+}
 
+SCRIPT_DIR=$(cd "$(dirname $(readlinkf $0))" && pwd)
+SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
 
 # BEGIN: corpusops common glue
 readlinkf() {
