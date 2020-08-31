@@ -149,25 +149,25 @@ lxcs_containers:
         {%- set _ = res.update(lxc_data__default) %}
         {%- set _ = res.update(lxc_data__extra) %}
         {%- for i in [
-          'eth0_ip', 'eth0_mac', 'eth0_gw', 'eth0_bridge',
-          'eth1_ip', 'eth1_mac', 'eth1_gw', 'eth1_bridge',
-          'eth2_ip', 'eth2_mac', 'eth2_gw', 'eth2_bridge',
-          'eth3_ip', 'eth3_mac', 'eth3_gw', 'eth3_bridge',
-          'eth4_ip', 'eth4_mac', 'eth4_gw', 'eth4_bridge',
-          'eth5_ip', 'eth5_mac', 'eth5_gw', 'eth5_bridge',
-          'eth6_ip', 'eth6_mac', 'eth6_gw', 'eth6_bridge',
-          'eth7_ip', 'eth7_mac', 'eth7_gw', 'eth7_bridge',
-          'eth8_ip', 'eth8_mac', 'eth8_gw', 'eth8_bridge',
-          'eth9_ip', 'eth9_mac', 'eth9_gw', 'eth9_bridge',
-          ] -%}
+          'eth0_ip', 'eth0_mac', 'eth0_gateway', 'eth0_bridge',
+          'eth1_ip', 'eth1_mac', 'eth1_gateway', 'eth1_bridge',
+          'eth2_ip', 'eth2_mac', 'eth2_gateway', 'eth2_bridge',
+          'eth3_ip', 'eth3_mac', 'eth3_gateway', 'eth3_bridge',
+          'eth4_ip', 'eth4_mac', 'eth4_gateway', 'eth4_bridge',
+          'eth5_ip', 'eth5_mac', 'eth5_gateway', 'eth5_bridge',
+          'eth6_ip', 'eth6_mac', 'eth6_gateway', 'eth6_bridge',
+          'eth7_ip', 'eth7_mac', 'eth7_gateway', 'eth7_bridge',
+          'eth8_ip', 'eth8_mac', 'eth8_gateway', 'eth8_bridge',
+          'eth9_ip', 'eth9_mac', 'eth9_gateway', 'eth9_bridge',
+          ] -%}                        gateway
         {%- if i in res and not res.get(i, None) %}{% set _ = res.pop(i)%}{%endif %}{%- endfor -%}
         {{- res|to_json -}}"
     lxc_data__extra: {}
     lxc_data__default:
       template_options: '-r {ubuntu_release} --mirror "{ubuntu_mirror}"'
       eth0_gateway: "{% if lxc_cluster_flavor == 'makinastates'
-        %}{% set gw='10.5.0.1'%}{%else%}{% set gw='10.8.0.1'%}{%endif
-        %}{{lxc_gateway|default(gw)}}"
+        %}{% set gateway='10.5.0.1'%}{%else%}{% set gateway='10.8.0.1'%}{%endif
+        %}{{lxc_gateway|default(gateway)}}"
       eth0_ip: "{{local_ip}}"
       container_name: "{{inventory_hostname}}"
       from_container: corpusopsbionictpl
