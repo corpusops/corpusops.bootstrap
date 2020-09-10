@@ -1310,8 +1310,7 @@ install_python_libs_() {
         local pip=$(get_cops_pip)
         local py=$(get_cops_python)
         if ! ( corpusops_use_venv ) && \
-            ! ( $pip --version >/dev/null 2>&1 ) && \
-            ( has_command easy_install );then
+            ! ( $pip --version >/dev/null 2>&1 ) ;then
             upgrade_pip "$py" || sdie "upgrading pip failed"
         fi
         local pip=$(get_cops_pip)
