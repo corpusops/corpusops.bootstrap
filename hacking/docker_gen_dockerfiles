@@ -469,7 +469,7 @@ upgrade_wd_to_br() {
 }
 get_python2() {
     local py2=
-    for i in python2.7 python2.6 python-2.7 python-2.6 python-2;do
+    for i in python2.7 python2.6 python-2.7 python-2.6 python-2 python2;do
         local lpy=$(get_command $i 2>/dev/null)
         if [ "x$lpy" != "x" ] && ( ${lpy} -V 2>&1| egrep -qi 'python 2' );then
             py2=${lpy}
