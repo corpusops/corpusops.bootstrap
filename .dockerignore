@@ -12,3 +12,5 @@ groups_vars
 ./venv
 ./ignored
 ./mountpoint
+./venv3
+./venv2
