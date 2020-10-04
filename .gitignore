@@ -1,4 +1,5 @@
 *.swp
+docker/IMAGES.json
 *.box
 *.bak
 *.egg-info
