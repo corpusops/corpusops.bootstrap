@@ -30,7 +30,14 @@ else
     if [[ -z "$@" ]] && [[ -z "${SKIP_COPS_INSTALL}" ]] \
         && [ ! -e $LOCAL_COPS_ROOT/venv/bin/ansible ];then
         log "Install corpusops"
-        if ! call_cops_installer $COPS_INSTALL_ARGS;then die_ 23 "Install error";fi
+        if ! call_cops_installer $COPS_INSTALL_ARGS;then
+            if ! ( cd $LOCAL_COPS_ROOT && \
+                   git pull && cd - && \
+                   call_cops_installer $COPS_INSTALL_ARGS; \
+             );then
+                   die_ 23 "Install error";
+            fi
+        fi
     fi
 
     # Update corpusops code, ansible & roles
