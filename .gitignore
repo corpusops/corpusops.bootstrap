@@ -29,3 +29,5 @@
 /.vagrant
 /vagrant_config.yml
 /sshconfig
+/venv*
+/docker/IMAGES.json
