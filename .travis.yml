@@ -6,6 +6,8 @@ git: {lfs_skip_smudge: true}
 env:
   global:
     - ANSIBLE_RELEASE=-2.7
+    - NO_ROLES_TEST=1
+    - NO_NOT_IN_DOCKER_ROLES_TEST=1
     # - RELEASE_AS_LATEST=true
   matrix:
     - >
