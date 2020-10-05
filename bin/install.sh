@@ -267,6 +267,12 @@ is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine" || test -e /etc/alpine-
 is_redhat_like() { echo $DISTRIB_ID \
         | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
+is_darwin () {
+    if [[ -n "${FORCE_DARWIN-}" ]];then return 0;fi
+    if [[ -n "${FORCE_NO_DARWIN-}" ]];then return 1;fi
+    if ( uname | grep -iq darwin );then return 0;fi
+    return 1
+}
 detect_os() {
     # this function should be copiable in other scripts, dont use adjacent functions
     UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
@@ -278,7 +284,11 @@ detect_os() {
     DISTRIB_CODENAME=""
     DISTRIB_ID=""
     DISTRIB_RELEASE=""
-    if ( lsb_release -h >/dev/null 2>&1 ); then
+    if ( is_darwin ); then
+        DISTRIB_ID=Darwin
+        DISTRIB_CODENAME=Darwin
+        DISTRIB_RELEASE=$(uname -a|awk '{print $7}'|cut -d : -f1)
+    elif ( lsb_release -h >/dev/null 2>&1 ); then
         DISTRIB_ID=$(lsb_release -si)
         DISTRIB_CODENAME=$(lsb_release -sc)
         DISTRIB_RELEASE=$(lsb_release -sr)
@@ -1606,7 +1616,9 @@ main() {
     if [ "x${DO_ONLY_SYNC_CODE}" != "x" ]; then
         synchronize_code || die "synchronize_code failed"
     else
-        install_prerequisites || die "System prerequisites failed"
+        if ! ( is_darwin );then
+            install_prerequisites || die "System prerequisites failed"
+        fi
         move_old_py2_venv || die "moving old Python2 virtualenv failed"
         setup_virtualenv || die "setup_virtualenv failed"
         install_python_libs || die "python libs incomplete install"
