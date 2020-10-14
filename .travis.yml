@@ -2,7 +2,7 @@
 services: [docker]
 # sudo: required
 dist: focal
-git: {lfs_skip_smudge: true}
+git: {lfs_skip_smudge: true, depth: 1}
 env:
   global:
     - ANSIBLE_RELEASE=-2.9
@@ -11,8 +11,11 @@ env:
     - NO_ROLES_TEST=1
     - NO_NOT_IN_DOCKER_ROLES_TEST=1
     # tmp: disable squashing at it make jobs too long
-    - NO_SQUASH=1
+    - SQUASH="--squash"
     - NO_OUTPUT=""
+    - COPS_ROOT="$TRAVIS_BUILD_DIR" \
+      funcs="$COPS_ROOT/bin/cops_shell_common" \
+      vv="$funcs vv"
   matrix:
     - >
       TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
@@ -101,14 +104,10 @@ install:
 # - bin/silent_run bin/cops_apply_role -vvvv --sudo roles/corpusops.roles/services_virt_docker/role.yml
 script:
 - |
-  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]];then
-      CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
-  else
-      CORPUSOPS_BRANCH="${TRAVIS_BRANCH}"
-  fi
-  echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
-  export CORPUSOPS_BRANCH
-  NO_SYNC=1 hacking/test_script
+  for i in $IMAGES;do
+    img="$(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
+    $vv docker build $SQUASH -f docker/${img} -t ${i} .
+  done
 after_success:
   - |
     for i in $IMAGES;do
