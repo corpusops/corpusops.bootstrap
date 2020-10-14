@@ -698,6 +698,7 @@ parse_cli "$@"
 START_DIRS=${START_DIR:-${@:-/}}
 GIT_SHALLOW=${GIT_SHALLOW-}
 GIT_SHALLOW_DEPTH=${GIT_SHALLOW_DEPTH-10}
+GIT_GC_AGGRESSIVE="${GIT_GC_AGGRESSIVE-"--aggressive"}"
 
 for dir in ${START_DIRS};do
     log "operating in ${dir}"
@@ -707,9 +708,9 @@ for dir in ${START_DIRS};do
             if [[ -n $GIT_SHALLOW ]];then
                 log "$gitdir will be shallowed"
                 vv git fetch --depth=${GIT_SHALLOW_DEPTH}
-                vv git gc --aggressive --prune=now
+                vv git gc $GIT_GC_AGGRESSIVE --prune=now
             fi
-            vv git gc --aggressive --prune=now
+            vv git gc $GIT_GC_AGGRESSIVE --prune=now
             cd >/dev/null 2>&1
         fi
     done < <(find "${dir}" -name .git -type d 2>/dev/null)
