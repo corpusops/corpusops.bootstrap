@@ -974,7 +974,7 @@ recap_(){
         if [ "x${DO_SYNC_CORE}" != "xno" ];then
             msg="${msg} core -"
         fi
-        if [ "x${DO_SYNC_ROLES}" != "xo" ];then
+        if [ "x${DO_SYNC_ROLES}" != "xno" ];then
             msg="${msg} roles"
         fi
         bs_log "${msg}"
@@ -1189,6 +1189,12 @@ may_activate_venv() {
     fi
 }
 
+noisy_test_ansible_state() {
+    ( QUIET=y may_activate_venv;\
+      ansible-playbook --help 2>&1 &&\
+      ansible --help >/dev/null 2>&1; )
+}
+
 test_ansible_state() {
     ( QUIET=y may_activate_venv;\
       ansible-playbook --help >/dev/null 2>&1 &&\
@@ -1205,7 +1211,7 @@ reinstall_egg_path() {
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
     local pip="$(get_cops_pip)"
-    if ( test_ansible_state| grep -iq pkg_resources.DistributionNotFound ) &&
+    if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         [ -e "$pip" ];then
         bs_log "Try to reinstall ansible egg"
@@ -1581,9 +1587,9 @@ parse_cli_opts() {
 }
 
 setup() {
-    detect_os
-    parse_cli_opts $LAUNCH_ARGS
-    set_vars # real variable affectation
+     detect_os
+     parse_cli_opts $LAUNCH_ARGS
+     set_vars # real variable affectation
 }
 
 main() {
