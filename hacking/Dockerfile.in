@@ -71,6 +71,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
         $(cat req*/os_packages_dev.${DISTRIB_ID} \
           2>/dev/null | xargs -n1)" \
     DEV_AUTOREMOVE=y \
+    GIT_GC_AGGRESSIVE= \
     GIT_SHALLOW_DEPTH=1 \
     GIT_SHALLOW=y \
     NO_IMAGE_STRIP= \
