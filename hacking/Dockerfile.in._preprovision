@@ -59,15 +59,17 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     echo "extras: "$WANTED_EXTRA_PACKAGES >&2;\
     DO_INSTALL=y DO_UPGRADE=y DO_UPDATE=y SILENT=1 \
       $COPS_ROOT/bin/cops_pkgmgr_install.sh'
-RUN bash -c 'set -ex \
-    : "install docker-images tools (https://github.com/corpusops/docker-images)" \
-    && git clone https://github.com/corpusops/docker-images \
-    && cd ./docker-images \
-    && helpers/add_gosu.sh \
-    && helpers/add_dockerize.sh \
-    && helpers/add_forego.sh \
-    && helpers/setup_locales.sh \
-    && cd - && rm -rf docker-images'
+
+# for now, we rely on rebasing on -bare flavors which already include those scripts
+# RUN bash -c 'set -ex \
+#     : "install docker-images tools (https://github.com/corpusops/docker-images)" \
+#     && git clone --depth=1 https://github.com/corpusops/docker-images \
+#     && cd ./docker-images \
+#     && helpers/add_gosu.sh \
+#     && helpers/add_dockerize.sh \
+#     && helpers/add_forego.sh \
+#     && helpers/setup_locales.sh \
+#     && cd - && rm -rf docker-images'
 
 # 2/ configure python & isolate virtualenv contruction
 # the python diffs are to fix ipv6 error (cant bind address)
@@ -152,6 +154,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
         $(cat req*/os_packages_dev.${DISTRIB_ID} \
           2>/dev/null | xargs -n1)" \
     DEV_AUTOREMOVE=y \
+    GIT_GC_AGGRESSIVE= \
     GIT_SHALLOW=y \
     GIT_SHALLOW_DEPTH=1 \
     NO_IMAGE_STRIP= \
