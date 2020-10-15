@@ -989,16 +989,16 @@ recap_(){
     if [ "x${DO_SYNC_CODE}" != "xno" ];then
         msg="Syncing:"
         if [ "x${DO_SYNC_ANSIBLE}" != "xno" ];then
-            msg="${msg} ansible -"
+            msg="${msg} - ansible"
         fi
         if [ "x${DO_SYNC_CORE}" != "xno" ];then
-            msg="${msg} core -"
+            msg="${msg} - core"
         fi
         if [ "x${DO_SYNC_ROLES}" != "xno" ];then
-            msg="${msg} roles"
+            msg="${msg} - roles"
         fi
         if [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
-            msg="${msg} collections"
+            msg="${msg} - collections"
         fi
         bs_log "${msg}"
         bs_yellow_log "---------------------------------------------------"
