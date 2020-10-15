@@ -1208,8 +1208,7 @@ checkout_code() {
     done
     # ansible 2.10 collection support*
     if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
-        v=$(checkouter --version 2>&1|head -n1|awk '{print $2}'|sed -e "s/^\([^.]\+\.[^.]\+\.[^.]\+\).*/\1/g")
-        if ( version_gte $v 2.10.0 );then
+        if ( version_gte $(get_ansible_branch) stable-2.10 );then
             log "Collecting base collections"
             vv agalaxy collection install  -p "$W/collections" \
                 -r requirements/collections.yml
