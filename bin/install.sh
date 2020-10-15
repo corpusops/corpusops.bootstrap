@@ -691,7 +691,7 @@ THIS="$(readlinkf "${0}")"
 LAUNCH_ARGS=${@}
 
 get_cops_pip() {
-    pip=$(get_command $(basename ${PIP:-pip2}))
+    pip=$(get_command $(basename ${PIP:-pip${COPS_PYTHON_VERSION}}))
     if [[ -z $pip ]]; then
         pip=$(get_command $(basename ${PIP:-pip}))
     fi
@@ -842,7 +842,8 @@ set_vars() {
     DO_ONLY_RECONFIGURE="${DO_ONLY_RECONFIGURE-""}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
-    DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_CODE}}"
+    DO_SYNC_COLLECTIONS="${DO_SYNC_COLLECTIONS-${DO_SYNC_COLLECTIONS}}"
+    DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_ROLES}}"
     DO_SYNC_ANSIBLE="${DO_SYNC_ANSIBLE-${DO_SYNC_ANSIBLE}}"
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
@@ -905,6 +906,7 @@ set_vars() {
     export DO_ONLY_RECONFIGURE
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
+    export DO_SYNC_COLLECTIONS
     export DO_SYNC_ROLES
     export DO_SYNC_ANSIBLE
     export DO_SYNC_CORE
@@ -994,6 +996,9 @@ recap_(){
         fi
         if [ "x${DO_SYNC_ROLES}" != "xno" ];then
             msg="${msg} roles"
+        fi
+        if [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
+            msg="${msg} collections"
         fi
         bs_log "${msg}"
         bs_yellow_log "---------------------------------------------------"
@@ -1108,6 +1113,15 @@ checkouter_() {
         )prefix='$(pwd)' venv='${VENV_PATH}'"
 }
 
+
+agalaxy() { ( agalaxy_ "${@}";) }
+agalaxy_() {
+    export PATH=$SCRIPT_DIR:$PATH;
+    ansible-galaxy \
+        $( [[ -n "${DEBUG}" ]] && echo "-vvvvv" ) \
+        "${@}"
+}
+
 fix_ansible_bins() {
     # handle broken links after upgrades
     local binp="" bin="" ret=0 abin="$(get_eggs_src_dir)/ansible/bin" owd="$(pwd)"
@@ -1192,6 +1206,15 @@ checkout_code() {
             return ${ret}
         fi
     done
+    # ansible 2.10 collection support*
+    if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
+        v=$(checkouter --version 2>&1|head -n1|awk '{print $2}'|sed -e "s/^\([^.]\+\.[^.]\+\.[^.]\+\).*/\1/g")
+        if ( version_gte $v 2.10.0 );then
+            log "Collecting base collections"
+            vv agalaxy collection install  -p "$W/collections" \
+                -r requirements/collections.yml
+        fi
+    fi
 }
 
 may_activate_venv() {
@@ -1229,6 +1252,7 @@ reinstall_egg_path() {
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
     local pip="$(get_cops_pip)"
+    local COPS_PYTHON=${COPS_PYTHON:-python}
     if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         [ -e "$pip" ];then
@@ -1478,6 +1502,8 @@ usage() {
         "$(print_contrary ${DO_SYNC_CORE})"  y
     bs_help "     --skip-sync-roles" "Do not sync roles" \
         "$(print_contrary ${DO_SYNC_ROLES})"  y
+    bs_help "     --skip-sync-collections" "Do not sync collection (only for ansible2.10+)" \
+        "$(print_contrary ${DO_SYNC_COLLECTIONS})"  y
     bs_help "    -s|--only-synchronize-code|--only-sync-code|--synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
@@ -1549,6 +1575,10 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--skip-sync-roles" ]; then
             DO_SYNC_ROLES="no"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--skip-sync-collections" ]; then
+            DO_SYNC_COLLECTIONS="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x-r" ] || [ "x${1}" = "x--reconfigure" ]; then
