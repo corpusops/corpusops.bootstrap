@@ -30,3 +30,4 @@ docker/IMAGES.json
 /.vagrant
 /vagrant_config.yml
 /sshconfig
+/collections
