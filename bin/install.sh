@@ -997,7 +997,7 @@ recap_(){
         if [ "x${DO_SYNC_ROLES}" != "xno" ];then
             msg="${msg} - roles"
         fi
-        if [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
+        if ( version_gte $(get_ansible_branch) stable-2.10 ) && [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
             msg="${msg} - collections"
         fi
         bs_log "${msg}"
