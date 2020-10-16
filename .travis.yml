@@ -50,7 +50,8 @@ before_install:
   print(c);open(d, 'w').write(json.dumps(c))
   \"
   && systemctl restart docker"
-- sudo sh -xc "apt-get update -qq && apt-get install -yqq python-six"
+- echo "$DOCKER_PASSWORD" | docker login --password-stdin --username="$DOCKER_RELEASER"
+- sudo sh -exc "apt-get update -qq && apt-get install -yqq python-six"
 install:
 # update block if neccessary
 #    for j in venv/src/ansible roles/corpusops.roles playbooks/corpusops;do
