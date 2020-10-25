@@ -7,7 +7,6 @@ env:
   global:
     - ANSIBLE_RELEASE=-2.9
     - RELEASE_AS_LATEST=true
-    - NO_SILENT=
     # tmp: disable extra tests
     - NO_ROLES_TEST=1
   matrix:
