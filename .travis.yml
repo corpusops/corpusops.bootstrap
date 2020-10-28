@@ -9,6 +9,8 @@ env:
     - NO_ROLES_TEST=1
     - NO_NOT_IN_DOCKER_ROLES_TEST=1
     # - RELEASE_AS_LATEST=true
+    # tmp: disable squashing at it make jobs too long
+    - NO_SQUASH=1
   matrix:
     - >
       TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
