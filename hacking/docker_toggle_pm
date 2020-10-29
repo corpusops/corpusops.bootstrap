@@ -176,8 +176,8 @@ output_in_error_() {
     fi
     CI_BUILD="${CI_BUILD-${DEFAULT_CI_BUILD-}}"
     if [ "x$CI_BUILD" != "x" ];then
-        DEFAULT_NO_OUTPUT=y
-        DEFAULT_DO_OUTPUT_TIMER=y
+        DEFAULT_NO_OUTPUT=${FORCE_NO_OUTPUT-y}
+        DEFAULT_DO_OUTPUT_TIMER=${FORCE_OUTPUT_TIMER:-y}
     fi
     VERBOSE="${VERBOSE-}"
     TIMER_FREQUENCE="${TIMER_FREQUENCE:-120}"
@@ -250,7 +250,7 @@ run_silent() {
     (
     DEFAULT_RUN_SILENT=1;
     if [ "x${NO_SILENT-}" != "x" ];then DEFAULT_RUN_SILENT=;fi;
-    SILENT=${SILENT-DEFAULT_RUN_SILENT} silent_run "${@}";
+    SILENT=${SILENT-${DEFAULT_RUN_SILENT}} silent_run "${@}";
     )
 }
 vvv() { debug "${@}";silent_run "${@}"; }
