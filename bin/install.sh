@@ -1210,8 +1210,9 @@ checkout_code() {
     if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
         if ( version_gte $(get_ansible_branch) stable-2.10 );then
             log "Collecting base collections"
-            vv agalaxy collection install  -p "$W/collections" \
-                -r requirements/collections.yml
+            reqfs="requirements/collections$(get_ansible_branch).yml requirements/collections.yml"
+            for reqf in $reqfs;do if [ -e $reqf ];then break;fi;done
+            vv agalaxy collection install -p "$W/collections/$(get_ansible_branch)" -r $reqf
         fi
     fi
 }

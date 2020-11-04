@@ -856,17 +856,29 @@ export ANSIBLE_SSH_PIPELINING=${ANSIBLE_SSH_PIPELINING-True}
 export ANSIBLE_PIPELINING=${ANSIBLE_SSH_PIPELINING-True}
 export ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING-false}
 export ANSIBLE_LOAD_CALLBACK_PLUGINS=${ANSIBLE_LOAD_CALLBACK_PLUGINS-1}
-export ANSIBLE_COLLECTIONS_PATHS=${ANSIBLE_COLLECTIONS_PATHS:-"$SCRIPT_ROOT/collections:~/.ansible/collections:/usr/share/ansible/collections"}
 
 if [[ -n ${ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
-get_abin_version() { $EXEC_SCRIPT --version|head -n1|awk '{print $2}'|cut -b-3; }
+get_abin_version() { $EXEC_SCRIPT --version|head -n1|awk '{print $2}'|sed -e "s/^\([0-9]\+\.[0-9]\+\).*/\1/"; }
+aversion=$(get_abin_version)
+DEFAULT_ANSIBLE_COLLECTION_PATH="${DEFAULT_ANSIBLE_COLLECTION_PATH:-"~/.ansible/collections"}"
+for p in \
+    "$SCRIPT_ROOT/collections/stable-$aversion" \
+    "$SCRIPT_ROOT/collections/$aversion" \
+    "$SCRIPT_ROOT/collections/common" \
+    "$SCRIPT_ROOT/collections/main" \
+;do
+    if [ -e $p ];then
+        DEFAULT_ANSIBLE_COLLECTION_PATH="$p:$DEFAULT_ANSIBLE_COLLECTION_PATH"
+    fi
+done
+export ANSIBLE_COLLECTIONS_PATHS=${ANSIBLE_COLLECTIONS_PATHS:-"$DEFAULT_ANSIBLE_COLLECTION_PATH"}
 declare -a ANSIBLE_SCRIPT_ARGS
 for arg in "$@";do
     if (echo $arg | egrep -q "^--sudo" );then
-        if ( version_gte $(get_abin_version) 2.9);then
+        if ( version_gte $aversion 2.9);then
             arg="$(echo "$arg"| sed -e "s/--sudo/--become/g")"
         fi
     fi
@@ -876,4 +888,4 @@ done
 if echo "${EXEC_SCRIPT}" | egrep -vq '^cops_ansible$';then
     exec ${EXEC_SCRIPT} "${ANSIBLE_SCRIPT_ARGS[@]}"
 fi
-# vim:set et sts=4 ts=4 tw=80:
+# vim:set et sts=4 ts=4 tw=0:
