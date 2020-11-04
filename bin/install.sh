@@ -816,7 +816,7 @@ get_corpusops_branch() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.9"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.10"
 }
 
 move_old_py2_venv() {
