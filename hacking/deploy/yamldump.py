@@ -17,7 +17,7 @@ for i in sys.argv[1:]:
 if not files:
     files.add(os.environ.get('YAML_TEST_FILE', '.gitlab-ci.yml'))
 for f in files:
-    print('Dumping {0}\n'.format(f))
+    sys.stderr.write('Dumping {0}\n'.format(f))
     data = yaml.load(open(f).read())
     edata = json.loads(json.dumps(data))
     out = StringIO()
