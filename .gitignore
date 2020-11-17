@@ -31,3 +31,4 @@ docker/IMAGES.json
 /vagrant_config.yml
 /sshconfig
 /collections
+/hacking/*/.env
