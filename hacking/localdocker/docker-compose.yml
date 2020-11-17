@@ -1,0 +1,88 @@
+# spawn a local containerized dockerd+registries setup
+version: "3.7"
+x-x: &x
+  env_file: [.env]
+  volumes:
+  - "$HOME/.docker:/dockeruser:ro"
+  - /etc/hosts:/hosts
+  - reg:/cache
+  - docker:/var/lib/docker
+services:
+  dockersetup:
+    <<: [ *x ]
+    build: {context: ".", args : {img: $DOCKER_IMAGE}}
+    image: $DOCKER_IMAGE
+    entrypoint: sh
+    network_mode: host
+    command:
+    - '-ec'
+    - |-
+      rm -f /cache/configured
+      mkdir /cache/dockerbins >/dev/null 2>&1||true
+      cp -vf /usr/local/bin/* /cache/dockerbins
+      touch /cache/configured
+      while true;do sleep 6555;done
+  dockerandregistries:
+    <<: [ *x ]
+    image: $REGISTRY_IMAGE
+    depends_on: [dockersetup]
+    network_mode: host
+    privileged: true
+    entrypoint: sh
+    build: {context: ".", args : {img: $REGISTRY_IMAGE}}
+    hostname: "${cn}"
+    command:
+    - '-ec'
+    - |-
+      if [ ${EP_DEBUG} != "x" ];then set -x;fi
+      # for i in /hosts /etc/hosts;do
+      for i in /hosts;do
+        egrep -v "\s+$${cn}\s?$$" $${i} > $${i}.sed
+        echo "127.0.0.1 $${cn}" >> $${i}.sed
+        cat $${i}.sed > $${i}
+      done
+      while [ ! -e /cache/configured ];do sleep 1;done
+      cp -vf /cache/dockerbins/* /usr/local/bin
+      if [[ -z "$${REGISTRY_PROXY_PASSWORD}" ]];then
+       if [[ -z $$DOCKERHUB_PASSWORD ]] && [[ -z $$DOCKER_AUTH_CONFIG ]] && [ -f "$$DOCKERCFG" ];then
+        export DOCKER_AUTH_CONFIG=$$(cat "$$DOCKERCFG")
+       fi
+       user=;pw=
+       if [ "x$${DOCKERHUB_PASSWORD-}" != "x" ];then user=$${DOCKERHUB_USER-};pw=$${DOCKERHUB_PASSWORD-};
+       elif ( echo "$$DOCKER_AUTH_CONFIG" | grep -q auths );then
+         dauth=$$(echo "$$DOCKER_AUTH_CONFIG"|jq '.auths|to_entries[]|select(.key|match("docker[.](com|io)"))|.value.auth')
+         user=$$(echo $${dauth}|jq '@base64d|split(":")[0]');
+         pw=$$(echo $${dauth}|jq '@base64d|split(":")[1:]|join(":")')
+       fi
+       if [ "x$${pw}" != "x" ];then export REGISTRY_PROXY_USERNAME="$${user}";export REGISTRY_PROXY_PASSWORD="$${pw}";fi
+      fi
+      if [ ! -e "$${s}" ];then mkdir -pv $${s};fi
+      if [ ! -e "$${s}/$${cn}.c.crt" ] || [ ! -e "$${s}/$${cn}.ca.crt" ];then
+        openssl genrsa -out "$${s}/$${cn}.ca.key" 4096 && openssl genrsa -out "$${s}/$${cn}.c.key" 4096
+        openssl req -batch -x509 -new -nodes -key "$${s}/$${cn}.ca.key" -sha256 -days 34675 \
+          -subj "/CN=$${cn}Cacert/" -out "$${s}/$${cn}.ca.crt"
+        openssl req -batch -new -sha256 -key "$${s}/$${cn}.c.key" -subj "/CN=$${cn}/" -out "$${s}/$${cn}.c.csr"
+        openssl x509 -req -in "$${s}/$${cn}.c.csr" -CA "$${s}/$${cn}.ca.crt" -CAkey "$${s}/$${cn}.ca.key" \
+          -CAcreateserial -out "$${s}/$${cn}.c.crt" -days 34675 -sha256
+      fi
+      htpasswd -nbB $$REGISTRY_USER $$REGISTRY_PASSWORD > $REGISTRY_AUTH_HTPASSWD_PATH
+      export REGISTRY_STORAGE_DELETE_ENABLED=True
+      export REGISTRY_AUTH_HTPASSWD_REALM=basic-realm
+      export LOCALCACHE_ROOTDIRECTORY=$${LOCALCACHE_ROOTDIRECTORY:-$REGISTRY_ROOTDIRECTORY/builds}
+      export PROXYCACHE_ROOTDIRECTORY=$${PROXYCACHE_ROOTDIRECTORY:-$REGISTRY_ROOTDIRECTORY/proxy}
+      export PROXYCACHE_REGISTRY="$${cn}:$$CACHE_PORT" BUILDCACHE_REGISTRY="$${cn}:$$BUILD_PORT"
+      cp -v $${s}/*.crt /usr/local/share/ca-certificates && update-ca-certificates
+      ( unset REGISTRY_AUTH_HTPASSWD_REALM REGISTRY_AUTH_HTPASSWD_PATH \
+        && export REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY="$${PROXYCACHE_ROOTDIRECTORY}" \
+        && export REGISTRY_HTTP_ADDR=":$${PROXYCACHE_REGISTRY//*:}"  \
+        && export REGISTRY_PROXY_REMOTEURL="$${PROXYCACHE_PROXIEDREGISTRY}" \
+        && /entrypoint.sh serve /etc/docker/registry/config.yml )&
+      ( set -e \
+        && export REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY="$${LOCALCACHE_ROOTDIRECTORY}" \
+        && export REGISTRY_HTTP_ADDR=:$${BUILDCACHE_REGISTRY//*:} \
+        && /entrypoint.sh serve /etc/docker/registry/config.yml )&
+      dockerd-entrypoint.sh --experimental --registry-mirror https://$${PROXYCACHE_REGISTRY} \
+        -H "tcp://$${cn}:$$DOCKER_PORT" -H "unix:///cache/docker.sock"
+volumes:
+  reg:
+  docker:
