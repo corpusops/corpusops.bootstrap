@@ -5,7 +5,7 @@ dist: focal
 git: {lfs_skip_smudge: true, depth: 1}
 env:
   global:
-    - ANSIBLE_RELEASE=-2.9
+    - ANSIBLE_RELEASE=-2.10
     - RELEASE_AS_LATEST=true
     # tmp: disable extra tests
     - NO_ROLES_TEST=1
@@ -16,7 +16,7 @@ env:
     - COPS_ROOT="$TRAVIS_BUILD_DIR" \
       funcs="$COPS_ROOT/bin/cops_shell_common" \
       vv="$funcs vv"
-  matrix:
+  jobs:
     - >
       TEST_IMAGES="corpusops/ubuntu:20.04_preprovision${ANSIBLE_RELEASE}"
       IMAGES="${TEST_IMAGES} corpusops/ubuntu:20.04${ANSIBLE_RELEASE}"
@@ -35,9 +35,9 @@ env:
     - >
       TEST_IMAGES="corpusops/archlinux:latest_preprovision${ANSIBLE_RELEASE}"
       IMAGES="${TEST_IMAGES} corpusops/archlinux:latest{ANSIBLE_RELEASE}"
-    - >
-      TEST_IMAGES="corpusops/debian:latest_preprovision${ANSIBLE_RELEASE}"
-      IMAGES="${TEST_IMAGES} corpusops/debian:latest${ANSIBLE_RELEASE}"
+    #- >
+    #  TEST_IMAGES="corpusops/debian:latest_preprovision${ANSIBLE_RELEASE}"
+    #  IMAGES="${TEST_IMAGES} corpusops/debian:latest${ANSIBLE_RELEASE}"
     - >
       TEST_IMAGES="corpusops/debian:stretch_preprovision${ANSIBLE_RELEASE}"
       IMAGES="${TEST_IMAGES} corpusops/debian:stretch${ANSIBLE_RELEASE}"
@@ -105,7 +105,7 @@ install:
 script:
 - |
   for i in $IMAGES;do
-    img="$(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
+    img="$(echo $i|sed -e "s/$ANSIBLE_RELEASE$//g")"
     $vv docker build $SQUASH -f docker/${img} -t ${i} .
   done
 after_success:
@@ -113,8 +113,8 @@ after_success:
     for i in $IMAGES;do
       imgs="$i"
       if [ "x${RELEASE_AS_LATEST-}" = "xtrue" ];then
-        imgs="$imgs $(echo $i|sed -e "s/${ANSIBLE_RELEASE}$//g")"
-        docker tag $imgs
+        imgs="$imgs $(echo $i|sed -e "s/$ANSIBLE_RELEASE$//g")"
+        $vv docker tag $imgs
       fi
       DEBUG=1 hacking/docker_release $imgs
     done
