@@ -11,13 +11,13 @@ corpusops team normally add entries to this [galaxy user](https://galaxy.ansible
 
 ## Installing
 
-```
+note for OSX users: we won't install dependencies for you: you need `virtualenv` and a valid python installation.
 
+```sh
 mkdir corpusops
 git clone https://github.com/corpusops/corpusops.bootstrap.git corpusops/corpusops.bootstrap
 corpusops/corpusops.bootstrap/bin/install.sh -l
 corpusops/corpusops.bootstrap/bin/install.sh
-
 ```
 
 It will in ./corpusops/corpusops.bootstrap:
