@@ -259,6 +259,7 @@ version_lte() { [  "$1" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_lt() { [ "$1" = "$2" ] && return 1 || version_lte $1 $2; }
 version_gte() { [  "$2" = "$(printf "$1\n$2" | sort -V | head -n1)" ]; }
 version_gt() { [ "$1" = "$2" ] && return 1 || version_gte $1 $2; }
+lowcase_distribid() { echo $DISTRIB_ID| awk '{print tolower($0)}'; }
 is_archlinux_like() { echo $DISTRIB_ID | egrep -iq "archlinux|arch"; }
 is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
 is_suse_like() { echo $DISTRIB_ID | egrep -iq "suse"; }
@@ -848,9 +849,9 @@ set_vars() {
         DO_VERSION="no"
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
-    BASE_PACKAGES_FILE="${W}/requirements/os_packages.${DISTRIB_ID}"
-    DEV_PACKAGES_FILE="${W}/requirements/os_packages_dev.${DISTRIB_ID}"
-    EXTRA_PACKAGES_FILE="${W}/requirements/os_extra_packages.${DISTRIB_ID}"
+    BASE_PACKAGES_FILE="${W}/requirements/os_packages.$(lowcase_distribid)"
+    DEV_PACKAGES_FILE="${W}/requirements/os_packages_dev.$(lowcase_distribid)"
+    EXTRA_PACKAGES_FILE="${W}/requirements/os_extra_packages.$(lowcase_distribid)"
     if [ -e "${BASE_PACKAGES_FILE}" ];then
         BASE_PACKAGES=$(cat "${BASE_PACKAGES_FILE}")
     else
