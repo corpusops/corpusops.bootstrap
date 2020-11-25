@@ -618,7 +618,6 @@ make_virtualenv() {
     fi
     if     [ ! -e "${venv_path}/bin/activate" ] \
         || [ ! -e "${venv_path}/lib" ] \
-        || [ ! -e "${venv_path}/include" ] \
         ; then
         bs_log "Creating virtualenv in ${venv_path}"
         if [ ! -e "${PIP_CACHE}" ]; then
