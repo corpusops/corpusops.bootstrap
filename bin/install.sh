@@ -728,7 +728,7 @@ ensure_last_virtualenv() {
 
 test_online() {
     ping -W 10 -c 1 8.8.8.8 1>/dev/null 2>/dev/null
-    if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ]; then
+    if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ] || [ "x${FORCE_ONLINE}" != "x" ]; then
         return 0
     fi
     return 1
