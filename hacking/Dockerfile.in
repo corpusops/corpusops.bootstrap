@@ -2,7 +2,7 @@
 # and their requisites; together with docker cache
 
 # __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
-FROM __IMAGE_PREPROVISION__-2.7
+FROM __IMAGE_PREPROVISION__-__ANSIBLE_RELEASE__
 
 # Rewarm apt cache
 RUN bash -c '\
@@ -13,6 +13,7 @@ RUN bash -c '\
       fi;\
   fi'
 
+ARG FORCE_ONLINE=
 ARG NO_OUTPUT=y
 ARG KEEP_DOCKERD=no
 ## Refresh files
@@ -29,10 +30,11 @@ ADD requirements/ $COPS_ROOT/requirements/
 # and apt is configured, and has installed base packages
 RUN bash -c 'step_rev=2;set -ex;\
     : reinstall py build prereqs;\
-    pip2 uninstall -y ipaddr docker-py;\
+    pip uninstall -y ipaddr docker-py;\
     export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
-    $COPS_ROOT/bin/install.sh -C --skip-sync-code;\
+    $COPS_ROOT/bin/install.sh -C --skip-sync-code'
+RUN bash -c 'set -e;\
     $_apply_role \
      ${COPS_ROOT}/roles/corpusops.roles/localsettings_pkgmgr/role.yml\
      ${COPS_ROOT}/roles/corpusops.roles/localsettings_basepkgs/role.yml\
@@ -67,9 +69,9 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
       rm -f /usr/bin/docker-runc; \
       rm -f /usr/bin/dockerd; \
     fi; \
+    export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
     PKGS_REMOVES="gcc \
-        $(cat req*/os_packages_dev.$(echo $DISTRIB_ID|awk \'{print tolower($0)}\' ) \
-          2>/dev/null | xargs -n1)" \
+        $(cat req*/os_packages_dev.$LDISTRIB_ID 2>/dev/null | xargs -n1)" \
     DEV_AUTOREMOVE=y \
     GIT_GC_AGGRESSIVE= \
     GIT_SHALLOW_DEPTH=1 \

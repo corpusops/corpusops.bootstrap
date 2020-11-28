@@ -1,3 +1,5 @@
+python-virtualenv
 virtualenv
 libffi7
 libffi6
+python-pip

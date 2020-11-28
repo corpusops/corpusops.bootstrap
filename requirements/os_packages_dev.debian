@@ -6,7 +6,8 @@ libffi-dev
 libgmp3-dev
 libsigc++-2.0-dev
 libssl-dev
-python3-all-dev
+python-dev
+python2-dev
 swig
 pkg-config
 libtool

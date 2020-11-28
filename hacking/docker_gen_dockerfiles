@@ -41,7 +41,6 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:20.04"
@@ -614,26 +613,11 @@ make_virtualenv() {
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
     local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
-    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
-        if [ ! -e "${venv_path}" ];then
-            mkdir -p "${venv_path}"
-        fi
-        if [ -e "${DEFAULT_VENV_PATH}" ] && \
-            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
-            [ ! -h "${DEFAULT_VENV_PATH}" ];then
-            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
-        fi
-        if [ -h $DEFAULT_VENV_PATH ] &&\
-            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
-            rm -f "${DEFAULT_VENV_PATH}"
-        fi
-        if [ ! -e $DEFAULT_VENV_PATH ];then
-            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
-        fi
+    if [ ! -e "${venv_path}" ];then
+        mkdir -p "${venv_path}"
     fi
     if     [ ! -e "${venv_path}/bin/activate" ] \
         || [ ! -e "${venv_path}/lib" ] \
-        || [ ! -e "${venv_path}/include" ] \
         ; then
         bs_log "Creating virtualenv in ${venv_path}"
         if [ ! -e "${PIP_CACHE}" ]; then
@@ -656,6 +640,20 @@ make_virtualenv() {
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
       deactivate; )
+    fi
+    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
+        if [ -h $DEFAULT_VENV_PATH ] &&\
+            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
+            rm -f "${DEFAULT_VENV_PATH}"
+        fi
+        if [ -e "${DEFAULT_VENV_PATH}" ] && \
+            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
+            [ ! -h "${DEFAULT_VENV_PATH}" ];then
+            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
+        fi
+        if [ ! -e $DEFAULT_VENV_PATH ];then
+            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
+        fi
     fi
 }
 ensure_last_python_requirement() {
@@ -717,15 +715,20 @@ rewrite_dockerfile() {
     local image_preprovision=${4:-"${image}_preprovision"}
     local default_base_image=${image//corpusops\//}
     local base_image=${5:-${default_base_image}}
+    LATEST_ANSIBLE=2.7
+    ANSIBLE_BRANCH=${ANSIBLE_RELEASE//latest/$LATEST_ANSIBLE}
     sed -r \
         -e "/__STRIPME__/d" \
         -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__IMAGE__|${image}|g" \
+        -e "s|__ANSIBLE_BRANCH__|${ANSIBLE_BRANCH}|g" \
+        -e "s|__ANSIBLE_RELEASE__|${ANSIBLE_RELEASE}|g" \
         -e "s|__BASE_IMAGE__|${base_image}|g" \
         -e "s|__IMAGE_PREPROVISION__|${image_preprovision}|g" \
         -e "s|FROM archlinux:latest|FROM archlinux/base|g" \
         -e "s!^(FROM (ubuntu|debian|centos|archlinux)(/base)?)(:)?!FROM corpusops/\2-bare\4!g" \
         "${template}"
+    #done
 }
 while read image_line;do
     for image in ${image_line}; do
@@ -736,13 +739,16 @@ while read image_line;do
         dfiles=""
         dfiles="${dfiles} docker/${image_preprovision}"
         dfiles="${dfiles} docker/${image}"
-        for f in ${dfiles};do
+        for ANSIBLE_RELEASE in 2.7;do
+        for fr in ${dfiles};do
+            f=${fr}-${ANSIBLE_RELEASE}
             template=${DOCKERFILE_TEMPLATE}
             if echo $f | grep -q preprovision; then
                 template=${template}._preprovision
             fi
             log "   Rewriting ${f} from ${template}"
             rewrite_dockerfile "${template}" "${image}" >"${f}"
+        done
         done
     done
 done <<< "${BASE_CORE_IMAGES} ${EXP_IMAGES}"
