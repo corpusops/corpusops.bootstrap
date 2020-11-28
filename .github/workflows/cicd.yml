@@ -15,7 +15,7 @@ jobs:
             tags="${{matrix.image}}_preprovision-${{matrix.ansible_release}}"
             rtags="${{matrix.image}}-${{matrix.ansible_release}}"
             if [[ -n "${{matrix.ansible_latest}}" ]];then
-            if [[ ${{matrix.ansible_release }} == ${{matrix.ansible_latest}} ]];then
+            if [[ "${{matrix.ansible_release" }} == "${{matrix.ansible_latest}}" ]];then
               tags="$tags ${{matrix.image}}_preprovision"
               rtags="$rtags ${{matrix.image}}"
             fi
