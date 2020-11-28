@@ -31,3 +31,5 @@
 /sshconfig
 /venv*
 /docker/IMAGES.json
+/collections
+/hacking/localdocker/
