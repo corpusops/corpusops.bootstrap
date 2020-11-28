@@ -49,7 +49,7 @@ jobs:
             venv
             roles
             collections
-          key: ${{ runner.os }}-${{env.GITHUB_REF}}-${{env.GITHUB_REPOSITORY}}venvstatics
+          key: ${{ runner.os }}-${{ github.ref }}-${{ github.repository }}-venvstatics
       - name: test installer & init DOTcorpusops
         run: |-
           set -ex
