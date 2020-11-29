@@ -16,6 +16,7 @@ RUN bash -c '\
 ARG FORCE_ONLINE=
 ARG NO_OUTPUT=y
 ARG KEEP_DOCKERD=no
+ARG ANSIBLE_PYTHON_INTERPRETER=__ANSIBLE_PYTHON_INTERPRETER__
 ## Refresh files
 ADD hacking/      $COPS_ROOT/hacking/
 ADD bin/          $COPS_ROOT/bin/
