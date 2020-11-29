@@ -1,0 +1,8 @@
+version: "3.7"
+services:
+  setup:
+    restart: unless-stopped
+  registries:
+    restart: unless-stopped
+  docker:
+    restart: unless-stopped

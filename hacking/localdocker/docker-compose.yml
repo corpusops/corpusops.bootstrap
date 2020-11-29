@@ -1,48 +1,66 @@
 # spawn a local containerized dockerd+registries setup
 version: "3.7"
-x-x: &x
-  env_file: [.env]
-  volumes:
-  - "$HOME/.docker:/dockeruser:ro"
-  - /etc/hosts:/hosts
-  - reg:/cache
-  - docker:/var/lib/docker
-services:
-  dockersetup:
-    <<: [ *x ]
-    build: {context: ".", args : {img: $DOCKER_IMAGE}}
-    image: $DOCKER_IMAGE
-    entrypoint: sh
-    network_mode: host
-    command:
-    - '-ec'
-    - |-
-      rm -f /cache/configured
-      mkdir /cache/dockerbins >/dev/null 2>&1||true
-      cp -vf /usr/local/bin/* /cache/dockerbins
-      touch /cache/configured
-      while true;do sleep 6555;done
-  dockerandregistries:
-    <<: [ *x ]
-    image: $REGISTRY_IMAGE
-    depends_on: [dockersetup]
-    network_mode: host
-    privileged: true
-    entrypoint: sh
+x-x:
+  x-x: &x
+    image: loc$REGISTRY_IMAGE
     build: {context: ".", args : {img: $REGISTRY_IMAGE}}
-    hostname: "${cn}"
+    privileged: true
+    env_file: [.env]
+    network_mode: host
+    entrypoint: sh
+    volumes:
+    - "$HOME/.docker:/dockeruser:ro"
+    - /etc/hosts:/hosts
+    - "reg:$ROOTDIRECTORY"
+    - docker:/var/lib/docker
+    - ssl:/etc/ssl
+    - /usr/local/share/ca-certificates:/hostcacert
+    - cacert:/usr/local/share/ca-certificates
+    - $SOCKET_DIR:/dockersocket
+    - $CERTS_PATH:/certs
+services:
+  setup:
+    <<: [ *x ]
     command:
     - '-ec'
     - |-
       if [ ${EP_DEBUG} != "x" ];then set -x;fi
-      # for i in /hosts /etc/hosts;do
-      for i in /hosts;do
-        egrep -v "\s+$${cn}\s?$$" $${i} > $${i}.sed
-        echo "127.0.0.1 $${cn}" >> $${i}.sed
-        cat $${i}.sed > $${i}
+      rm -fv ${ROOTDIRECTORY}/*configured
+      for cn in $$rcn $$dcn;do
+       for i in /hosts;do
+          egrep -v "\s+$${cn}\s?$$" $${i} > $${i}.sed
+          echo "$${LISTEN} $${cn}" >> $${i}.sed
+          cat $${i}.sed > $${i}
+        done
+       if [ ! -e "$${s}" ];then mkdir -pv $${s};fi
+       if [ ! -e "$${s}/$${cn}.c.crt" ] || [ ! -e "$${s}/$${cn}.ca.crt" ];then
+         openssl genrsa -out "$${s}/$${cn}.ca.key" 4096 && openssl genrsa -out "$${s}/$${cn}.c.key" 4096
+         openssl req -batch -x509 -new -nodes -key "$${s}/$${cn}.ca.key" -sha256 -days 34675 \
+           -subj "/CN=$${cn}Cacert/" -out "$${s}/$${cn}.ca.crt"
+         openssl req -batch -new -sha256 -key "$${s}/$${cn}.c.key" -subj "/CN=$${cn}/" -out "$${s}/$${cn}.c.csr"
+         openssl x509 -req -in "$${s}/$${cn}.c.csr" -CA "$${s}/$${cn}.ca.crt" -CAkey "$${s}/$${cn}.ca.key" \
+           -CAcreateserial -out "$${s}/$${cn}.c.crt" -days 34675 -sha256
+       fi
       done
-      while [ ! -e /cache/configured ];do sleep 1;done
-      cp -vf /cache/dockerbins/* /usr/local/bin
+      if [ ! -e /usr/local/share/ca-certificates ];then mkdir /usr/local/share/ca-certificates;fi
+      for cacert in /usr/local/share/ca-certificates /hostcacert;do
+        if [ -e $$cacert ];then cp -v $${s}/*crt $$cacert;fi
+      done
+      update-ca-certificates
+      htpasswd -nbB $$REGISTRY_USER $$REGISTRY_PASSWORD > $REGISTRY_AUTH_HTPASSWD_PATH
+      touch ${ROOTDIRECTORY}/setupconfigured
+      while true;do sleep 65400;done
+  registries:
+    <<: [ *x ]
+    depends_on: [setup]
+    build: {context: ".", args : {img: $REGISTRY_IMAGE}}
+    command:
+    - '-ec'
+    - |-
+      export cn=$$dcn
+      if [ ${EP_DEBUG} != "x" ];then set -x;fi
+      while [ ! -e ${ROOTDIRECTORY}/setupconfigured ];do sleep 1;done
+      rm -f ${ROOTDIRECTORY}/regconfigured
       if [[ -z "$${REGISTRY_PROXY_PASSWORD}" ]];then
        if [[ -z $$DOCKERHUB_PASSWORD ]] && [[ -z $$DOCKER_AUTH_CONFIG ]] && [ -f "$$DOCKERCFG" ];then
         export DOCKER_AUTH_CONFIG=$$(cat "$$DOCKERCFG")
@@ -56,22 +74,11 @@ services:
        fi
        if [ "x$${pw}" != "x" ];then export REGISTRY_PROXY_USERNAME="$${user}";export REGISTRY_PROXY_PASSWORD="$${pw}";fi
       fi
-      if [ ! -e "$${s}" ];then mkdir -pv $${s};fi
-      if [ ! -e "$${s}/$${cn}.c.crt" ] || [ ! -e "$${s}/$${cn}.ca.crt" ];then
-        openssl genrsa -out "$${s}/$${cn}.ca.key" 4096 && openssl genrsa -out "$${s}/$${cn}.c.key" 4096
-        openssl req -batch -x509 -new -nodes -key "$${s}/$${cn}.ca.key" -sha256 -days 34675 \
-          -subj "/CN=$${cn}Cacert/" -out "$${s}/$${cn}.ca.crt"
-        openssl req -batch -new -sha256 -key "$${s}/$${cn}.c.key" -subj "/CN=$${cn}/" -out "$${s}/$${cn}.c.csr"
-        openssl x509 -req -in "$${s}/$${cn}.c.csr" -CA "$${s}/$${cn}.ca.crt" -CAkey "$${s}/$${cn}.ca.key" \
-          -CAcreateserial -out "$${s}/$${cn}.c.crt" -days 34675 -sha256
-      fi
-      htpasswd -nbB $$REGISTRY_USER $$REGISTRY_PASSWORD > $REGISTRY_AUTH_HTPASSWD_PATH
       export REGISTRY_STORAGE_DELETE_ENABLED=True
       export REGISTRY_AUTH_HTPASSWD_REALM=basic-realm
       export LOCALCACHE_ROOTDIRECTORY=$${LOCALCACHE_ROOTDIRECTORY:-$REGISTRY_ROOTDIRECTORY/builds}
       export PROXYCACHE_ROOTDIRECTORY=$${PROXYCACHE_ROOTDIRECTORY:-$REGISTRY_ROOTDIRECTORY/proxy}
       export PROXYCACHE_REGISTRY="$${cn}:$$CACHE_PORT" BUILDCACHE_REGISTRY="$${cn}:$$BUILD_PORT"
-      cp -v $${s}/*.crt /usr/local/share/ca-certificates && update-ca-certificates
       ( unset REGISTRY_AUTH_HTPASSWD_REALM REGISTRY_AUTH_HTPASSWD_PATH \
         && export REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY="$${PROXYCACHE_ROOTDIRECTORY}" \
         && export REGISTRY_HTTP_ADDR=":$${PROXYCACHE_REGISTRY//*:}"  \
@@ -81,8 +88,37 @@ services:
         && export REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY="$${LOCALCACHE_ROOTDIRECTORY}" \
         && export REGISTRY_HTTP_ADDR=:$${BUILDCACHE_REGISTRY//*:} \
         && /entrypoint.sh serve /etc/docker/registry/config.yml )&
-      dockerd-entrypoint.sh --experimental --registry-mirror https://$${PROXYCACHE_REGISTRY} \
-        -H "tcp://$${cn}:$$DOCKER_PORT" -H "unix:///cache/docker.sock"
+      touch ${ROOTDIRECTORY}/regconfigured
+      wait
+  docker:
+    <<: [ *x ]
+    build: {context: ".", args : {img: $DOCKER_IMAGE}}
+    depends_on: [setup, registries]
+    image: loc$DOCKER_IMAGE
+    command:
+    - '-ec'
+    - |-
+      if [ ${EP_DEBUG} != "x" ];then set -x;fi
+      addgroup -g $$DOCKER_GID docker || groupmod -g $$DOCKER_GID docker
+      export DOCKER_SOCK=dockersocket/localdocker-$${rcn}.sock
+      export PROXYCACHE_REGISTRY="$${dcn}:$$CACHE_PORT" BUILDCACHE_REGISTRY="$${dcn}:$$BUILD_PORT"u
+      export DOCKER_HOST=unix://$$DOCKER_SOCK
+      while [ ! -e ${ROOTDIRECTORY}/setupconfigured ];do sleep 1;done
+      while [ ! -e ${ROOTDIRECTORY}/regconfigured ];do sleep 1;done
+      rm -f ${ROOTDIRECTORY}/dockerconfigured
+      export cn=$$rcn
+      touch ${ROOTDIRECTORY}/dockerconfigured
+      ( set -x && dockerd-entrypoint.sh --experimental \
+        --registry-mirror https://$${PROXYCACHE_REGISTRY} \
+        -H "tcp://$${rcn}:$${DOCKER_TLS_PORT}" \
+        -H "$$DOCKER_HOST" )&
+      while ! (docker system info);do sleep 3;done
+      cp -v /certs/ca/cert.pem /hostcacert/localdocker-cacert$$rcn.crt
+      # chown :$$DOCKER_GID $$DOCKER_SOCK
+      touch ${ROOTDIRECTORY}/regconfigured
+      wait
 volumes:
   reg:
   docker:
+  ssl:
+  cacert:
