@@ -850,7 +850,8 @@ set_vars() {
     DO_ONLY_RECONFIGURE="${DO_ONLY_RECONFIGURE-""}"
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE-""}"
     DO_SYNC_CODE="${DO_SYNC_CODE-"y"}"
-    DO_SYNC_COLLECTIONS="${DO_SYNC_COLLECTIONS-${DO_SYNC_COLLECTIONS}}"
+    DO_SYNC_COLLECTIONS="${DO_SYNC_COLLECTIONS-}"
+    DO_FORCE_SYNC_COLLECTIONS="${DO_FORCE_SYNC_COLLECTIONS-}"
     DO_SYNC_ROLES="${DO_SYNC_ROLES-${DO_SYNC_ROLES}}"
     DO_SYNC_ANSIBLE="${DO_SYNC_ANSIBLE-${DO_SYNC_ANSIBLE}}"
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
@@ -915,6 +916,7 @@ set_vars() {
     export DO_ONLY_SYNC_CODE
     export DO_SYNC_CODE
     export DO_SYNC_COLLECTIONS
+    export DO_FORCE_SYNC_COLLECTIONS
     export DO_SYNC_ROLES
     export DO_SYNC_ANSIBLE
     export DO_SYNC_CORE
@@ -1007,7 +1009,11 @@ recap_(){
             msg="${msg} - roles"
         fi
         if ( version_gte $(get_ansible_branch) stable-2.10 ) && [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
-            msg="${msg} - collections"
+            msg="${msg} -"
+            if [ "x$DO_FORCE_SYNC_COLLECTIONS" = "xyes" ];then
+                msg="${msg} - forcesync"
+            fi
+            msg="${msg} collections"
         fi
         bs_log "${msg}"
         bs_yellow_log "---------------------------------------------------"
@@ -1218,10 +1224,14 @@ checkout_code() {
     # ansible 2.10 collection support*
     if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
         if ( version_gte $(get_ansible_branch) stable-2.10 );then
-            log "Collecting base collections"
-            reqfs="requirements/collections$(get_ansible_branch).yml requirements/collections.yml"
-            for reqf in $reqfs;do if [ -e $reqf ];then break;fi;done
-            vv agalaxy collection install -p "$W/collections/$(get_ansible_branch)" -r $reqf
+            if [ "x$DO_FORCE_SYNC_COLLECTIONS" != "xyes" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible" ];then
+                log "Collections in place, skipping fetch"
+            else
+                log "Collecting base collections"
+                reqfs="requirements/collections$(get_ansible_branch).yml requirements/collections.yml"
+                for reqf in $reqfs;do if [ -e $reqf ];then break;fi;done
+                vv agalaxy collection install -p "$W/collections/$(get_ansible_branch)" -r $reqf
+            fi
         fi
     fi
 }
@@ -1513,6 +1523,8 @@ usage() {
         "$(print_contrary ${DO_SYNC_ROLES})"  y
     bs_help "     --skip-sync-collections" "Do not sync collection (only for ansible2.10+)" \
         "$(print_contrary ${DO_SYNC_COLLECTIONS})"  y
+    bs_help "     --force-sync-collections" "Force sync collection even if fetch once (only for ansible2.10+)" \
+        "$(print_contrary ${DO_FORCE_SYNC_COLLECTIONS})"  y
     bs_help "    -s|--only-synchronize-code|--only-sync-code|--synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    --version" "show corpusops version & exit" "${DO_VERSION}" y
@@ -1588,6 +1600,10 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--skip-sync-collections" ]; then
             DO_SYNC_COLLECTIONS="no"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--force-sync-collections" ]; then
+            DO_FORCE_SYNC_COLLECTIONS="yes"
             argmatch="1"
         fi
         if [ "x${1}" = "x-r" ] || [ "x${1}" = "x--reconfigure" ]; then
