@@ -720,12 +720,17 @@ rewrite_dockerfile() {
     local base_image=${5:-${default_base_image}}
     LATEST_ANSIBLE=2.10
     ANSIBLE_BRANCH=${ANSIBLE_RELEASE//latest/$LATEST_ANSIBLE}
+    apy=auto
+    if ( echo "$2" | egrep -iq "debian:(sid|buster|latest)");then
+        apy=python3
+    fi
     sed -r \
         -e "/__STRIPME__/d" \
         -e "s|__COPS_ROOT__|${cops_root}|g" \
         -e "s|__IMAGE__|${image}|g" \
         -e "s|__ANSIBLE_BRANCH__|${ANSIBLE_BRANCH}|g" \
         -e "s|__ANSIBLE_RELEASE__|${ANSIBLE_RELEASE}|g" \
+        -e "s|__ANSIBLE_PYTHON_INTERPRETER__|$apy|g" \
         -e "s|__BASE_IMAGE__|${base_image}|g" \
         -e "s|__IMAGE_PREPROVISION__|${image_preprovision}|g" \
         -e "s|FROM archlinux:latest|FROM archlinux/base|g" \
