@@ -721,7 +721,7 @@ rewrite_dockerfile() {
     LATEST_ANSIBLE=2.7
     ANSIBLE_BRANCH=${ANSIBLE_RELEASE//latest/$LATEST_ANSIBLE}
     apy=auto
-    if ( echo "$2" | egrep -iq "debian:(sid|buster|latest)");then
+    if ( echo "$2" | egrep -iq "(ubuntu:2)|(debian:(sid|buster|latest))");then
         apy=python3
     fi
     sed -r \
