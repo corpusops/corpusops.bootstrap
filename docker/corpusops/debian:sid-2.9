@@ -25,7 +25,7 @@ ADD docs/         $COPS_ROOT/docs/
 ADD collections/  $COPS_ROOT/collections/
 ADD roles/        $COPS_ROOT/roles/
 ADD requirements/ $COPS_ROOT/requirements/
-
+RUN bash -c 'set -e;$_apply_role -vvvvv -e "{cops_vars_debug: true}" ${COPS_ROOT}/role.yml'
 # Be sure that system python is capable of SSL SNI connections
 # and apt is configured, and has installed base packages
 RUN bash -c 'step_rev=2;set -ex;\
