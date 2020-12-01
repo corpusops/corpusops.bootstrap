@@ -114,11 +114,11 @@ jobs:
         - "corpusops/ubuntu:20.04"
         - "corpusops/ubuntu:18.04"
         - "corpusops/ubuntu:16.04"
-        - "corpusops/ubuntu:latest"
-        - "corpusops/debian:stretch"
-        - "corpusops/debian:buster"
-        - "corpusops/debian:sid"
-        - "corpusops/centos:7"
+        #- "corpusops/ubuntu:latest"
+        #- "corpusops/debian:stretch"
+        #- "corpusops/debian:buster"
+        #- "corpusops/debian:sid"
+        #- "corpusops/centos:7"
 on:
   workflow_dispatch:
   push:
