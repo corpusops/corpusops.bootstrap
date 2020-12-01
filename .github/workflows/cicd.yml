@@ -120,6 +120,7 @@ jobs:
         - "corpusops/debian:sid"
         - "corpusops/centos:7"
 on:
+  workflow_dispatch:
   push:
   pull_request:
   schedule: [{cron: '1 0 1,15 * *'}]
