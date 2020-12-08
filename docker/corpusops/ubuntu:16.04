@@ -67,7 +67,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
       rm -f /usr/bin/dockerd; \
     fi; \
     PKGS_REMOVES="gcc \
-        $(cat req*/os_packages_dev.${DISTRIB_ID} \
+        $(cat req*/os_packages_dev.$(echo $DISTRIB_ID|awk \'{print tolower($0)}\' ) \
           2>/dev/null | xargs -n1)" \
     DEV_AUTOREMOVE=y \
     GIT_GC_AGGRESSIVE= \
