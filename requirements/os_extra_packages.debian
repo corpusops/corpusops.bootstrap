@@ -1,1 +1,3 @@
-os_extra_packages.Debian
+virtualenv
+libffi7
+libffi6

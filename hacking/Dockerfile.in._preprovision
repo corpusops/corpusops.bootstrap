@@ -35,19 +35,20 @@ COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
 RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
-    WANTED_PACKAGES="$(cat os_packages.${DISTRIB_ID} \
+    export LDISTRIB_UID=$(echo $DISTRIB_ID|awk '"'"'{print tolower($0)}'"'"');\
+    WANTED_PACKAGES="$(cat os_packages.${LDISTRIB_ID} \
                            2>/dev/null | xargs -n1)";\
-    WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
-    WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${DISTRIB_ID} \
-                                 os_packages_dev.${DISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${LDISTRIB_ID} 2>/dev/null | xargs -n1)";\
+    WANTED_EXTRA_PACKAGES="$(cat os_extra_packages.${LDISTRIB_ID} \
+                                 os_packages_dev.${LDISTRIB_ID} 2>/dev/null | xargs -n1)";\
     :;\
     if ((which which && which systemd) \
        ||  command -v systemd )>/dev/null 2>&1 \
-       || ( echo $DISTRIB_ID|egrep -iq debian ) \
+       || ( echo $LDISTRIB_ID|egrep -iq debian ) \
        || ( [ -e /lib/systemd/system ]  && [ ! -e /lib/init/upstart-job ]; ) \
        || ( [ -e /lib/systemd/systemd ] && [ ! -e /lib/init/upstart-job ]; ) ;then \
       WANTED_PACKAGES="systemd dbus ${WANTED_PACKAGES}";\
-      if  ( echo $DISTRIB_ID|egrep -iq "debian|ubuntu|mint"; );then \
+      if  ( echo $LDISTRIB_ID|egrep -iq "debian|ubuntu|mint"; );then \
         WANTED_PACKAGES="systemd-sysv ${WANTED_PACKAGES}"; \
       fi \
     fi;\
@@ -148,10 +149,11 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
+    export LDISTRIB_UID=$(echo $DISTRIB_ID|awk '"'"'{print tolower($0)}'"'"');\
     cd "$COPS_ROOT";\
     rm -f /etc/systemd/system/getty.target.wants/getty@tty1.service;\
     PKGS_REMOVES="gcc \
-        $(cat req*/os_packages_dev.${DISTRIB_ID} \
+        $(cat req*/os_packages_dev.${LDISTRIB_ID} \
           2>/dev/null | xargs -n1)" \
     DEV_AUTOREMOVE=y \
     GIT_GC_AGGRESSIVE= \
