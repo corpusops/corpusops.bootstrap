@@ -648,9 +648,15 @@ make_virtualenv() {
     if ! ( $venv --help 2>&1 | grep -q -- $ust );then
         ust=""
     fi
+    sp="--system-site-packages"
+    if ( is_darwin ); then
+        sp=""
+    else
+        sp="--system-site-packages"
+    fi
     $venv \
         $( [ "x$py" != "x" ] && echo "--python=$py"; ) \
-        --system-site-packages $ust \
+        $sp $ust \
         "${venv_path}" &&\
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
