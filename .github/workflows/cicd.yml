@@ -14,9 +14,11 @@ jobs:
         run: |-
             tags="${{matrix.image}}_preprovision-${{matrix.ansible_release}}"
             rtags="${{matrix.image}}-${{matrix.ansible_release}}"
+            if [[ -n "${{matrix.ansible_latest}}" ]];then
             if [[ ${{matrix.ansible_release }} == ${{matrix.ansible_latest}} ]];then
               tags="$tags ${{matrix.image}}_preprovision"
               rtags="$rtags ${{matrix.image}}"
+            fi
             fi
             if ( echo $GITHUB_REF | egrep -iq '^refs/heads/(master|2.0|workflows)$' ) \
               && [[ "$GITHUB_REPOSITORY" == 'corpusops/corpusops.bootstrap' ]]
