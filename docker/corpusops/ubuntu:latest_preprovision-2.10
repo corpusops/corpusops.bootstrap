@@ -4,6 +4,7 @@
 FROM corpusops/ubuntu-bare:latest
 ENV container docker
 
+ARG FORCE_ONLINE=
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ARG NO_OUTPUT=y
 ARG USE_VENV=no
@@ -34,7 +35,7 @@ COPY bin/cops_detect_os bin/cops_pkgmgr_install.sh $COPS_ROOT/bin/
 RUN bash -c 'step_rev=3;cd $COPS_ROOT/requirements;\
     :;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
-    export LDISTRIB_UID=$(echo $DISTRIB_ID|awk '"'"'{print tolower($0)}'"'"');\
+    export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
     WANTED_PACKAGES="$(cat os_packages.${LDISTRIB_ID} \
                            2>/dev/null | xargs -n1)";\
     WANTED_DOCKER_PACKAGES="$(cat os_docker_packages.${LDISTRIB_ID} 2>/dev/null | xargs -n1)";\
@@ -115,15 +116,16 @@ RUN bash -c 'step_rev=3;cd $COPS_ROOT;\
 # 3/ Run install script to finish installation
 # We remove a package (git) to test the system install routines
 COPY .corpusops ${COPS_ROOT}/.corpusops
-COPY requirements/python_* ${COPS_ROOT}/requirements/
+COPY requirements/collections*yml requirements/python_* ${COPS_ROOT}/requirements/
 COPY bin/install.sh bin/cops_shell_common ${COPS_ROOT}/bin/
 COPY src ${COPS_ROOT}/src
 COPY setup.py ${COPS_ROOT}/setup.py
 RUN bash -c 'step_rev=2;set -e;cd ${COPS_ROOT};\
-    bin/install.sh -C --skip-sync-code --use-venv $USE_VENV'
+    bin/install.sh -C --ansible-branch stable-2.10 --skip-sync-code --use-venv $USE_VENV;'
 
 COPY bin/ ${COPS_ROOT}/bin/
 COPY roles ${COPS_ROOT}/roles
+COPY collections ${COPS_ROOT}/collections
 
 # Now copy all rootfs helpers & make the container a good systemd / process
 # manager citizen
@@ -148,7 +150,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
-    export LDISTRIB_UID=$(echo $DISTRIB_ID|awk '"'"'{print tolower($0)}'"'"');\
+    export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
     cd "$COPS_ROOT";\
     rm -f /etc/systemd/system/getty.target.wants/getty@tty1.service;\
     PKGS_REMOVES="gcc \
