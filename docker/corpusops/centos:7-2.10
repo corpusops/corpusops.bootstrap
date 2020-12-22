@@ -1,8 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-# __STRIPME__: __IMAGE__ will be replaced, see docker/docker_gen_dockerfiles.sh
-FROM __IMAGE_PREPROVISION__-__ANSIBLE_RELEASE__
+FROM corpusops/centos:7_preprovision-2.10
 
 # Rewarm apt cache
 RUN bash -c '\
