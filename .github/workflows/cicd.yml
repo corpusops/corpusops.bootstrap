@@ -118,4 +118,4 @@ jobs:
 on:
   push:
   pull_request:
-  schedule: [{cron: '1 0 * * *'}]
+  schedule: [{cron: '1 0 1,11,21 * *'}]
