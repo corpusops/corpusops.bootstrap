@@ -5,6 +5,7 @@ env:
   NO_SQUASH: ""
   NONINTERACTIVE: "1"
   FORCE_ONLINE: "1"
+  CORPUSOPS_ROLES_BRANCH: "2.0"
 jobs:
   r:
     runs-on: ubuntu-latest
