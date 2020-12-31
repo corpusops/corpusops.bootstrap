@@ -116,7 +116,8 @@ jobs:
         - "corpusops/ubuntu:16.04"
         - "corpusops/ubuntu:latest"
         - "corpusops/debian:stretch"
-        - "corpusops/debian:jessie"
+        - "corpusops/debian:buster"
+        - "corpusops/debian:sid"
         - "corpusops/centos:7"
 on:
   push:

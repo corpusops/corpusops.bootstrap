@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/debian:jessie_preprovision-2.10
+FROM corpusops/debian:buster_preprovision-2.10
 
 # Rewarm apt cache
 RUN bash -c '\
