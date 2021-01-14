@@ -79,7 +79,7 @@ uniquify_string() {
     local pattern=$1
     shift
     echo "$@" \
-        | sed -e "s/${pattern}/\n/g" \
+        | awk '{gsub(/'"$pattern"'/, RS) ; print;}' \
         | awk '!seen[$0]++' \
         | tr "\n" "${pattern}" \
         | sed -e "s/^${pattern}\|${pattern}$//g"
