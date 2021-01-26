@@ -798,6 +798,12 @@ get_ansible_url() {
         "$(get_corpusops_orga_url)/ansible.git"
 }
 
+get_ansible_egg() {
+    ( version_gte $(get_ansible_branch) stable-2.10 ) \
+        && echo ansible-base \
+        || echo ansible
+}
+
 get_corpusops_use_venv() {
     ret=$(get_default_knob corpusops_use_venv "${CORPUSOPS_USE_VENV}" "yes")
     if echo $ret | egrep -q "^(yes|1)$";then
@@ -1035,6 +1041,7 @@ reconfigure() {
             -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
             -e "s#__CORPUSOPS_USE_VENV__#$(get_corpusops_use_venv)#g" \
             -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
+            -e "s#__ANSIBLE_EGG__#$(get_ansible_egg)#g" \
             -e "s#__ANSIBLE_BRANCH__#$(get_ansible_branch)#g" \
             "${i}" > "${W}/requirements/$(basename "${i}" .in)"
     done
