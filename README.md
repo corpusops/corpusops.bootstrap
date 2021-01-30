@@ -51,7 +51,7 @@ cd $corpusops_bootstrap && \
 
 |  Branch | TravisBuild |  Branch | TravisBuild |
 | ------- | ----------- |  ------ | ----------- |
-| 2.0 | [![Build Status 2.0  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=2.0)](https://travis-ci.org/corpusops/corpusops.bootstrap) | master | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap) |
+| 2.0 |  ![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/workflows/.github/workflows/cicd.yml/badge.svg?branch=2.0)  | master | [![Build Status master  Branch](https://travis-ci.org/corpusops/corpusops.bootstrap.svg?branch=master)](https://travis-ci.org/corpusops/corpusops.bootstrap) |
 
 
 ## Roles
