@@ -153,6 +153,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\
     export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
     cd "$COPS_ROOT";\
+    sed -i "/extraheader/ d" .git/config; \
     rm -f /etc/systemd/system/getty.target.wants/getty@tty1.service;\
     PKGS_REMOVES="gcc \
         $(cat req*/os_packages_dev.${LDISTRIB_ID} \
