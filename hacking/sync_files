@@ -706,6 +706,8 @@ parse_cli() {
 cd "$(dirname "${0}")/.."
 parse_cli "$@"
 cd $W
+curl -so roles/corpusops.roles/ansible_plugins/library/json_patch.py \
+ "https://raw.githubusercontent.com/corpusops/ansible-jsonpatch/master/json_patch.py"
 rm hacking/deploy.links/*
 for i in hacking/deploy/*;do
     ln -sfv cops_wrapper.sh hacking/deploy.links/$(basename $i)
