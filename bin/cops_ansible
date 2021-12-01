@@ -39,6 +39,7 @@ readlinkf() {
         echo "$val"
     fi
 }
+export ANSIBLE_SKIP_CONFLICT_CHECK=${ANSIBLE_SKIP_CONFLICT_CHECK-1}
 
 SCRIPT_DIR=$(cd "$(dirname $(readlinkf $0))" && pwd)
 SCRIPT_ROOT=${SCRIPT_ROOT:-$(dirname $SCRIPT_DIR)}
