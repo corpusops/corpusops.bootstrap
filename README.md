@@ -49,7 +49,7 @@ cd $corpusops_bootstrap && \
 
 ## badges
 
-|  Branch | TravisBuild |  Branch | TravisBuild |
+|  Branch | CIBuild |  Branch | CIBuild |
 | ------- | ----------- |  ------ | ----------- |
 | 2.0 |  [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/workflows/.github/workflows/cicd.yml/badge.svg?branch=2.0)](https://github.com/corpusops/corpusops.bootstrap/actions?query=workflow%3A.github%2Fworkflows%2Fcicd.yml+branch%3A2.0)  | master |  [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/workflows/.github/workflows/cicd.yml/badge.svg?branch=master)](https://github.com/corpusops/corpusops.bootstrap/actions?query=workflow%3A.github%2Fworkflows%2Fcicd.yml+branch%3Amaster)  |
 
