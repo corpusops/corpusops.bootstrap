@@ -100,27 +100,27 @@ jobs:
             docker build $sq --iidfile $siid -f "docker/${img}" . --build-arg FORCE_ONLINE=1
             for i in ${{steps.v.outputs.rtags}};do docker tag $(cat $siid) $i;done
           fi
-      #- name: Push images if needed
-      #  run: |-
-      #    set -ex;for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do
-      #      if [[ -z $NO_SQUASH ]];then docker push ${i}-nosquash;fi;docker push $i;done
-      #  if: ${{steps.v.outputs.releasable == 'true'}}
+      - name: Push images if needed
+        run: |-
+          set -ex;for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do
+            if [[ -z $NO_SQUASH ]];then docker push ${i}-nosquash;fi;docker push $i;done
+        if: ${{steps.v.outputs.releasable == 'true'}}
     strategy:
       fail-fast: false
       matrix:
         ansible_latest: ["2.10"]
         ansible_release:
         - "2.9"
-        #- "2.10"
+        - "2.10"
         image:
-        #- "corpusops/ubuntu:20.04"
-        #- "corpusops/ubuntu:18.04"
-        #- "corpusops/ubuntu:16.04"
-        #- "corpusops/ubuntu:latest"
-        #- "corpusops/debian:stretch"
-        #- "corpusops/debian:buster"
+        - "corpusops/ubuntu:20.04"
+        - "corpusops/ubuntu:18.04"
+        - "corpusops/ubuntu:16.04"
+        - "corpusops/ubuntu:latest"
+        - "corpusops/debian:stretch"
+        - "corpusops/debian:buster"
         - "corpusops/debian:sid"
-        #- "corpusops/centos:7"
+        - "corpusops/centos:7"
 on:
   workflow_dispatch:
   push:
