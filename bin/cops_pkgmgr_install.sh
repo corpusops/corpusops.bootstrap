@@ -781,7 +781,56 @@ pacman_setup() {
     ensure_command which core/which
 }
 
-### redhat alike (dnf & yum)
+### redhat alike (microdnf, dnf & yum)
+### MICRODNF
+microdnf_repoquery() {
+    vvv microdnf repoquery "${@}"
+}
+
+is_microdnf_available() {
+    pkgs="$(microdnf repoquery --available)"
+    for i in $@;do
+        if ! ( echo "$pkgs" | egrep -iq "${i}" ; ); then
+            return 1
+        fi
+    done
+}
+
+is_microdnf_installed() {
+    pkgs="$(microdnf repoquery --installed)"
+    for i in $@;do
+        if ! ( echo "$pkgs" | egrep -iq "${i}" ; ); then
+            return 1
+        fi
+    done
+}
+
+microdnf_update() {
+    vvv microdnf repoquery $(i_y) --refresh --available --installed >/dev/null
+    ret=$?
+    if echo ${ret} | egrep -q '^(0|100)$'; then
+        return 0
+    fi
+    return 1
+}
+
+microdnf_upgrade() {
+    vvv microdnf update $(i_y) $@
+}
+
+microdnf_install() {
+    vvv microdnf install $(i_y) $@ &&\
+        if [ "x$NO_LATEST" = "x" ];then vvv microdnf_update $@;fi
+}
+
+microdnf_ensure_repoquery() {
+    return 0
+}
+
+microdnf_setup() {
+    rh_setup
+}
+
 ### DNF
 dnf_repoquery() {
     vvv dnf repoquery -q "${@}"
@@ -1069,7 +1118,9 @@ parse_cli() {
         INSTALLER=pacman
     elif ( is_redhat_like; );then
         INSTALLER=yum
-        if has_command dnf;then
+        if has_command microdnf;then
+            INSTALLER=microdnf
+        elif has_command dnf;then
             INSTALLER=dnf
         fi
     else
