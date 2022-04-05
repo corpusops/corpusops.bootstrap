@@ -74,6 +74,14 @@ NORMAL="\\e[0;0m"
 NO_COLOR=${NO_COLORS-${NO_COLORS-${NOCOLOR-${NOCOLORS-}}}}
 LOGGER_NAME=${LOGGER_NAME:-corpusops_build}
 ERROR_MSG="There were errors"
+is_container() {
+    if ( grep -q container= /proc/1/environ 2>/dev/null ) \
+       || ( egrep -q 'docker|lxc' /proc/1/cgroup 2>/dev/null ) \
+       || [ -e /.dockerenv ];then
+           return 0
+    fi
+    return 1
+}
 uniquify_string() {
     local pattern=$1
     shift
@@ -616,11 +624,26 @@ make_virtualenv() {
     local venv_path=${2-${VENV_PATH:-$DEFAULT_VENV_PATH}}
     local venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     local PIP_CACHE=${PIP_CACHE:-${venv_path}/cache}
-    if [ ! -e "${venv_path}" ];then
-        mkdir -p "${venv_path}"
+    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
+        if [ ! -e "${venv_path}" ];then
+            mkdir -p "${venv_path}"
+        fi
+        if [ -e "${DEFAULT_VENV_PATH}" ] && \
+            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
+            [ ! -h "${DEFAULT_VENV_PATH}" ];then
+            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
+        fi
+        if [ -h $DEFAULT_VENV_PATH ] &&\
+            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
+            rm -f "${DEFAULT_VENV_PATH}"
+        fi
+        if [ ! -e $DEFAULT_VENV_PATH ];then
+            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
+        fi
     fi
     if     [ ! -e "${venv_path}/bin/activate" ] \
         || [ ! -e "${venv_path}/lib" ] \
+        || [ ! -e "${venv_path}/include" ] \
         ; then
         bs_log "Creating virtualenv in ${venv_path}"
         if [ ! -e "${PIP_CACHE}" ]; then
@@ -643,20 +666,6 @@ make_virtualenv() {
     ( . "${venv_path}/bin/activate" &&\
       upgrade_pip "${venv_path}/bin/python" &&\
       deactivate; )
-    fi
-    if [ "x${DEFAULT_VENV_PATH}" != "${venv_path}" ];then
-        if [ -h $DEFAULT_VENV_PATH ] &&\
-            [ "x$(readlink $DEFAULT_VENV_PATH)" != "$venv_path" ];then
-            rm -f "${DEFAULT_VENV_PATH}"
-        fi
-        if [ -e "${DEFAULT_VENV_PATH}" ] && \
-            [ "$DEFAULT_VENV_PATH" != "$venv_path" ] &&\
-            [ ! -h "${DEFAULT_VENV_PATH}" ];then
-            die "$DEFAULT_VENV_PATH is not a symlink but we want to create it"
-        fi
-        if [ ! -e $DEFAULT_VENV_PATH ];then
-            ln -s "${venv_path}" "${DEFAULT_VENV_PATH}"
-        fi
     fi
 }
 ensure_last_python_requirement() {
