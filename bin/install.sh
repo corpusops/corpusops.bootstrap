@@ -837,6 +837,8 @@ get_ansible_branch() {
 
 set_vars() {
     reset_colors
+    if ( is_container );then DEFAULT_FORCE_ONLINE=1;fi
+    FORCE_ONLINE=${FORCE_ONLINE-${DEFAULT_FORCE_ONLINE-}}
     SCRIPT_DIR="${W}/bin"
     QUIET=${QUIET:-}
     CHRONO="$(get_chrono)"
@@ -892,6 +894,7 @@ set_vars() {
         QUIET_GIT="-q"
     fi
     # export variables to survive a restart/fork
+    export FORCE_ONLINE
     export NONINTERACTIVE
     export SED PATH UNAME
     export DISTRIB_CODENAME DISTRIB_ID DISTRIB_RELEASE
