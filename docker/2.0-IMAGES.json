@@ -13,6 +13,10 @@
 	  "dockerfile": "docker/corpusops/{name}:20.04_preprovision"
     },
     {
+      "tag": "corpusops/ubuntu:22.04_preprovision-2.9",
+	  "dockerfile": "docker/corpusops/{name}:20.04_preprovision"
+    },
+    {
       "tag": "corpusops/ubuntu:18.04_preprovision-2.9",
 	  "dockerfile": "docker/corpusops/{name}:18.04_preprovision"
     },
@@ -31,6 +35,10 @@
     {
       "tag": "corpusops/ubuntu:16.04-2.9",
 	  "dockerfile": "docker/corpusops/{name}:16.04"
+    },
+    {
+      "tag": "corpusops/ubuntu:22.04-2.9",
+	  "dockerfile": "docker/corpusops/{name}:20.04"
     },
     {
       "tag": "corpusops/ubuntu:20.04-2.9",
@@ -73,4 +81,4 @@
 	  "dockerfile": "docker/corpusops/{name}:latest"
     }
   ]
-} 
+}
