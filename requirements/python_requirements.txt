@@ -9,6 +9,9 @@ pip >= 1.5.6
 chardet >= 2.3.0
 ordereddict >= 1.1
 
+# JINJA BUG from jinja2.filters import environmentfilter, do_groupby as _do_groupby
+jinja2 < 3.1.0
+
 # MISC
 pytz >= 2014.9
 timelib >= 0.2.4
