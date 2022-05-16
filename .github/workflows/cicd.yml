@@ -113,6 +113,7 @@ jobs:
         - "2.9"
         - "2.10"
         image:
+        - "corpusops/ubuntu:22.04"
         - "corpusops/ubuntu:20.04"
         - "corpusops/ubuntu:18.04"
         - "corpusops/ubuntu:16.04"
