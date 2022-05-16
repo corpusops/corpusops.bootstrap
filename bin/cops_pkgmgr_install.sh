@@ -36,14 +36,15 @@ SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:22.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:20.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
-BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:22.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:20.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:18.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
@@ -270,7 +271,7 @@ is_debian_like() { echo $DISTRIB_ID | egrep -iq "debian|ubuntu|mint"; }
 is_suse_like() { echo $DISTRIB_ID | egrep -iq "suse"; }
 is_alpine_like() { echo $DISTRIB_ID | egrep -iq "alpine" || test -e /etc/alpine-release; }
 is_redhat_like() { echo $DISTRIB_ID \
-        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora|amzn)"; }
+        | egrep -iq "((^ol$)|rhel|redhat|red-hat|centos|fedora)"; }
 set_lang() { locale=${1:-C};export LANG=${locale};export LC_ALL=${locale}; }
 is_darwin () {
     if [ "x${FORCE_DARWIN-}" != "x" ];then return 0;fi
