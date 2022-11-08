@@ -1275,7 +1275,7 @@ ensure_has_virtualenv() {
     if ! has_command virtualenv;then
         if is_debian_like && [ "x${DO_INSTALL_PREREQUISITES}" = "xy" ]; then
             SKIP_UPGRADE=y\
-                WANTED_PACKAGES="virtualenv python-virtualenv" \
+                WANTED_PACKAGES="virtualenv" WANTED_EXTRA_PACKAGES="python-virtualenv python3-virtualenv" \
                 vv "$W/bin/cops_pkgmgr_install.sh" 2>&1\
                 || die " [bs] Failed install virtualenv extra pkgs"
         fi

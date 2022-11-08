@@ -9,8 +9,6 @@ libgmpxx4ldbl
 openssl
 lsb-release
 man-db
-python-six
-python-apt
 rsync
 ca-certificates
 binutils
