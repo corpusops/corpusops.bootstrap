@@ -1268,10 +1268,10 @@ else
         upgrade && install
         ret=$?
     # do not shell out for WANTED_EXTRA_PACKAGES
-    elif [ "x$WANTED_PACKAGES" != "x" ];then
+    elif [ "x$SECONDROUND" != "x" ];then
         export WANTED_PACKAGES="$( echo $COPS_PKGMGR_PKGCANDIDATES $SECONDROUND )"
         export WANTED_EXTRA_PACKAGES="$( echo $SECONDROUND_EXTRA )"
-        log "Escalating privileges (root) for installing: $WANTED_PACKAGES $WANTED_EXTRA_PACKAGES"
+        log "Escalating privileges (root) 111for installing: $WANTED_PACKAGES -- $WANTED_EXTRA_PACKAGES"
         $(may_sudo) "$0" "$@"
         ret=$?
     fi
