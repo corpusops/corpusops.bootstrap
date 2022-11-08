@@ -1111,14 +1111,10 @@ install_prerequisites_() {
     # its software-properties-common replacement
     if is_debian_like;then
         log "installing python pkgs (python-software-properties or software-properties-common)"
-        if ! ( SKIP_UPDATE=y SKIP_UPGRADE=y\
-            WANTED_PACKAGES="python-software-properties" \
-            $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 );then
-                SKIP_UPDATE=y SKIP_UPGRADE=y\
-                    WANTED_PACKAGES="software-properties-common" \
-                    $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
-                    || sdie "-> Failed install python apt pkgs"
-        fi
+        WANTED_EXTRA_PACKAGES="python-software-properties software-properties-common" \
+            SKIP_UPDATE=y SKIP_UPGRADE=y\
+            $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
+            || sdie "-> Failed install python apt pkgs"
     fi
 }
 
@@ -1336,7 +1332,7 @@ ensure_has_virtualenv() {
     if ! has_command virtualenv;then
         if is_debian_like && [ "x${DO_INSTALL_PREREQUISITES}" = "xy" ]; then
             SKIP_UPGRADE=y\
-                WANTED_PACKAGES="virtualenv python-virtualenv" \
+                WANTED_PACKAGES="virtualenv" WANTED_EXTRA_PACKAGES="python3-virtualenv python-virtualenv" \
                 vv "$W/bin/cops_pkgmgr_install.sh" 2>&1\
                 || die " [bs] Failed install virtualenv extra pkgs"
         fi
