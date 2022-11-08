@@ -1181,8 +1181,7 @@ prepare_install() {
             warn "EXTRA Packages $(echo ${SECONDROUND_EXTRA}) not found before update"
         fi
         if [ "x$WHOAMI" = "xroot" ];then
-            if [ "x$SECONDROUND" != "x" ] || [ "x$SECONDROUND_EXTRA" != "x" ] \
-                && [ "x$NO_SUDO" = "x" ];then
+            if [ "x$SECONDROUND" != "x" ];then
                 ( DO_UPDATE=1 update )
                 secondround_pkgscan
             elif [ "x$DO_UPDATE" != "x" ];then
