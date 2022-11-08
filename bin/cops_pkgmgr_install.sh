@@ -1181,7 +1181,8 @@ prepare_install() {
             warn "EXTRA Packages $(echo ${SECONDROUND_EXTRA}) not found before update"
         fi
         if [ "x$WHOAMI" = "xroot" ];then
-            if [ "x$SECONDROUND" != "x" ] || [ "x$SECONDROUND_EXTRA" != "x" ];then
+            if [ "x$SECONDROUND" != "x" ] || [ "x$SECONDROUND_EXTRA" != "x" ] \
+                && [ "x$NO_SUDO" = "x" ];then
                 ( DO_UPDATE=1 update )
                 secondround_pkgscan
             elif [ "x$DO_UPDATE" != "x" ];then
@@ -1267,7 +1268,8 @@ else
     if [ "x$WHOAMI" = "xroot" ];then
         upgrade && install
         ret=$?
-    else
+    # do not shell out for WANTED_EXTRA_PACKAGES
+    elif [ "x$WANTED_PACKAGES" != "x" ];then
         export WANTED_PACKAGES="$( echo $COPS_PKGMGR_PKGCANDIDATES $SECONDROUND )"
         export WANTED_EXTRA_PACKAGES="$( echo $SECONDROUND_EXTRA )"
         log "Escalating privileges (root) for installing: $WANTED_PACKAGES $WANTED_EXTRA_PACKAGES"

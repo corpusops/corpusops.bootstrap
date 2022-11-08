@@ -2,9 +2,7 @@ python-virtualenv
 python3-virtualenv
 virtualenv
 libffi7
-python-pip
 python-six
 python-apt
-python-dev
 python2-dev
 libffi6

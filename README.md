@@ -15,6 +15,7 @@ corpusops team normally add entries to this [galaxy user](https://galaxy.ansible
 
 mkdir corpusops
 git clone https://github.com/corpusops/corpusops.bootstrap.git corpusops/corpusops.bootstrap
+# either apt install python-pip or python3-pip
 corpusops/corpusops.bootstrap/bin/install.sh -l
 corpusops/corpusops.bootstrap/bin/install.sh
 

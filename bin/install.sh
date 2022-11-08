@@ -1073,14 +1073,11 @@ install_prerequisites_() {
     # its software-properties-common replacement
     if is_debian_like;then
         log "installing python pkgs (python-software-properties or software-properties-common)"
-        if ! ( SKIP_UPDATE=y SKIP_UPGRADE=y\
-            WANTED_PACKAGES="python-software-properties" \
-            $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 );then
-                SKIP_UPDATE=y SKIP_UPGRADE=y\
-                    WANTED_PACKAGES="software-properties-common" \
-                    $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
+        SKIP_UPDATE=y SKIP_UPGRADE=y\
+            WANTED_EXTRA_PACKAGES="python-software-properties software-properties-common" \
+            SKIP_UPDATE=y SKIP_UPGRADE=y\
+            $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
                     || sdie "-> Failed install python apt pkgs"
-        fi
     fi
 }
 
