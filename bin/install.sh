@@ -519,8 +519,8 @@ get_python2() {
 get_python3() {
     local py_ver=3
     get_python_ $py_ver \
-        python3.9  python3.8  python3.7  python3.6  python3.5  python3.4  \
-        python-3.9 python-3.8 python-3.7 python-3.6 python-3.5 python-3.4 \
+        python3.10  python3.9  python3.8  python3.7  python3.6  python3.5  python3.4  \
+        python-3.10 python-3.9 python-3.8 python-3.7 python-3.6 python-3.5 python-3.4 \
         python-${py_ver} python${py_ver} python
 }
 has_python_module() {
