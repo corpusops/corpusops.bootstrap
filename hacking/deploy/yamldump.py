@@ -18,7 +18,10 @@ if not files:
     files.add(os.environ.get('YAML_TEST_FILE', '.gitlab-ci.yml'))
 for f in files:
     sys.stderr.write('Dumping {0}\n'.format(f))
-    data = yaml.load(open(f).read())
+    try:
+        data = yaml.load(open(f).read())
+    except TypeError:
+        data = yaml.full_load(open(f).read())
     edata = json.loads(json.dumps(data))
     out = StringIO()
     yaml.safe_dump(edata,
