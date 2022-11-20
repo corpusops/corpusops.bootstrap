@@ -26,6 +26,7 @@ A_CRYPTED_VAULTS=${@:-${A_CRYPTED_VAULTS}}
 edit_vault() {
     local vault=$1
     if [ -e $vault ];then mode=edit;else mode=create;fi
+    mode=${ANSIBLE_VAULT_ACTION-$mode}
     debug "${mode}: $vault"
     warn_vault
     vaultd="$(dirname "$vault")"
