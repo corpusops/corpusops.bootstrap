@@ -121,7 +121,7 @@ jobs:
         - "corpusops/ubuntu:18.04"
         - "corpusops/ubuntu:latest"
         - "corpusops/debian:buster"
-        - "corpusops/debian:bulleye"
+        - "corpusops/debian:bullseye"
         - "corpusops/debian:sid"
         #- "corpusops/debian:stretch"
         #- "corpusops/ubuntu:16.04"
