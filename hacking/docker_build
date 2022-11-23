@@ -330,6 +330,10 @@ detect_os() {
         if [ $DISTRIB_MAJOR  -eq 7 ];then DISTRIB_CODENAME="wheezy";fi
         if [ $DISTRIB_MAJOR  -eq 8 ];then DISTRIB_CODENAME="jessie";fi
         if [ $DISTRIB_MAJOR  -eq 9 ];then DISTRIB_CODENAME="stretch";fi
+        if [ $DISTRIB_MAJOR  -eq 10 ];then DISTRIB_CODENAME="buster";fi
+        if [ $DISTRIB_MAJOR  -eq 11 ];then DISTRIB_CODENAME="bullseye";fi
+        if [ $DISTRIB_MAJOR  -eq 12 ];then DISTRIB_CODENAME="bookworm";fi
+        if [ $DISTRIB_MAJOR  -eq 13 ];then DISTRIB_CODENAME="trixie";fi
     elif [ -e /etc/SuSE-brand ] || [ -e /etc/SuSE-release ];then
         for i in /etc/SuSE-brand /etc/SuSE-release;do
             if [ -e $i ];then
