@@ -25,12 +25,12 @@ jobs:
             if ( echo "$GITHUB_REF" | egrep -q "${RELEASABLE_BRANCHES}" ) \
             && ( echo "$GITHUB_REPOSITORY" | egrep -q "${RELEASABLE_REPOS}" )
             then releasable=true;else releasable=false;fi
-            echo "::set-output name=releasable::$releasable"
-            echo "::set-output name=tags::$tags"
-            echo "::set-output name=rtags::$rtags"
+            echo "name=releasabl=$releasable" >> $GITHUB_STATE
+            echo "tags=$tags"            >> $GITHUB_STATE
+            echo "rtags=$rtags"          >> $GITHUB_STATE
         id: v
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -41,9 +41,9 @@ jobs:
           import json;c=json.load(open(d));c['experimental']=True;\
           open(d, 'w').write(json.dumps(c))\"
           systemctl restart docker"
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Cache multiple paths
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/cache
@@ -76,8 +76,10 @@ jobs:
           siid=$(mktemp)
           if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
           img=${{matrix.image}}_preprovision-${{matrix.ansible_release}}
+          # docker build --iidfile $iid \
+          #   --cache-from="${img}-nosquash" --cache-from="$img" \
+          #   -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           docker build --iidfile $iid \
-            --cache-from="${img}-nosquash" --cache-from="$img" \
             -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           for i in ${{steps.v.outputs.tags}};do
             for t in $i ${i}-nosquash;do docker tag $(cat $iid) $t;done;done
@@ -93,7 +95,8 @@ jobs:
           siid=$(mktemp)
           if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
           img=${{matrix.image}}-${{matrix.ansible_release}}
-          docker build --iidfile $iid --cache-from="$img" -f "docker/${img}" . --build-arg FORCE_ONLINE=1
+          # docker build --iidfile $iid --cache-from="$img" -f "docker/${img}" . --build-arg FORCE_ONLINE=1
+          docker build --iidfile $iid -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           for i in ${{steps.v.outputs.rtags}};do
             for t in $i ${i}-nosquash;do docker tag $(cat $iid) $t;done;done
           if [[ -z $NO_SQUASH ]];then
@@ -112,15 +115,18 @@ jobs:
         ansible_release: ["2.7"]
         image:
         - "corpusops/ubuntu:20.04"
-        - "corpusops/ubuntu:18.04"
-        - "corpusops/ubuntu:16.04"
+        #- "corpusops/ubuntu:18.04"
         #- "corpusops/ubuntu:latest"
-        #- "corpusops/debian:stretch"
         #- "corpusops/debian:buster"
+        #- "corpusops/debian:bullseye"
         #- "corpusops/debian:sid"
+        #- "corpusops/debian:stretch"
+        #- "corpusops/ubuntu:16.04"
+        #- "corpusops/debian:buster"
         #- "corpusops/centos:7"
 on:
   workflow_dispatch:
   push:
   pull_request:
   schedule: [{cron: '1 0 1,15 * *'}]
+
