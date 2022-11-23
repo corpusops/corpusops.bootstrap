@@ -1,0 +1,87 @@
+# For quickier rebuilds, we isolate each step of the installation
+# and their requisites; together with docker cache
+
+FROM corpusops/debian:bullseye_preprovision-2.9
+
+# Rewarm apt cache
+RUN bash -c '\
+  if grep -E -qi "ubuntu|mint|debian" /etc/*-release 2>/dev/null;then\
+      apt-get update -y -qq;\
+      if [ "x${PKGS_REMOVES-}" != "x" ];then\
+        apt-get install -y $PKGS_REMOVES;\
+      fi;\
+  fi'
+
+ARG FORCE_ONLINE=
+ARG NO_OUTPUT=y
+ARG KEEP_DOCKERD=no
+ARG ANSIBLE_PYTHON_INTERPRETER=auto
+## Refresh files
+ADD hacking/      $COPS_ROOT/hacking/
+ADD bin/          $COPS_ROOT/bin/
+ADD src/          $COPS_ROOT/src/
+ADD playbooks/    $COPS_ROOT/playbooks/
+ADD docs/         $COPS_ROOT/docs/
+ADD collections/  $COPS_ROOT/collections/
+ADD roles/        $COPS_ROOT/roles/
+ADD requirements/ $COPS_ROOT/requirements/
+
+# Be sure that system python is capable of SSL SNI connections
+# and apt is configured, and has installed base packages
+RUN bash -c 'step_rev=2;set -ex;\
+    : reinstall py build prereqs;\
+    pip3 uninstall -y ipaddr docker-py;\
+    export A_ENV_NAME="docker";\
+    export A_INVENTORY="localhost,";\
+    $COPS_ROOT/bin/install.sh -C --skip-sync-code'
+RUN bash -c 'set -e;\
+    $_apply_role \
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_pkgmgr/role.yml\
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_basepkgs/role.yml\
+     ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
+
+# Install docker client for dind(sibling via docker socket) workflows
+RUN bash -c 'step_rev=2;set -e;\
+    export A_ENV_NAME="docker";\
+    export A_INVENTORY="localhost,";\
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml \
+      -e "{corpusops_localsettings_docker_has_docker_py: true}"'
+
+# Disable docker service in base image
+RUN bash -c 'rm -vf \
+  /etc/rc*.d/*docker \
+  /lib/systemd/*/*wants/docker* \
+  /etc/systemd/*/*wants/docker* \
+  && if [ -e /etc/init ];then echo manual > /etc/init/docker.override;fi'
+
+# Make the docker image a preconfigured-for-production image
+RUN bash -c 'step_rev=2;set -e;\
+    $_apply_role ${COPS_ROOT}/roles/corpusops.roles/playbooks/provision/server.yml'
+
+# pack, cleanup, snapshot any found git repo
+ADD docker/       $COPS_ROOT/docker/
+RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+    if [ "x$KEEP_DOCKERD" = "xno" ];then \
+      rm -f /usr/bin/docker-containerd; \
+      rm -f /usr/bin/docker-containerd-ctr; \
+      rm -f /usr/bin/docker-containerd-shim; \
+      rm -f /usr/bin/docker-init; \
+      rm -f /usr/bin/docker-proxy; \
+      rm -f /usr/bin/docker-runc; \
+      rm -f /usr/bin/dockerd; \
+    fi; \
+    export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
+    PKGS_REMOVES="gcc \
+        $(cat req*/os_packages_dev.$LDISTRIB_ID 2>/dev/null | xargs -n1)" \
+    DEV_AUTOREMOVE=y \
+    GIT_GC_AGGRESSIVE= \
+    GIT_SHALLOW_DEPTH=1 \
+    GIT_SHALLOW=y \
+    NO_IMAGE_STRIP= \
+        /sbin/cops_container_strip.sh'
+
+# Default to launch systemd, and you ll have have to mount:
+#  -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run/lock --tmpfs /run
+STOPSIGNAL SIGRTMIN+3
+CMD ["/entry_point"]
+# vim:set et ft=Dockerfile:
