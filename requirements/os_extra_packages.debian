@@ -5,4 +5,6 @@ libffi7
 python-six
 python-apt
 python2-dev
+libpython2.7-dev
+libpython2-dev
 libffi6
