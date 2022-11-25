@@ -149,6 +149,8 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
 
 # pack, cleanup, snapshot any found git repo
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+    : use python3 as ansible python interpreter on master branch and no python link is in place;\
+    if [ ! -e /usr/bin/python ];then ln -sfv /usr/bin/python3 /usr/bin/python;fi;\
     : be sure apt is healthy ;\
     if [ -e /var/lib/dpkg/info/bash.list ];then apt update -qq && apt-get -fy install;fi;\
     : define DISTRIB_ID;. $COPS_ROOT/bin/cops_detect_os;\

@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/debian-bare:buster
+FROM corpusops/debian-bare:bookworm
 ENV container docker
 
 ARG FORCE_ONLINE=
@@ -9,7 +9,7 @@ ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ARG NO_OUTPUT=y
 ARG USE_VENV=no
 ARG PYTHONUNBUFFERED=1
-ARG ANSIBLE_PYTHON_INTERPRETER=python3
+ARG ANSIBLE_PYTHON_INTERPRETER=auto
 ARG NONINTERACTIVE="y"
 # ARG DEFAULT_A_VERBOSITY="-vvvvv -e cops_vars_debug=true"
 ARG DEFAULT_A_VERBOSITY=""

@@ -35,6 +35,7 @@ SYSTEM_COPS_ROOT=${SYSTEM_COPS_ROOT-$DEFAULT_COPS_ROOT}
 DOCKER_COPS_ROOT=${DOCKER_COPS_ROOT-$SYSTEM_COPS_ROOT}
 COPS_URL=${COPS_URL-$DEFAULT_COPS_URL}
 BASE_PREPROVISION_IMAGES="ubuntu:latest_preprovision"
+BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:22.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:20.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
@@ -43,6 +44,7 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovis
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
+BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:22.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:20.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:18.04"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:16.04"
@@ -51,6 +53,8 @@ BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/centos:7"
 BASE_IMAGES="$BASE_PREPROVISION_IMAGES $BASE_CORE_IMAGES"
 EXP_PREPROVISION_IMAGES=""
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES archlinux:latest_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:bookworm_preprovision"
+EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:bullseye_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:latest_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:stretch_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:buster_preprovision"
@@ -60,6 +64,8 @@ EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:stretch"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:buster"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:bookworm"
+EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:bullseye"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:sid"
 EXP_IMAGES="$EXP_PREPROVISION_IMAGES $EXP_CORE_IMAGES"
 # ansible related
@@ -318,6 +324,8 @@ detect_os() {
         if [ $DISTRIB_MAJOR  -eq 7 ];then DISTRIB_CODENAME="wheezy";fi
         if [ $DISTRIB_MAJOR  -eq 8 ];then DISTRIB_CODENAME="jessie";fi
         if [ $DISTRIB_MAJOR  -eq 9 ];then DISTRIB_CODENAME="stretch";fi
+        if [ $DISTRIB_MAJOR  -eq 10 ];then DISTRIB_CODENAME="bullseye";fi
+        if [ $DISTRIB_MAJOR  -eq 11 ];then DISTRIB_CODENAME="bookworm";fi
     elif [ -e /etc/SuSE-brand ] || [ -e /etc/SuSE-release ];then
         for i in /etc/SuSE-brand /etc/SuSE-release;do
             if [ -e $i ];then
