@@ -114,7 +114,9 @@ jobs:
         ansible_latest: [""]
         ansible_release: ["2.7"]
         image:
+        - "corpusops/ubuntu:18.04"
         - "corpusops/ubuntu:20.04"
+        - "corpusops/ubuntu:22.04"
         #- "corpusops/ubuntu:18.04"
         #- "corpusops/ubuntu:latest"
         #- "corpusops/debian:buster"
