@@ -5,7 +5,7 @@
         dest: '{{prefix}}/roles/geerlingguy.repo-epel'
       - repo: '__CORPUSOPS_ORGA_URL__/roles.git'
         dest: '{{prefix}}/roles/corpusops.roles'
-        version: '__CORPUSOPS_BRANCH__'
+        version: '__CORPUSOPS_ROLES_BRANCH__'
   tasks:
     # cleanup old roles (we should not have now envs with them,
     # disabling

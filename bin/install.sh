@@ -814,9 +814,13 @@ get_ansible_url() {
 }
 
 get_ansible_egg() {
-    ( version_gte $(get_ansible_branch) stable-2.10 ) \
-        && echo ansible-base \
-        || echo ansible
+    if ( version_gte $(get_ansible_branch) stable-2.13 );then
+        echo ansible-core;
+    elif ( version_gte $(get_ansible_branch) stable-2.10 );then
+        echo ansible-base;
+    else
+        echo ansible
+    fi
 }
 
 get_corpusops_use_venv() {
@@ -838,6 +842,10 @@ get_eggs_src_dir() {
     else
         echo "${EGGS_SRC_DIR:-/usr/src/corpusops}"
     fi
+}
+
+get_corpusops_roles_branch() {
+    get_default_knob corpusops_roles_branch "${CORPUSOPS_ROLES_BRANCH}" "2.0"
 }
 
 get_corpusops_branch() {
@@ -879,11 +887,13 @@ set_vars() {
     DO_SYNC_ANSIBLE="${DO_SYNC_ANSIBLE-${DO_SYNC_ANSIBLE}}"
     DO_SYNC_CORE="${DO_SYNC_CORE-${DO_SYNC_CODE}}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES-"y"}"
+    DO_UPGRADE="${DO_UPGRADE-""}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV-"y"}"
     NONINTERACTIVE="${NONINTERACTIVE-${DO_NOCONFIRM}}"
     CORPUSOPS_ORGA_URL="${CORPUSOPS_ORGA_URL-}"
     CORPUSOPS_URL="${CORPUSOPS_URL-}"
     CORPUSOPS_BRANCH="${CORPUSOPS_BRANCH-}"
+    CORPUSOPS_ROLES_BRANCH="${CORPUSOPS_ROLES_BRANCH-}"
     CORPUSOPS_USE_VENV="${CORPUSOPS_USE_VENV-}"
     ANSIBLE_URL="${ANSIBLE_URL-}"
     ANSIBLE_BRANCH="${ANSIBLE_BRANCH-}"
@@ -956,14 +966,14 @@ set_vars() {
 }
 
 get_cops_orig_python() {
-	local DEFAULT_PYTHON_BIN_FIRST=""
-	if [ "x${CORPUSOPS_USE_VENV}" = "xno" ];then
-   		DEFAULT_PYTHON_BIN_FIRST="y"
-	fi
-	local default_py=$(
+    local DEFAULT_PYTHON_BIN_FIRST=""
+    if [ "x${CORPUSOPS_USE_VENV}" = "xno" ];then
+           DEFAULT_PYTHON_BIN_FIRST="y"
+    fi
+    local default_py=$(
         deactivate 2>/dev/null || :;
         DEFAULT_PYTHON_BIN_FIRST=$DEFAULT_PYTHON_BIN_FIRST \
-		get_python${COPS_PYTHON_VERSION}
+        get_python${COPS_PYTHON_VERSION}
     )
     echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
 }
@@ -1058,6 +1068,7 @@ reconfigure() {
             -e "s#__CORPUSOPS_ORGA_URL__#$(get_corpusops_orga_url)#g" \
             -e "s#__CORPUSOPS_URL__#$(get_corpusops_url)#g" \
             -e "s#__CORPUSOPS_BRANCH__#$(get_corpusops_branch)#g" \
+            -e "s#__CORPUSOPS_ROLES_BRANCH__#$(get_corpusops_roles_branch)#g" \
             -e "s#__CORPUSOPS_USE_VENV__#$(get_corpusops_use_venv)#g" \
             -e "s#__ANSIBLE_URL__#$(get_ansible_url)#g" \
             -e "s#__ANSIBLE_EGG__#$(get_ansible_egg)#g" \
@@ -1661,6 +1672,9 @@ parse_cli_opts() {
         if [ "x${1}" = "x--ansible-branch" ]; then
             ANSIBLE_BRANCH="${2}";sh="2";argmatch="1"
         fi
+        if [ "x${1}" = "x--upgrade" ]; then
+            DO_UPGRADE="1";argmatch="1"
+        fi
         if [ "x${argmatch}" != "x1" ]; then
             USAGE="1"
             break
@@ -1712,9 +1726,47 @@ main() {
     fi
 }
 
+upgrade() {
+    UPGRADE_REMOTE="${UPGRADE_BRANCH:-origin}"
+    UPGRADE_BRANCH="${UPGRADE_BRANCH:-3.0}"
+    UPGRADE_TRACK="$UPGRADE_REMOTE/$UPGRADE_BRANCH"
+    cd "$(dirname $(readlinkf $0))/.."
+    export COPS_ROOT="$(pwd)"
+    vv git fetch origin || die "git fetch failed"
+    if ! ( git diff --exit-code &>/dev/null );then
+        log "Saving changes"
+        vv git stash
+    fi
+    if ( git branch -q|xargs -n1|egrep -q "^$UPGRADE_BRANCH" );then
+        log "Already has locally $UPGRADE_BRANCH"
+        if ! [ "x$(git rev-parse --abbrev-ref HEAD)" != "x$UPGRADE_BRANCH" ];then
+            log "Switching branch: $(git rev-parse --abbrev-ref HEAD) > $UPGRADE_BRANCH"
+            vv git checkout $UPGRADE_BRANCH || die "Checkout to $UPGRADE_TRACK failed"
+        fi
+    else
+        vv git checkout $UPGRADE_TRACK -b $UPGRADE_BRANCH || die "Original checkout to $UPGRADE_TRACK failed"
+    fi
+    vv git reset --hard $UPGRADE_TRACK || die "reset to $UPGRADE_TRACK failed"
+    py=$(get_cops_python)
+    if [ -e venv/src/ansible-base ] && [ ! -e venv/src/ansible-core ];then
+        mv -vf venv/src/ansible-base venv/src/ansible-core
+    fi
+    if ( $py -m pip freeze|egrep -q ansible.base );then
+         $py -m pip uninstall -y ansible-base || true
+    fi
+    ( unset CORPUSOPS_BRANCH ANSIBLE_URL ANSIBLE_BRANCH;exec "$COPS_ROOT/bin/install.sh" "$@" )
+    ret=$?
+    log "Upgrade finished (code: $ret)"
+    exit $ret
+}
+
 if [ "x${CORPUS_OPS_AS_FUNCS}" = "x" ]; then
     reset_colors
     setup
+    if [ "x${DO_UPGRADE}" = "x1" ]; then
+        shift
+        upgrade "$@"
+    fi
     if [ "x${DO_VERSION}" = "xy" ];then
         echo "${CORPUSOPS_VERSION}"
         exit 0
