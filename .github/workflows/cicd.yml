@@ -111,10 +111,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ansible_latest: ["2.10"]
+        ansible_latest: ["2.14"]
         ansible_release:
-        - "2.9"
-        - "2.10"
+        - "2.14"
         image:
         - "corpusops/ubuntu:22.04"
         - "corpusops/ubuntu:20.04"

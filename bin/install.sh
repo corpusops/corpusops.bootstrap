@@ -849,11 +849,11 @@ get_corpusops_roles_branch() {
 }
 
 get_corpusops_branch() {
-    get_default_knob corpusops_branch "${CORPUSOPS_BRANCH}" "2.0"
+    get_default_knob corpusops_branch "${CORPUSOPS_BRANCH}" "3.0"
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.10"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.14"
 }
 
 move_old_py2_venv() {
@@ -1015,6 +1015,7 @@ if OpenSSL_version <= LooseVersion('0.15'):
     raise ValueError('trigger upgrade pyopenssl')
 # futures
 import concurrent
+import resolvelib
 EOF
     return ${?}
 }
@@ -1043,7 +1044,7 @@ recap_(){
         if [ "x${DO_SYNC_ROLES}" != "xno" ];then
             msg="${msg} - roles"
         fi
-        if ( version_gte $(get_ansible_branch) stable-2.10 ) && [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
+        if ( version_gte $(get_ansible_branch) stable-2.14 ) && [ "x${DO_SYNC_COLLECTIONS}" != "xno" ];then
             msg="${msg} -"
             if [ "x$DO_FORCE_SYNC_COLLECTIONS" = "xyes" ];then
                 msg="${msg} - forcesync"
@@ -1256,7 +1257,7 @@ checkout_code() {
     done
     # ansible 2.10 collection support*
     if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
-        if ( version_gte $(get_ansible_branch) stable-2.10 );then
+        if ( version_gte $(get_ansible_branch) stable-2.14 );then
             if [ "x$DO_FORCE_SYNC_COLLECTIONS" != "xyes" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible/utils" ];then
                 log "Collections in place, skipping fetch"
             else

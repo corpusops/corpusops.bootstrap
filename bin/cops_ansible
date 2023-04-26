@@ -880,12 +880,23 @@ export ANSIBLE_SSH_PIPELINING=${ANSIBLE_SSH_PIPELINING-True}
 export ANSIBLE_PIPELINING=${ANSIBLE_SSH_PIPELINING-True}
 export ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING-false}
 export ANSIBLE_LOAD_CALLBACK_PLUGINS=${ANSIBLE_LOAD_CALLBACK_PLUGINS-1}
+# see https://github.com/ansible/ansible/issues/80633, retrocompat needed for old playbook
+export ANSIBLE_STRING_TYPE_FILTERS="${ANSIBLE_STRING_TYPE_FILTERS:-string,to_yaml,to_nice_yaml,ppretty}"
 
 if [[ -n ${ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
-get_abin_version() { $EXEC_SCRIPT --version|head -n1|awk '{print $2}'|sed -e "s/^\([0-9]\+\.[0-9]\+\).*/\1/"; }
+
+get_abin_version() {
+    aver=$($EXEC_SCRIPT --version)
+    # >=2.11
+    # aver="ansible-playbook [core 2.14.5rc1.post0] (stable-2.10 df904730fe) last updated 2023/05/30 12:18:56 (GMT +200)"
+    # <2.11 ansible-playbook 2.10.17.post0
+    # aver="ansible-playbook 2.10.17.post0"
+    if ( echo $aver | grep -vEq "\[" );then grp=2; else grp=3;fi
+    echo $aver|head -n1|awk '{print $'${grp}'}'|sed -e "s/^\([0-9]\+\.[0-9]\+\).*/\1/"
+}
 aversion=$(get_abin_version)
 DEFAULT_ANSIBLE_COLLECTION_PATH="${DEFAULT_ANSIBLE_COLLECTION_PATH:-"~/.ansible/collections"}"
 for p in \
