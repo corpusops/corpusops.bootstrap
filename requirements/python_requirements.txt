@@ -67,3 +67,6 @@ passlib[argon2,bcrypt,totp]
 
 # prometheus playbook
 jmespath
+
+# galaxy
+resolvelib<0.9.0,>=0.5.3

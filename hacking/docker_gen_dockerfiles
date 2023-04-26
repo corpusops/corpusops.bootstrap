@@ -733,7 +733,7 @@ rewrite_dockerfile() {
     local image_preprovision=${4:-"${image}_preprovision"}
     local default_base_image=${image//corpusops\//}
     local base_image=${5:-${default_base_image}}
-    LATEST_ANSIBLE=2.10
+    LATEST_ANSIBLE=2.14
     ANSIBLE_BRANCH=${ANSIBLE_RELEASE//latest/$LATEST_ANSIBLE}
     apy=auto
     if ( echo "$2" | grep -E -iq "(ubuntu:2)|(debian:(sid|buster|latest))");then
@@ -762,7 +762,7 @@ while read image_line;do
         dfiles=""
         dfiles="${dfiles} docker/${image_preprovision}"
         dfiles="${dfiles} docker/${image}"
-        for ANSIBLE_RELEASE in 2.10 2.9;do
+        for ANSIBLE_RELEASE in 2.14;do
         for fr in ${dfiles};do
             f=${fr}-${ANSIBLE_RELEASE}
             template=${DOCKERFILE_TEMPLATE}
