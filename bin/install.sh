@@ -980,6 +980,7 @@ check_py_modules() {
 import six
 $( if [[ -z "${DISABLE_MITOGEN-1}" ]] ;then echo "import mitogen";fi; )
 import corpusops
+import passlib
 import packaging
 import ansible
 import dns
