@@ -57,3 +57,6 @@ docker[tls] >= 3.3.0
 #epdb
 #remote-pdb >= 2.0.0
 pdb_clone
+
+# password hash
+passlib[argon2,bcrypt,totp]
