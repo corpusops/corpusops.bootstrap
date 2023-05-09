@@ -87,10 +87,7 @@ compute_nodes_lxcs:
         {% set r = {} %}
         {% set h = vars['hostvars'] %}
         {%- for i in vars['groups'].get(inventory_hostname+'_lxcs', []) %}
-        {%-  set hd = h[i] %}{% set cconf = r.setdefault(i, {}) %}
-        {%-    for ii, ival in hd.get('lxc_data',{}).items() %}
-        {%-      set _ = cconf.setdefault(ii, ival) %}
-        {%-   endfor %}
+        {%-     set cconf = r.setdefault(i, {}) %}
         {%- endfor %}
         {{ r | to_json }}
     corpusops_haproxy_registrations_registrations_lxc: |-
