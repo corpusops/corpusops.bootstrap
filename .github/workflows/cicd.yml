@@ -111,7 +111,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ansible_latest: ["2.10"]
+        ansible_latest: []
         ansible_release:
         - "2.9"
         - "2.10"
