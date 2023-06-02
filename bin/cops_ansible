@@ -881,7 +881,7 @@ export ANSIBLE_PIPELINING=${ANSIBLE_SSH_PIPELINING-True}
 export ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING-false}
 export ANSIBLE_LOAD_CALLBACK_PLUGINS=${ANSIBLE_LOAD_CALLBACK_PLUGINS-1}
 # see https://github.com/ansible/ansible/issues/80633, retrocompat needed for old playbook
-export ANSIBLE_STRING_TYPE_FILTERS="${ANSIBLE_STRING_TYPE_FILTERS:-string,to_yaml,to_nice_yaml,ppretty}"
+export ANSIBLE_STRING_TYPE_FILTERS="${ANSIBLE_STRING_TYPE_FILTERS:-yaml,ppretty}"
 
 if [[ -n ${ENV_DEBUG-} ]]; then
     env
