@@ -1127,32 +1127,11 @@ install_prerequisites_() {
     # we need either python-software-properties or
     # its software-properties-common replacement
     if is_debian_like;then
-        local pyextras="" olddebpyextras="python3.9 python3.9-dev libpython3.9 libpython3.9-dev"
-        if ( echo $DISTRIB_ID | grep -E -iq "ubuntu|mint"; );then
-            if ( version_lte "${DISTRIB_RELEASE//.}" "1804" );then
-                bs_log "Ubuntu Version $DISTRIB_RELEASE not supported anymore, unexpected result should occur at best"
-            fi
-            if ( version_gte "${DISTRIB_RELEASE//.}" "2004" );then
-                pyextras="$olddebpyextras"
-            fi
-        fi
-        if ( echo $DISTRIB_ID | grep -E -iq "debian"; );then
-            if ( version_lte "${DISTRIB_RELEASE//.}" "11" ) &&  ( version_gte "${DISTRIB_RELEASE//.}" "10" );then
-                pyextras="$olddebpyextras"
-            fi
-        fi
-        log "installing python pkgs(python-software-properties or software-properties-common)"
+        log "installing python pkgs (python-software-properties or software-properties-common)"
         WANTED_EXTRA_PACKAGES="python-software-properties software-properties-common" \
             SKIP_UPDATE=y SKIP_UPGRADE=y\
             $W/bin/cops_pkgmgr_install.sh >/dev/null 2>&1 \
             || sdie "-> Failed install python apt pkgs"
-
-        if [[ -n $pyextras ]];then
-            bs_log "installing python requirements: $pyextras"
-            WANTED_PACKAGES="$pyextras" SKIP_UPDATE=y SKIP_UPGRADE=y \
-                $W/bin/cops_pkgmgr_install.sh 2>&1 \
-                || sdie "-> Failed install python OS requirements: $pyextras"
-        fi
     fi
 }
 
