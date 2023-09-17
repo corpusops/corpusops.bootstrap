@@ -7,3 +7,5 @@ collections:
 - name: community.kubernetes
 - name: community.mysql
 - name: community.network
+- name: community.postgresql
+- name: community.mysql
