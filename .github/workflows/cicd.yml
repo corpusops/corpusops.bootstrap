@@ -75,7 +75,10 @@ jobs:
           iid=$(mktemp)
           siid=$(mktemp)
           if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
-          img=${{matrix.image}}_preprovision-${{matrix.ansible_release}}
+          img=${{matrix.image}}_preprovision-${{matrix.ansible_release}} 
+          # docker build --iidfile $iid \
+          #   --cache-from="${img}-nosquash" --cache-from="$img" \
+          #   -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           docker build --iidfile $iid \
             --cache-from="${img}-nosquash" --cache-from="$img" \
             -f "docker/${img}" . --build-arg FORCE_ONLINE=1
@@ -93,6 +96,7 @@ jobs:
           siid=$(mktemp)
           if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
           img=${{matrix.image}}-${{matrix.ansible_release}}
+          # docker build --iidfile $iid --cache-from="$img" -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           docker build --iidfile $iid --cache-from="$img" -f "docker/${img}" . --build-arg FORCE_ONLINE=1
           for i in ${{steps.v.outputs.rtags}};do
             for t in $i ${i}-nosquash;do docker tag $(cat $iid) $t;done;done
