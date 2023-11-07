@@ -731,7 +731,7 @@ parse_cli() {
         RELEASED_DIR=${1}
         shift
     else
-        RELEASED_DIR=${W}
+        RELEASED_DIR=${OW}
     fi
     R_IMAGES="${@:-"${IMAGES}"}"
     R_IMAGES="$(echo "$R_IMAGES"|xargs -n1|awk '!seen[$0]++')"
