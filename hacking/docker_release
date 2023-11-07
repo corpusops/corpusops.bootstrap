@@ -782,6 +782,7 @@ release_test() {
     return 1
 }
 
+if [ "x${RELEASE_DEBUG}" != "x" ];then set -x;fi
 parse_cli "$@"
 ret=0
 if release_test; then
