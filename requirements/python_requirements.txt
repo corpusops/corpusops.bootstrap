@@ -63,3 +63,6 @@ pdb_clone
 
 # password hash
 passlib[argon2,bcrypt,totp]
+
+# prometheus playbook
+jmespath
