@@ -48,6 +48,8 @@ RUN bash -c 'step_rev=2;set -e;\
     curl  "${DOCKER_CREDS_HELPER_URL}">/bin/docker-credential-copsgitlab && chmod +x /bin/docker-credential-copsgitlab;\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml \
       -e "{corpusops_localsettings_docker_has_docker_py: true}"'
+ARG BUILDX_VERSION=latest
+COPY --from=docker/buildx-bin:latest /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 
 # Disable docker service in base image
 RUN bash -c 'rm -vf \
