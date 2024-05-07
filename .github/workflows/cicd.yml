@@ -25,7 +25,7 @@ jobs:
             if ( echo "$GITHUB_REF" | egrep -q "${RELEASABLE_BRANCHES}" ) \
             && ( echo "$GITHUB_REPOSITORY" | egrep -q "${RELEASABLE_REPOS}" )
             then releasable=true;else releasable=false;fi
-            echo "name=releasabl=$releasable" >> $GITHUB_STATE
+            echo "releasabl=$releasable" >> $GITHUB_STATE
             echo "tags=$tags"            >> $GITHUB_STATE
             echo "rtags=$rtags"          >> $GITHUB_STATE
         id: v
