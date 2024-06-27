@@ -39,7 +39,7 @@ export COPS_ROOT="${COPS_ROOT:-$DEFAULT_COPS_ROOT}"
 export COPS_URL="${COPS_URL:-https://github.com/corpusops/corpusops.bootstrap.git}"
 export NO_SHARED_COPS="${NO_SHARED_COPS-${SKIP_COPS_FROM_SYSTEM-}}"
 if [[ -n ${SKIP_COPS_DOWNLOAD-} ]];then
-    die_ 0 "-> Skip corpusops setup"
+    die_ 0 "-> Skip corpusops download"
 fi
 test_corpusops_present() {
     # in docker images, corpusops has been stripped from some folders
