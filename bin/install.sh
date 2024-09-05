@@ -1247,7 +1247,7 @@ checkout_code() {
     # ansible 2.10 collection support*
     if [ "x$DO_SYNC_COLLECTIONS" != "xno" ];then
         if ( version_gte $(get_ansible_branch) stable-2.10 );then
-            if [ "x$DO_FORCE_SYNC_COLLECTIONS" != "xyes" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible" ];then
+            if [ "x$DO_FORCE_SYNC_COLLECTIONS" != "xyes" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible" ] && [ -e "$W/collections/$(get_ansible_branch)/ansible_collections/ansible/utils" ];then
                 log "Collections in place, skipping fetch"
             else
                 log "Collecting base collections"
