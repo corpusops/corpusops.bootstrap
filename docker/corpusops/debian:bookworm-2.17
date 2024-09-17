@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/ubuntu:16.04_preprovision-2.14
+FROM corpusops/debian:bookworm_preprovision-2.17
 
 # Rewarm apt cache
 RUN bash -c '\
