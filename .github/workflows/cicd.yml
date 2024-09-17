@@ -111,15 +111,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ansible_latest: ["2.14"]
-        ansible_release:
-        - "2.14"
+        ansible_latest:  ["2.17"]
+        ansible_release: ["2.17"]
         image:
+        - "corpusops/ubuntu:24.04"
         - "corpusops/ubuntu:22.04"
-        - "corpusops/ubuntu:20.04"
         - "corpusops/ubuntu:latest"
-        - "corpusops/debian:bullseye"
-
+        - "corpusops/debian:bookworm"
 on:
   workflow_dispatch:
   push:

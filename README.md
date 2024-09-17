@@ -36,13 +36,16 @@ It will in ./corpusops/corpusops.bootstrap:
 | `2.0`               | 2.0                | **python-3**             | **2.10**                  | `2.9,2.10`             | 2019  | `corpusops/ubuntu:22.04-2.10`, `corpusops/ubuntu:20.04-2.10`, `corpusops/ubuntu:18.04-2.10`,  `corpusops/ubuntu:22.04-2.9`, `corpusops/ubuntu:20.04-2.9`, `corpusops/ubuntu:18.04-2.9`  |
 | `master`            | master             | **python-2.8**           | **2.7**                   | `2.5, 2.7`             | 2017  | `corpusops/ubuntu:20.04-2.7`, `corpusops/ubuntu:18.04-2.7`    |
 
-### Upgrading from ``master`` branch
-We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
 
-```
+
+### Upgrading from any branch
+We provide a semi-automatic way to proceed to ``4.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
+
+```sh
+# be sure to be on the latest changeset of the corpusops.bootstrap's local branch checkout
 cd $corpusops_bootstrap && \
-    git pull && \
-    ./bin/install.sh -C -b 2.0 && \
+    git fetch origin && \
+    ./bin/install.sh -C -b 4.0 --ansible-branch 2.17 && \
     bin/install.sh -C && \
     rm -f .corpusops/corpusops_branch
 ```

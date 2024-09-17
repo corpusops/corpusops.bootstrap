@@ -1,7 +1,7 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/debian:buster_preprovision-2.14
+FROM corpusops/ubuntu:14.04_preprovision-2.17
 
 # Rewarm apt cache
 RUN bash -c '\
@@ -15,7 +15,7 @@ RUN bash -c '\
 ARG FORCE_ONLINE=
 ARG NO_OUTPUT=y
 ARG KEEP_DOCKERD=no
-ARG ANSIBLE_PYTHON_INTERPRETER=python3
+ARG ANSIBLE_PYTHON_INTERPRETER=auto
 ## Refresh files
 ADD hacking/      $COPS_ROOT/hacking/
 ADD bin/          $COPS_ROOT/bin/

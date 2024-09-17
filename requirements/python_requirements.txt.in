@@ -2,9 +2,8 @@
 paramiko
 
 # reqs that need te be taken with care
-# setuptools is only pinned down to <45 on master branch
-setuptools<66
 packaging
+setuptools
 pip >= 1.5.6
 chardet >= 2.3.0
 ordereddict >= 1.1
@@ -59,8 +58,8 @@ docker[tls] >= 3.3.0
 
 # Remote/Forking Debugging (install manually, do not work on docker/centos)
 #epdb
-#remote-pdb >= 2.0.0
-pdb_clone
+remote-pdb >= 2.0.0
+#pdb_clone
 
 # password hash
 passlib[argon2,bcrypt,totp]

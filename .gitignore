@@ -32,3 +32,4 @@ docker/IMAGES.json
 /sshconfig
 /collections
 /hacking/*/.env
+/requirements/python_requirements.txt
