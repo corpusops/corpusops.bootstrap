@@ -5,7 +5,7 @@ env:
   NO_SQUASH: ""
   NONINTERACTIVE: "1"
   FORCE_ONLINE: "1"
-  CORPUSOPS_ROLES_BRANCH: "2.0"
+  CORPUSOPS_ROLES_BRANCH: "4.0"
   RELEASABLE_REPOS: "^corpusops/"
   RELEASABLE_BRANCHES: "^(refs/heads/)?(master|2.0|3.0|workflows)$"
 jobs:
