@@ -845,7 +845,7 @@ get_eggs_src_dir() {
 }
 
 get_corpusops_roles_branch() {
-    get_default_knob corpusops_roles_branch "${CORPUSOPS_ROLES_BRANCH}" "2.0"
+    get_default_knob corpusops_roles_branch "${CORPUSOPS_ROLES_BRANCH}" "4.0"
 }
 
 get_corpusops_branch() {
