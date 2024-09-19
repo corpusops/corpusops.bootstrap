@@ -42,9 +42,11 @@ RUN bash -c 'set -e;\
      ${COPS_ROOT}/roles/corpusops.roles/localsettings_python_sni/role.yml'
 
 # Install docker client for dind(sibling via docker socket) workflows
+ARG DOCKER_CREDS_HELPER_URL="https://raw.githubusercontent.com/corpusops/docker-gitlabtools/main/rootfs/common/bin/docker-credential-copsgitlab"
 RUN bash -c 'step_rev=2;set -e;\
     export A_ENV_NAME="docker";\
     export A_INVENTORY="localhost,";\
+    curl  "${DOCKER_CREDS_HELPER_URL}">/bin/docker-credential-copsgitlab && chmod +x /bin/docker-credential-copsgitlab;\
     $_apply_role ${COPS_ROOT}/roles/corpusops.roles/localsettings_docker/role.yml \
       -e "{corpusops_localsettings_docker_has_docker_py: true}"'
 
