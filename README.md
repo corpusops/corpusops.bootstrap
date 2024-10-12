@@ -41,7 +41,7 @@ We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old i
 ```
 cd $corpusops_bootstrap && \
     git pull && \
-    ./bin/install.sh -C -b 2.0 && \
+    ./bin/install.sh -C -b 3.0 && \
     bin/install.sh -C && \
     rm -f .corpusops/corpusops_branch
 ```
