@@ -118,7 +118,7 @@ jobs:
         - "corpusops/ubuntu:22.04"
         - "corpusops/ubuntu:20.04"
         #- "corpusops/ubuntu:18.04"
-        - "corpusops/ubuntu:latest"
+        #- "corpusops/ubuntu:latest"
         #- "corpusops/debian:buster"
         - "corpusops/debian:bullseye"
         #- "corpusops/debian:sid"
