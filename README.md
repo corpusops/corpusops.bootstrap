@@ -52,7 +52,7 @@ cd $corpusops_bootstrap && \
 
 ## Ansible notes
 - It's better to use the installer (this repo, corpusops.bootstrap) that uses under the hood our [ansible fork](https://github.com/corpusops/ansible)
- which have [small fixes & divergences](https://github.com/corpusops/ansible/tree/stable-2.14/divergences)
+ which have [small fixes & divergences](https://github.com/corpusops/ansible/tree/stable-2.17/divergences)
  to [pristine ansible](https://github.com/ansible/ansible).
 
 ## badges
