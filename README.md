@@ -31,7 +31,6 @@ It will in ./corpusops/corpusops.bootstrap:
 
 | corpusops.bootstrap | roles branch       | supported python version | bundled ansible branch    | ansible requirements    | docker tags |
 | ------------------- | ------------------ | ------------------------ | ------------------------- | ----------------------- | ----------- |
-| `3.0`               | 2.0                | **>=python-3.9**         | **2.14**                  | `>= 2.10`               | `corpusops/ubuntu:latest`, `corpusops/ubuntu:22.04-2.14`, `corpusops/ubuntu:20.04-2.14`, |
 | `2.0`               | 2.0                | **python-3**             | **2.10**                  | `2.9,2.10`              | `corpusops/ubuntu:22.04-2.10`, `corpusops/ubuntu:20.04-2.10`, `corpusops/ubuntu:18.04-2.10`,  `corpusops/ubuntu:22.04-2.9`, `corpusops/ubuntu:20.04-2.9`, `corpusops/ubuntu:18.04-2.9`  |
 | `master`            | master             | **python-2.8**           | **2.7**                   | `2.5, 2.7`              | `corpusops/ubuntu:20.04-2.7`, `corpusops/ubuntu:18.04-2.7`    |
 
