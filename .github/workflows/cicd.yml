@@ -117,15 +117,9 @@ jobs:
         image:
         - "corpusops/ubuntu:22.04"
         - "corpusops/ubuntu:20.04"
-        #- "corpusops/ubuntu:18.04"
         - "corpusops/ubuntu:latest"
-        #- "corpusops/debian:buster"
         - "corpusops/debian:bullseye"
-        #- "corpusops/debian:sid"
-        #- "corpusops/debian:stretch"
-        #- "corpusops/ubuntu:16.04"
-        #- "corpusops/debian:buster"
-        #- "corpusops/centos:7"
+
 on:
   workflow_dispatch:
   push:
