@@ -31,11 +31,10 @@ It will in ./corpusops/corpusops.bootstrap:
 
 | corpusops.bootstrap | roles branch       | supported python version | bundled ansible branch    | ansible requirements   |  release year date | docker tags |
 | ------------------- | ------------------ | ------------------------ | ------------------------- | -----------------------| ------------------ | ----------- |
-| `4.0`               | 4.0                | **>=python-3.10**        | **2.17**                  | `>= 2.10`              | 2024  | `corpusops/ubuntu:latest`, `corpusops/ubuntu:24.04-2.17`, `corpusops/ubuntu:22.04-2.17`, |
-| `3.0`               | 2.0                | **>=python-3.9**         | **2.14**                  | `>= 2.10`              | 2021  | `corpusops/ubuntu:latest`, `corpusops/ubuntu:22.04-2.14`, `corpusops/ubuntu:20.04-2.14`, |
+| `4.0`               | 4.0                | **>=python-3.10**        | **2.17**                  | `>= 2.10`              | 2024  | `corpusops/ubuntu:24.04-2.17`, `corpusops/ubuntu:22.04-2.17`, `corpusops/debian:bookworm-2.17` |
+| `3.0`               | 2.0                | **>=python-3.9**         | **2.14**                  | `>= 2.10`              | 2021  | `corpusops/ubuntu:latest` (ansible-2.14), `corpusops/ubuntu:22.04-2.14`, `corpusops/ubuntu:20.04-2.14` |
 | `2.0`               | 2.0                | **python-3**             | **2.10**                  | `2.9,2.10`             | 2019  | `corpusops/ubuntu:22.04-2.10`, `corpusops/ubuntu:20.04-2.10`, `corpusops/ubuntu:18.04-2.10`,  `corpusops/ubuntu:22.04-2.9`, `corpusops/ubuntu:20.04-2.9`, `corpusops/ubuntu:18.04-2.9`  |
 | `master`            | master             | **python-2.8**           | **2.7**                   | `2.5, 2.7`             | 2017  | `corpusops/ubuntu:20.04-2.7`, `corpusops/ubuntu:18.04-2.7`    |
-
 
 
 ### Upgrading from any branch
