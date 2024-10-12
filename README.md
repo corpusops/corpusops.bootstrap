@@ -52,8 +52,8 @@ cd $corpusops_bootstrap && \
  to [pristine ansible](https://github.com/ansible/ansible).
 
 ## badges
-|  B | S |  B | S | B | S | B | S |
-| --- | --- | ---| --- | ---| --- |
+|  B  | S   |  B | S   | B   | S   |
+| --- | --- | ---| --- | --- | --- |
 | 4.0 | [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=4.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml)[![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=4.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml) |
 | 3.0 | [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=3.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml)[![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=3.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml) |
 
