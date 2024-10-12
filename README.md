@@ -47,7 +47,7 @@ cd $corpusops_bootstrap && \
     git fetch origin && \
     ./bin/install.sh -C -b 4.0 --ansible-branch 2.17 && \
     bin/install.sh -C && \
-    rm -f .corpusops/corpusops_branch
+    rm -f .corpusops/*_branch
 ```
 
 ## Ansible notes
