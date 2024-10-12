@@ -1,7 +1,9 @@
 # For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
-FROM corpusops/debian:latest_preprovision-2.17
+ARG RSYNC=corpusops/rsync
+FROM corpusops/debian:latest_preprovision-2.17 AS base
+FROM base AS final
 
 # Rewarm apt cache
 RUN bash -c '\
@@ -84,8 +86,14 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
     NO_IMAGE_STRIP= \
         /sbin/cops_container_strip.sh'
 
-# Default to launch systemd, and you ll have have to mount:
-#  -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run/lock --tmpfs /run
+# SQUASH Stage
+FROM $RSYNC AS squashed-rsync
+FROM base AS squashed-ancestor
+ARG ROOTFS="/BASE_ROOTFS_TO_COPY_THAT_WONT_COLLIDE_1234567890"
+ARG PATH="${ROOTFS}_rsync/bin:$PATH"
+RUN --mount=type=bind,from=final,target=$ROOTFS --mount=type=bind,from=squashed-rsync,target=${ROOTFS}_rsync \
+rsync -Aaz --delete ${ROOTFS}/ / --exclude=/proc --exclude=/sys --exclude=/etc/resolv.conf --exclude=/etc/hosts --exclude=$ROOTFS* --exclude=dev/shm --exclude=dev/pts --exclude=dev/mqueue
 STOPSIGNAL SIGRTMIN+3
+ENV PATH=$COPS_ROOT/bin:$COPS_ROOT/venv/bin:$PATH
 CMD ["/entry_point"]
 # vim:set et ft=Dockerfile:
