@@ -5,9 +5,8 @@ env:
   NO_SQUASH: ""
   NONINTERACTIVE: "1"
   FORCE_ONLINE: "1"
-  CORPUSOPS_ROLES_BRANCH: "2.0"
   RELEASABLE_REPOS: "^corpusops/"
-  RELEASABLE_BRANCHES: "^(refs/heads/)?(master|2.0|3.0|workflows)$"
+  RELEASABLE_BRANCHES: "^(refs/heads/)?(3.0)$"
 jobs:
   r:
     runs-on: ubuntu-latest
@@ -26,8 +25,8 @@ jobs:
             && ( echo "$GITHUB_REPOSITORY" | egrep -q "${RELEASABLE_REPOS}" )
             then releasable=true;else releasable=false;fi
             echo "releasable=$releasable" >> $GITHUB_OUTPUT
-            echo "tags=$tags"            >> $GITHUB_OUTPUT
-            echo "rtags=$rtags"          >> $GITHUB_OUTPUT
+            echo "tags=$tags"             >> $GITHUB_OUTPUT
+            echo "rtags=$rtags"           >> $GITHUB_OUTPUT
         id: v
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -36,77 +35,34 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Activate docker experimental
         run: |-
-          sudo bash -exc "service docker stop;python -c \
+          sudo bash -exc "if [ ! -e /etc/docker/daemon.json ];then mkdir /etc/docker||true;echo '{}' > /etc/docker/daemon.json;fi;service docker stop;python -c \
           \"d='/etc/docker/daemon.json';\
           import json;c=json.load(open(d));c['experimental']=True;\
           open(d, 'w').write(json.dumps(c))\"
           systemctl restart docker"
       - uses: actions/checkout@v3
-      - name: Cache multiple paths
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/cache
-            venv3
-            venv
-            roles
-            collections
-          key: ${{ runner.os }}-${{ github.ref }}-${{ github.repository }}-venvstatics
       - name: test installer & init DOTcorpusops
         run: |-
           set -ex
           if [[ -n "${GITHUB_BASE_REF}" ]];then CORPUSOPS_BRANCH="$(git log HEAD|head -n1|awk '{print $2}')"
           else CORPUSOPS_BRANCH="${GITHUB_REF//*\/}";fi
-          echo "Pinning corpusops to branch/changeset: ${CORPUSOPS_BRANCH}" >&2
-          export CORPUSOPS_BRANCH
-          if ! ( bin/install.sh -C -S -b ${CORPUSOPS_BRANCH}; );then
-            echo "Busting venv cache && rebuilding"
-            rm -rf venv*;bin/install.sh -C -S -b ${CORPUSOPS_BRANCH};fi
-          if ! ( bin/install.sh -C --synchronize-code );then
-            rm -rf roles/corpusops.roles;bin/install.sh -C --synchronize-code;fi
-          cd roles/corpusops.roles
-          git reset --hard origin/${CORPUSOPS_ROLES_BRANCH:-${CORPUSOPS_BRANCH}}
-          git log -n1
-          cd -
-      - name: Build 1st round image
-        id: docker_build1
-        run: |-
-          set -ex
-          iid=$(mktemp)
-          siid=$(mktemp)
-          if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
-          img=${{matrix.image}}_preprovision-${{matrix.ansible_release}}
-          # docker build --iidfile $iid \
-          #   --cache-from="${img}-nosquash" --cache-from="$img" \
-          #   -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-          docker build --iidfile $iid \
-            -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-          for i in ${{steps.v.outputs.tags}};do
-            for t in $i ${i}-nosquash;do docker tag $(cat $iid) $t;done;done
-          if [[ -z $NO_SQUASH ]];then
-            docker build $sq --iidfile $siid -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-            for i in ${{steps.v.outputs.tags}};do docker tag $(cat $siid) $i;done
-          fi
-      - name: Build 2nd round image
+          echo "Pinning corpusops branch/changeset: ${CORPUSOPS_BRANCH}" >&2
+          mkdir .corpusops || true
+          echo $CORPUSOPS_BRANCH > .corpusops/corpusops_branch
+          # be sure not to have any cached role or collection
+          rm -rfv collection*/* roles/* || true
+      - name: Build image
         id: docker_build2
         run: |-
           set -ex
           iid=$(mktemp)
-          siid=$(mktemp)
-          if [[ -z $NO_SQUASH ]];then sq='--squash';else sq="";fi
           img=${{matrix.image}}-${{matrix.ansible_release}}
-          # docker build --iidfile $iid --cache-from="$img" -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-          docker build --iidfile $iid -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-          for i in ${{steps.v.outputs.rtags}};do
-            for t in $i ${i}-nosquash;do docker tag $(cat $iid) $t;done;done
-          if [[ -z $NO_SQUASH ]];then
-            docker build $sq --iidfile $siid -f "docker/${img}" . --build-arg FORCE_ONLINE=1
-            for i in ${{steps.v.outputs.rtags}};do docker tag $(cat $siid) $i;done
-          fi
+          docker build --iidfile $iid -f "docker/${img}" . --build-arg FORCE_ONLINE=1 --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from=$img
+          # preprovision tag is kept & so, then, pushed only for retrocompat.
+          for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do for t in $i;do docker tag $(cat $iid) $t;done;done
       - name: Push images if needed
         run: |-
-          set -ex;for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do
-            if [[ -z $NO_SQUASH ]];then docker push ${i}-nosquash;fi;docker push $i;done
+          set -ex;for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do docker push $i;done
         if: ${{steps.v.outputs.releasable == 'true'}}
     strategy:
       fail-fast: false
