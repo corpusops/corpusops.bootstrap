@@ -1,1 +1,1 @@
-docker/corpusops/ubuntu:ubuntu:20.04-2.10
+docker/corpusops/ubuntu:22.04-2.14

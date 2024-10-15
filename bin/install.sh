@@ -49,6 +49,8 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
+# disabled: now use multistage built image
+BASE_PREPROVISION_IMAGES=""
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:22.04"
@@ -65,6 +67,8 @@ EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:latest_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:bullseye_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:buster_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:sid_preprovision"
+# disabled: now use multistage built image
+EXP_PREPROVISION_IMAGES=""
 EXP_CORE_IMAGES=""
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
@@ -1028,7 +1032,7 @@ recap_(){
     bs_yellow_log "----------------------------------------------------------"
     bs_yellow_log " CORPUSOPS BOOTSTRAP"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
-    bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${NORMAL}"
+    bs_yellow_log "   version: ${RED}$(get_corpusops_branch)${YELLOW} ansible: ${RED}$(get_ansible_branch)${YELLOW} roles: ${RED}$(get_corpusops_roles_branch)${NORMAL}"
     if ! corpusops_use_venv;then
         bs_yellow_log "   use venv: ${RED}no${NORMAL}"
     fi
@@ -1603,6 +1607,7 @@ usage() {
     bs_help "    -u|--use-venv yes/no" "do we use venv" "$(get_corpusops_use_venv)" y
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
+    bs_help "    --roles-branch <branch>" "corpusops ansible roles git branch" "$(get_corpusops_roles_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
     bs_help "    -d|--debug" "activate debug" "${DEBUG}" y
@@ -1705,6 +1710,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--ansible-branch" ]; then
             ANSIBLE_BRANCH="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--roles-branch" ]; then
+            CORPUSOPS_ROLES_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--upgrade" ]; then
             DO_UPGRADE="1";argmatch="1"
