@@ -205,6 +205,7 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
       rm -f /usr/bin/docker-runc; \
       rm -f /usr/bin/dockerd; \
     fi; \
+    for i in /root/.local;do rm -rf $i || true;done;\
     export LDISTRIB_ID=$(echo $DISTRIB_ID|awk '"'{print tolower("'$0'")}'"' );\
     cd "$COPS_ROOT";\
     sed -i "/extraheader/ d" .git/config;\
