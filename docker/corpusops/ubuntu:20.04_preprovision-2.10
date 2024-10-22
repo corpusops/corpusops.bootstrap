@@ -7,7 +7,7 @@ ENV container docker
 ARG FORCE_ONLINE=
 ARG COPS_ROOT=/srv/corpusops/corpusops.bootstrap
 ARG NO_OUTPUT=y
-ARG USE_VENV=no
+ARG USE_VENV=yes
 ARG PYTHONUNBUFFERED=1
 ARG ANSIBLE_PYTHON_INTERPRETER=python3
 ARG NONINTERACTIVE="y"
@@ -133,6 +133,7 @@ COPY collections ${COPS_ROOT}/collections
 COPY hacking/container_rootfs/ $COPS_ROOT/hacking/container_rootfs/
 COPY hacking/sync_files $COPS_ROOT/hacking/
 RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
+    if [ "x${USE_VENV}" != "xno" ];then for i in $COPS_ROOT/bin/*;do ln -sf $i /usr/local/bin;done;fi;\
     VERBOSE=y $_silent_run $COPS_ROOT/hacking/sync_files;\
     VERBOSE=y $_silent_run rsync -aK hacking/container_rootfs/ /;\
     VERBOSE=y $_silent_run /sbin/cops_container_activate_core_services.sh;\
