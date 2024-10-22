@@ -729,14 +729,13 @@ ensure_last_virtualenv() {
     fi
     venv=$(get_command $(basename ${VIRTUALENV_BIN:-virtualenv}))
     py=$(get_cops_orig_python)
-    pip=$(get_cops_pip)
     ez=$(get_command $(basename ${EASY_INSTALL:-easy_install}))
     if ( [[ "x${venv}" == "x/usr/bin/virtualenv" ]] \
          || [[ "x${venv}" == "x/bin/virtualenv" ]] ); then
         if version_lt "$($venv --version)" "15.1.0"; then
             log "Installing last version of virtualenv"
-            if [[ -n $pip ]];then
-                $(may_sudo) "$py" "$pip" install --upgrade virtualenv
+            if ( $py -m pip --version >/dev/null 2>&1 );then
+                $(may_sudo) "$py" -m pip install --upgrade virtualenv
             elif [[ -n $ez ]];then
                 $(may_sudo) "$py" "$ez" -U virtualenv
             fi
@@ -966,7 +965,7 @@ get_cops_orig_python() {
         DEFAULT_PYTHON_BIN_FIRST=$DEFAULT_PYTHON_BIN_FIRST \
 		get_python${COPS_PYTHON_VERSION}
     )
-     echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
+    echo ${COPS_ORIG_PYTHON:-${COPS_PYTHON:-$default_py}}
 }
 
 get_cops_python() {
@@ -1287,20 +1286,21 @@ test_ansible_state() {
 reinstall_egg_path() {
     ( cd "$1" && \
         if corpusops_use_venv;then export PATH=$VENV_PATH/bin:$PATH;fi; \
-        vv "$(get_cops_python)" "$(get_cops_pip)" \
+        vv "$(get_cops_python)" -m pip \
                install -U --force-reinstall --no-deps -e . )
 }
 
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
-    local pip="$(get_cops_pip)"
-    local COPS_PYTHON=${COPS_PYTHON:-python}
+    local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
+    $COPS_PYTHON -m pip --version
     if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
-        [ -e "$pip" ];then
+        ( $COPS_PYTHON -m pip --version >/dev/null 2>&1 );then
         bs_log "Try to reinstall ansible egg"
         vv reinstall_egg_path "$(get_eggs_src_dir)/ansible"
     fi
+    $COPS_PYTHON -m pip --version
 }
 
 ensure_ansible_is_usable() {
@@ -1407,13 +1407,11 @@ install_python_libs_() {
         fi
     else
         bs_log "Python install incomplete"
-        local pip=$(get_cops_pip)
         local py=$(get_cops_python)
         if ! ( corpusops_use_venv ) && \
-            ! ( $pip --version >/dev/null 2>&1 ) ;then
+            ! ( $py -m pip --version >/dev/null 2>&1 ) ;then
             upgrade_pip "$py" || sdie "upgrading pip failed"
         fi
-        local pip=$(get_cops_pip)
         if ! ( $py -m pip --version >/dev/null 2>&1 );then
             sdie "pip not found"
         fi
