@@ -1,4 +1,4 @@
-# For quickier rebuilds, we isolate each step of the installation
+#: For quickier rebuilds, we isolate each step of the installation
 # and their requisites; together with docker cache
 
 FROM corpusops/ubuntu-bare:16.04
@@ -168,5 +168,6 @@ RUN bash -c 'step_rev=3;set -e;cd $COPS_ROOT;\
 
 STOPSIGNAL SIGRTMIN+3
 #  -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run/lock --tmpfs /run
+ENV PATH=$COPS_ROOT/bin:$COPS_ROOT/venv/bin:$PATH
 CMD ["/entry_point"]
 # vim:set et ft=Dockerfile:
