@@ -61,7 +61,7 @@ jobs:
           for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do for t in $i;do docker tag $(cat $iid) $t;done;done
       - name: Push images if needed
         run: |-
-          set -ex;for i in ${{steps.v.outputs.tags}} ${{steps.v.outputs.rtags}};do docker push $i;done
+          set -ex;for i in ${{steps.v.outputs.rtags}};do docker push $i;done
         if: ${{steps.v.outputs.releasable == 'true'}}
     strategy:
       fail-fast: false
