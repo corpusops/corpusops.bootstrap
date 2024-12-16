@@ -75,8 +75,8 @@ jobs:
         - "corpusops/ubuntu:20.04"
         - "corpusops/debian:bullseye"
 on:
-  workflow_dispatch:
-  push:
-  pull_request:
-  schedule: [{cron: '1 0 1,15 * *'}]
+  # workflow_dispatch:
+  # push:
+  # pull_request:
+  # schedule: [{cron: '1 0 1,15 * *'}]
 
