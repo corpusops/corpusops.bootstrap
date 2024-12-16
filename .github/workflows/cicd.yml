@@ -77,8 +77,8 @@ jobs:
         - "corpusops/debian:buster"
         - "corpusops/debian:bullseye"
 on:
-  workflow_dispatch:
-  push:
-  pull_request:
-  schedule: [{cron: '1 0 1,15 * *'}]
+  # workflow_dispatch:
+  # push:
+  # pull_request:
+  # schedule: [{cron: '1 0 1,15 * *'}]
 
