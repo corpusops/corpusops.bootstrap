@@ -75,7 +75,7 @@ jobs:
         - "corpusops/ubuntu:latest"
         - "corpusops/debian:bookworm"
 on:
-  # workflow_dispatch:
+  workflow_dispatch:
   # push:
   # pull_request:
   # schedule: [{cron: '1 0 1,15 * *'}]
