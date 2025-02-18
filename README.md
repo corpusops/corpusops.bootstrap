@@ -28,8 +28,12 @@ It will in ./corpusops/corpusops.bootstrap:
 
 
 ### Note about branches and Versions
-- `2.0`: current branch with roles supported ansible version `>=  2.5` using **python-3** and bundling **ansible-2.9**.
-- `master`:  old branch with roles supported ansible version `<=  2.7` using **python-2** and bundling **ansible-2.7**.
+
+| corpusops.bootstrap | roles branch       | supported python version | bundled ansible branch    | ansible requirements    | docker tags |
+| ------------------- | ------------------ | ------------------------ | ------------------------- | ----------------------- | ----------- |
+| `3.0`               | 2.0                | **>python-3.9**          | **2.14**                  | `>= 2.10`               | `corpusops/ubuntu:latest`, `corpusops/ubuntu:22.04-2.14`, `corpusops/ubuntu:20.04-2.14`, |
+| `2.0`               | 2.0                | **python-3**             | **2.10**                  | `2.9,2.10`              | `corpusops/ubuntu:22.04-2.10`, `corpusops/ubuntu:20.04-2.10`, `corpusops/ubuntu:18.04-2.10`,  `corpusops/ubuntu:22.04-2.9`, `corpusops/ubuntu:20.04-2.9`, `corpusops/ubuntu:18.04-2.9`  |
+| `master`            | master             | **python-2.8**           | **2.7**                   | `2.5, 2.7`              | `corpusops/ubuntu:20.04-2.7`, `corpusops/ubuntu:18.04-2.7`    |
 
 ### Upgrading from ``master`` branch
 We provide a semi-automatic way to proceed to ``2.0`` upgrade not to break old installs, it's as simple as copying this in a terminal
