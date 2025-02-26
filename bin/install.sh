@@ -992,6 +992,9 @@ check_py_modules() {
     if [[ -z $bin ]];then
         sdie "No python interpreter found"
     fi
+    if ! ( $bin -V >/dev/null 2>&1 );then
+        sdie "Python is not working $($bin -V)"
+    fi
     "${bin}" << EOF
 import six
 $( if [[ -z "${DISABLE_MITOGEN-1}" ]] ;then echo "import mitogen";fi; )
@@ -1306,15 +1309,15 @@ may_activate_venv() {
 }
 
 noisy_test_ansible_state() {
+    local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
     ( QUIET=y may_activate_venv;\
-      ansible-playbook --help 2>&1 &&\
-      ansible --help >/dev/null 2>&1; )
+      $COPS_PYTHON -V && unset LANG LC_ALL &&\
+      ansible-playbook --version 2>&1 &&\
+      ansible --version 2>&1; )
 }
 
 test_ansible_state() {
-    ( QUIET=y may_activate_venv;\
-      ansible-playbook --help >/dev/null 2>&1 &&\
-      ansible --help >/dev/null 2>&1 )
+    noisy_test_ansible_state >/dev/null 2>&1
 }
 
 reinstall_egg_path() {
@@ -1327,7 +1330,6 @@ reinstall_egg_path() {
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
     local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
-    $COPS_PYTHON -m pip --version
     if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         ( $COPS_PYTHON -m pip --version >/dev/null 2>&1 );then
