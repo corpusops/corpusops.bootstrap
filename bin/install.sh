@@ -1330,6 +1330,10 @@ reinstall_egg_path() {
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
     local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
+    if ! ( $COPS_PYTHON -m pip --version );then
+        log "Trying to install missing dependencies(fix)"
+        install_prerequisites || die "install prereqs(fix) failed"
+    fi
     if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         ( $COPS_PYTHON -m pip --version >/dev/null 2>&1 );then
