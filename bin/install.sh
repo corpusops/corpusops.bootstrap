@@ -1327,13 +1327,17 @@ reinstall_egg_path() {
                install -U --force-reinstall --no-deps -e . )
 }
 
+try_fix_deps() {
+    if ! ( $COPS_PYTHON -m pip --version );then
+        log "Trying to install missing dependencies(fix)"
+        DO_INSTALL_PREREQUISITES=y install_prerequisites || die "install prereqs(fix) failed"
+    fi
+}
+
 try_fix_ansible()  {
     bs_log "Try to fix ansible tree"
     local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
-    if ! ( $COPS_PYTHON -m pip --version );then
-        log "Trying to install missing dependencies(fix)"
-        install_prerequisites || die "install prereqs(fix) failed"
-    fi
+    try_fix_deps
     if ( noisy_test_ansible_state 2>&1| grep -iq pkg_resources.DistributionNotFound ) &&
         [ -e "$(get_eggs_src_dir)/ansible/.git" ] && \
         ( $COPS_PYTHON -m pip --version >/dev/null 2>&1 );then
