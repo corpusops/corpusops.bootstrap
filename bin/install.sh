@@ -1328,7 +1328,8 @@ reinstall_egg_path() {
 }
 
 try_fix_deps() {
-    if ! ( $COPS_PYTHON -m pip --version );then
+    local COPS_PYTHON=${COPS_PYTHON:-$(get_cops_python)}
+    if ! ( $COPS_PYTHON -m pip --version &>/dev/null );then
         log "Trying to install missing dependencies(fix)"
         DO_INSTALL_PREREQUISITES=y install_prerequisites || die "install prereqs(fix) failed"
     fi
