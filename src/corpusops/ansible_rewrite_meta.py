@@ -19,7 +19,7 @@ T = D(A(__name__))
 
 DEFAULTS = '''
 galaxy_info:
-  author: Mathieu Le Marec - Pasquet <kiorky@cryptelium.net>
+  author: Makina Corpus <freesoftware@makina-corpus.com>
   description: |
     {role}
   company: corpusOps
