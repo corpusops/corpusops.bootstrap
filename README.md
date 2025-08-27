@@ -48,15 +48,14 @@ cd $corpusops_bootstrap && \
 
 ## Ansible notes
 - It's better to use the installer (this repo, corpusops.bootstrap) that uses under the hood our [ansible fork](https://github.com/corpusops/ansible)
- which have [small fixes & divergences](https://github.com/corpusops/ansible/tree/stable-2.9/divergences)
+ which have [small fixes & divergences](https://github.com/corpusops/ansible/tree/stable-2.17/divergences)
  to [pristine ansible](https://github.com/ansible/ansible).
 
 ## badges
-
-|  Branch | CIBuild |  Branch | CIBuild |
-| ------- | ----------- |  ------ | ----------- |
-| 2.0 |  [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/workflows/.github/workflows/cicd.yml/badge.svg?branch=2.0)](https://github.com/corpusops/corpusops.bootstrap/actions?query=workflow%3A.github%2Fworkflows%2Fcicd.yml+branch%3A2.0)  | master |  [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/workflows/.github/workflows/cicd.yml/badge.svg?branch=master)](https://github.com/corpusops/corpusops.bootstrap/actions?query=workflow%3A.github%2Fworkflows%2Fcicd.yml+branch%3Amaster)  |
-
+|  B | S |  B | S | B | S | B | S |
+| --- | --- | ---| --- | ---| --- |
+| 4.0 | [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=4.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml)[![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=4.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml) |
+| 3.0 | [![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=3.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml)[![.github/workflows/cicd.yml](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml/badge.svg?branch=3.0)](https://github.com/corpusops/corpusops.bootstrap/actions/workflows/cicd.yml) |
 
 ## Roles
 - [corpusops.roles](https://github.com/corpusops/roles)
