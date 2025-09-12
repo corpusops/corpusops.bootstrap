@@ -7,7 +7,7 @@ env:
   FORCE_ONLINE: "1"
   CORPUSOPS_ROLES_BRANCH: "4.0"
   RELEASABLE_REPOS: "^corpusops/"
-  RELEASABLE_BRANCHES: "^(refs/heads/)?(master|2.0|3.0|workflows)$"
+  RELEASABLE_BRANCHES: "^(refs/heads/)?(master|2.0|3.0|4.0|workflows)$"
 jobs:
   r:
     runs-on: ubuntu-latest
