@@ -15,7 +15,7 @@ note for OSX users: we won't install dependencies for you: you need `virtualenv`
 
 ```sh
 mkdir corpusops
-git clone https://github.com/corpusops/corpusops.bootstrap.git corpusops/corpusops.bootstrap
+git clone https://github.com/corpusops/corpusops.bootstrap.git -b 2.0 corpusops/corpusops.bootstrap
 corpusops/corpusops.bootstrap/bin/install.sh -l
 corpusops/corpusops.bootstrap/bin/install.sh
 ```
@@ -43,7 +43,7 @@ cd $corpusops_bootstrap && \
     git pull && \
     ./bin/install.sh -C -b 2.0 && \
     bin/install.sh -C && \
-    rm -f .corpusops/corpusops_branch
+    rm -f .corpusops/*_branch
 ```
 
 ## Ansible notes
