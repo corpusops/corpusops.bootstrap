@@ -15,7 +15,7 @@ note for OSX users: we won't install dependencies for you: you need `virtualenv`
 
 ```sh
 mkdir corpusops
-git clone https://github.com/corpusops/corpusops.bootstrap.git -b 2.0 corpusops/corpusops.bootstrap
+git clone https://github.com/corpusops/corpusops.bootstrap.git -b 3.0 corpusops/corpusops.bootstrap
 corpusops/corpusops.bootstrap/bin/install.sh -l
 corpusops/corpusops.bootstrap/bin/install.sh
 ```
