@@ -44,7 +44,7 @@ We provide a semi-automatic way to proceed to ``4.0`` upgrade not to break old i
 # be sure to be on the latest changeset of the corpusops.bootstrap's local branch checkout
 cd $corpusops_bootstrap && \
     git fetch origin && \
-    ./bin/install.sh -C -b 4.0 --ansible-branch 2.17 && \
+    ./bin/install.sh -C -b 4.0 --ansible-branch 2.17 --roles-branch 4.0 && \
     bin/install.sh -C && \
     rm -f .corpusops/*_branch
 ```

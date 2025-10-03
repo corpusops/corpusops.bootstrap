@@ -1620,6 +1620,7 @@ usage() {
     bs_help "    -u|--use-venv yes/no" "do we use venv" "$(get_corpusops_use_venv)" y
     bs_help "    --ansible-url <url>" "ansible fork git url" "$(get_ansible_url)" y
     bs_help "    --ansible-branch <branch>" "ansible fork git branch" "$(get_ansible_branch)" y
+    bs_help "    --roles-branch <branch>" "corpusops ansible roles git branch" "$(get_corpusops_roles_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" y
     bs_help "    -d|--debug" "activate debug" "${DEBUG}" y
@@ -1722,6 +1723,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--ansible-branch" ]; then
             ANSIBLE_BRANCH="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--roles-branch" ]; then
+            CORPUSOPS_ROLES_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--upgrade" ]; then
             DO_UPGRADE="1";argmatch="1"
