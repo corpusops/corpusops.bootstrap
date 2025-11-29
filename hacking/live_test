@@ -45,6 +45,8 @@ BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:18.04_prepr
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:16.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/ubuntu:14.04_preprovision"
 BASE_PREPROVISION_IMAGES="$BASE_PREPROVISION_IMAGES corpusops/centos:7_preprovision"
+# disabled: now use multistage built image
+BASE_PREPROVISION_IMAGES=""
 
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:latest"
 BASE_CORE_IMAGES="$BASE_CORE_IMAGES corpusops/ubuntu:24.04"
@@ -63,6 +65,8 @@ EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:bookworm_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:bullseye_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:buster_preprovision"
 EXP_PREPROVISION_IMAGES="$EXP_PREPROVISION_IMAGES debian:sid_preprovision"
+# disabled: now use multistage built image
+EXP_PREPROVISION_IMAGES=""
 EXP_CORE_IMAGES=""
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/archlinux:latest"
 EXP_CORE_IMAGES="$EXP_CORE_IMAGES corpusops/debian:latest"
